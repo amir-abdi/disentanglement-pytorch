@@ -28,7 +28,7 @@ class CVAEModel(nn.Module):
         :return: latent encoding of the input and labels
         """
         # todo: hard coded assuming sinlge label
-        y_onehot = one_hot_embedding(y, self.num_classes[0]).squeeze(1)
+        y_onehot = one_hot_embedding(y, self.num_classes).squeeze(1)
         y_tiled = self.tiler(y_onehot)
         xy = torch.cat((x, y_tiled), dim=1)
         return self.encoder(xy)
@@ -41,7 +41,7 @@ class CVAEModel(nn.Module):
         :return: reconstructed data
         """
         # todo: hard coded assuming sinlge label
-        y_onehot = one_hot_embedding(y, self.num_classes[0]).squeeze(1)
+        y_onehot = one_hot_embedding(y, self.num_classes).squeeze(1)
         zy = torch.cat((z, y_onehot), dim=1)
         return self.decoder(zy)
 

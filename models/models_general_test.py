@@ -27,14 +27,11 @@ class TestAE(object):
             encoder='SimpleEncoder64'
 
         include_labels = ''
-        num_classes = ''
         if alg == 'CVAE':
             if dset_name == 'dsprites':
-                include_labels = '1'
-                num_classes = '3'
+                include_labels = '1,2,3'
             elif dset_name == 'celebA':
-                include_labels = 'Wearing_Hat'
-                num_classes = '2'
+                include_labels = 'Wearing_Hat,Arched_Eyebrows'
 
         args = get_args(['--name=tmp_test',
                          '--alg={}'.format(alg),
@@ -50,7 +47,6 @@ class TestAE(object):
                          '--max_iter=4',
                          '--vae_loss={}'.format(vae_loss),
                          '--include_labels={}'.format(include_labels),
-                         '--num_classes={}'.format(num_classes),
                          ])
 
         logging.info('Testing {}:{}'.format(dset_name, alg))
