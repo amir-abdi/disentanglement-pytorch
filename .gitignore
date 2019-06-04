@@ -1,9 +1,9 @@
 wandb
 checkpoints
-.idea
 outputs
-mae
-
+train_outputs
+test_outputs
+.idea
 
 ### default python ignores
 
