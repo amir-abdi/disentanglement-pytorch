@@ -75,7 +75,6 @@ def get_args(sys_args):
     parser.add_argument('--include_labels', default=None, type=str, help='Labels (indices or names) to include in '
                                                                          'latent encoding.')
     parser.add_argument('--l_dim', default=0, type=str, help='size of the encoded w space (for each label)')
-    parser.add_argument('--num_classes', type=str, help='number of classes per each label')
 
     # optimizer
     parser.add_argument('--beta1', default=0.9, type=float, help='beta1 parameter of the Adam optimizer')
@@ -144,16 +143,12 @@ def get_args(sys_args):
 
     # Handle list arguments
     args.include_labels = str2list(args.include_labels, str)
-    args.num_classes = str2list(args.num_classes, int)
 
     assert args.image_size == 64, 'for now, models are hard coded to support only image size of 64x63'
 
-    # consider the same num classes for all labels (features) if a single num_classes value was provided
     args.num_labels = 0
     if args.include_labels is not None:
         args.num_labels = len(args.include_labels)
-    if args.num_classes is not None and len(args.num_classes) == 1 and args.num_labels > 1:
-        args.num_classes = args.num_classes * args.num_labels
 
     # makedirs
     os.makedirs(args.ckpt_dir, exist_ok=True)

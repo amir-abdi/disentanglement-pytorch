@@ -195,18 +195,26 @@ def one_hot_embedding(labels, num_classes):
     """Embedding labels to one-hot form.
 
     Args:
-      labels: (LongTensor) class labels, sized [N,].
-      num_classes: (int) number of classes.
+      labels: (LongTensor) class labels, sized [N, NumLabels].
+      num_classes: list of int for number of classes for each label, or single label (int)
 
     Returns:
       (tensor) encoded labels, sized [N, #classes].
     """
-    if num_classes not in one_hot_embedding.Ys:
-        one_hot_embedding.Ys[num_classes] = cuda(torch.eye(num_classes))
+    if isinstance(num_classes, int):
+        num_classes = [num_classes]
 
-    y = one_hot_embedding.Ys[num_classes]
+    one_hots = []
+    for i in range(len(num_classes)):
+        num_class = num_classes[i]
 
-    return y[labels]
+        if num_class not in one_hot_embedding.Ys:
+            one_hot_embedding.Ys[num_class] = cuda(torch.eye(num_class))
+
+        y = one_hot_embedding.Ys[num_class]
+        one_hots.append(y[labels[:, i]])
+
+    return torch.cat(one_hots, dim=1)
 
 
 if __name__ == '__main__':

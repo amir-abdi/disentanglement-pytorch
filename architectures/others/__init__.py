@@ -1,1 +1,1 @@
-from .tile_networks import MultiTo2DChannel
+from .tiler_networks import MultiTo2DChannel

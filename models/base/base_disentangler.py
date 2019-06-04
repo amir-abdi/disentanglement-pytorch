@@ -35,7 +35,6 @@ class BaseDisentangler(object):
         self.z_dim = args.z_dim
         self.l_dim = args.l_dim
         self.num_labels = args.num_labels
-        self.num_classes = args.num_classes
 
         # Loss weights
         self.w_recon = args.w_recon
@@ -52,8 +51,10 @@ class BaseDisentangler(object):
         self.dset_dir = args.dset_dir
         self.dset_name = args.dset_name
         self.batch_size = args.batch_size
-        self.data_loader = get_dataloader(args)
         self.image_size = args.image_size
+        self.data_loader = get_dataloader(args)
+        self.num_classes = self.data_loader.dataset.get_num_classes()
+        self.class_values = self.data_loader.dataset.get_class_values()
 
         # Progress bar
         if not args.test:
@@ -171,8 +172,6 @@ class BaseDisentangler(object):
             for i, lbl in enumerate(sample_labels):
                 sample_labels_dict.update({str(i): lbl})
 
-        # todo: handle sample_labels_dict if fader networks and cvae got implemented
-
         encodings = dict()
         for key in sample_images_dict.keys():
             encodings[key] = self.encode_deterministic(images=sample_images_dict[key],
@@ -212,10 +211,14 @@ class BaseDisentangler(object):
                         gifs.append(sample)
 
             if self.traverse_c:
+                num_classes = self.data_loader.dataset.get_num_classes(False)
                 for lid in range(self.num_labels):
                     for temp_i in range(num_cols):
-                        class_id = temp_i % self.num_classes[lid]
-                        label = torch.tensor(class_id).to(self.device, dtype=torch.long).unsqueeze(0)
+                        class_id = temp_i % num_classes[lid]
+                        class_value = self.class_values[lid][class_id]
+                        label = label_orig.clone()
+                        new_label = torch.tensor(class_value).to(self.device, dtype=torch.long).unsqueeze(0)
+                        label[:, lid] = new_label
                         sample = torch.sigmoid(self.decode(latent=latent_orig, labels=label)).detach()
 
                         samples.append(sample)

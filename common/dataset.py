@@ -12,25 +12,36 @@ from torchvision.datasets import ImageFolder
 from torchvision import transforms
 
 
+# todo: share code between the two dataset classes
 class CustomImageFolder(ImageFolder):
-    def __init__(self, root, transform=None, labels=None, label_weights=None, name=None):
+    def __init__(self, root, transform, labels, label_weights, name, class_values):
         super(CustomImageFolder, self).__init__(root, transform)
         self.indices = range(len(self))
         self.labels = labels
-        self.label_weights = None
+        self._label_weights = None
         self.name = name
 
+        self._label_weights = None
+        self._num_classes_torch = None
+        self._num_classes_list = None
+        self._class_values = None
         if labels is not None:
-            if label_weights is not None:
-                self.label_weights = torch.tensor(label_weights)
-            else:
-                # todo: assuming binary classes
-                self.label_weights = [[0.5, 0.5]] * labels.shape[1]
+            self._label_weights = [torch.tensor(w) for w in label_weights]
+            self._num_classes_torch = torch.tensor([len(cv) for cv in class_values])
+            self._num_classes_list = [len(cv) for cv in class_values]
+            self._class_values = class_values
 
-    def get_label_weights(self):
-        if self.label_weights is not None:
-            return self.label_weights
-        return None
+    def get_label_weights(self, i):
+        return self._label_weights[i]
+
+    def get_num_classes(self, as_tensor=True):
+        if as_tensor:
+            return self._num_classes_torch
+        else:
+            return self._num_classes_list
+
+    def get_class_values(self):
+        return self._class_values
 
     def __getitem__(self, index1):
         index2 = random.choice(self.indices)
@@ -51,24 +62,37 @@ class CustomImageFolder(ImageFolder):
 
 
 class CustomNpzDataset(Dataset):
-    def __init__(self, data_images, transform=None, labels=None, label_weights=None, name=None):
+    def __init__(self, data_images, transform, labels, label_weights, name, class_values):
 
         self.data_npz = data_images
         self.labels = labels
         self.label_weights = None
         self.name = name
 
-        if label_weights is not None:
-            self.label_weights = label_weights
+        self._label_weights = None
+        self._num_classes_torch = None
+        self._num_classes_list = None
+        self._class_values = None
+        if labels is not None:
+            self._label_weights = [torch.tensor(w) for w in label_weights]
+            self._num_classes_torch = torch.tensor([len(cv) for cv in class_values])
+            self._num_classes_list = [len(cv) for cv in class_values]
+            self._class_values = class_values
 
         self.transform = transform
         self.indices = range(len(self))
 
-    def get_label_weights(self):
-        # todo: not tested
-        if self.label_weights is not None:
-            return self.label_weights
-        return None
+    def get_label_weights(self, i):
+        return self._label_weights[i]
+
+    def get_num_classes(self, as_tensor=True):
+        if as_tensor:
+            return self._num_classes_torch
+        else:
+            return self._num_classes_list
+
+    def get_class_values(self):
+        return self._class_values
 
     def __getitem__(self, index1):
         index2 = random.choice(self.indices)
@@ -108,6 +132,7 @@ def get_dataloader(args):
     # check if labels are provided as indices or names
     label_idx = None
     label_names = None
+    class_values = None
     if include_labels is not None:
         try:
             int(include_labels[0])
@@ -136,23 +161,27 @@ def get_dataloader(args):
             # celebA labels are all binary with values -1 and +1
             labels[labels == -1] = 0
             from pathlib import Path
-            num_labels = labels.shape[0]
-            num_images = len(list(Path(root).glob('**/*.jpg')))
+            num_l = labels.shape[0]
+            num_i = len(list(Path(root).glob('**/*.jpg')))
+            assert num_i == num_l, 'num_images ({}) != num_labels ({})'.format(num_i, num_l)
 
-            # num_images = len(glob.glob(root + '/img_align_celeba_train/*.jpg'))
-            assert num_images == num_labels, 'num_images ({}) != num_labels ({})'.format(num_images, num_labels)
-
+            # calculate weight adversely proportional to each class's population
+            num_labels = labels.shape[1]
             label_weights = []
-            for i in range(labels.shape[1]):
+            for i in range(num_labels):
                 ones = labels[:, i].sum()
                 prob_one = ones / labels.shape[0]
                 label_weights.append([prob_one, 1 - prob_one])
             label_weights = np.array(label_weights)
 
+            # all labels in celebA are binary
+            class_values = [[0, 1]] * num_labels
+
         data_kwargs = {'root': root,
                        'labels': labels,
                        'transform': transform,
                        'label_weights': label_weights,
+                       'class_values': class_values,
                        'name': name}
         dset = CustomImageFolder
     elif name.lower() == 'dsprites':
@@ -165,21 +194,29 @@ def get_dataloader(args):
                 index_shape = label_idx.index(1)
                 labels[:, index_shape] -= 1
 
+            # dsprite has uniformly distributed labels
+            num_labels = labels.shape[1]
             label_weights = []
-            for i in range(labels.shape[1]):
-                _, count = np.unique(labels[:, i], axis=0, return_counts=True)
+            class_values = []
+            for i in range(num_labels):
+                unique_values, count = np.unique(labels[:, i], axis=0, return_counts=True)
                 weight = 1 - count / labels.shape[0]
                 if len(weight) == 1:
                     weight = np.array(1)
                 else:
                     weight /= sum(weight)
                 label_weights.append(np.array(weight))
+
+                # always set label values to integers starting from zero
+                unique_values_mock = np.arange(len(unique_values))
+                class_values.append(unique_values_mock)
             label_weights = np.array(label_weights)
 
         data_kwargs = {'data_images': npz['imgs'],
                        'labels': labels,
                        'transform': transform,
                        'label_weights': label_weights,
+                       'class_values': class_values,
                        'name': name}
         dset = CustomNpzDataset
     else:
