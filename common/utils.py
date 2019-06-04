@@ -1,34 +1,32 @@
-"""utils.py"""
-
-import os
 import logging
 import argparse
 import subprocess
 import scipy.linalg as linalg
 import numpy as np
-
-import torch.nn.functional as F
 import random
 
+import torch.nn
+import torch.nn.init as init
+from torch.autograd import Variable
+from common import constants as c
 
-class DataGatherer(object):
-    def __init__(self, *args):
-        self.keys = args
-        self.data = self.get_empty_data_dict()
 
-    def get_empty_data_dict(self):
-        return {arg: [] for arg in self.keys}
+def cuda(x):
+    if torch.cuda.is_available():
+        x = x.cuda()
+    return Variable(x)
 
-    def insert(self, **kwargs):
-        for key in kwargs:
-            self.data[key].append(kwargs[key])
 
-    def flush(self):
-        self.data = self.get_empty_data_dict()
+def static_var(varname, value):
+    def decorate(func):
+        setattr(func, varname, value)
+        return func
+
+    return decorate
 
 
 def str2list(v, type):
-    if v is None:
+    if v is None or v == '':
         return None
     return [type(item) for item in v.split(',')]
 
@@ -117,43 +115,45 @@ class LinearScheduler:
         return self.start_value + iter * self.inc_per_iter
 
 
-def dataset_samples(dataset, device):
+def get_sample_data(dataset, device):
+    def random_idx():
+        return random.randint(0, dataset.__len__() - 1)
+
     sample_idx = {}
     dset_name = dataset.name
     if dset_name.lower() == 'dsprites':
         fixed_idx = [87040, 332800, 578560]  # square ellipse heart
-        sample_idx = {'fixed_square': fixed_idx[0],
-                      'fixed_ellipse': fixed_idx[1],
-                      'fixed_heart': fixed_idx[2]
+        sample_idx = {'{}_{}'.format(c.FIXED, c.SQUARE): fixed_idx[0],
+                      '{}_{}'.format(c.FIXED, c.ELLIPSE): fixed_idx[1],
+                      '{}_{}'.format(c.FIXED, c.HEART): fixed_idx[2]
                       }
 
     elif dset_name.lower() == 'celeba':
         fixed_idx = [11281, 114307, 10535, 59434]
-        sample_idx = {'fixed_1': fixed_idx[0],
-                      'fixed_2': fixed_idx[1],
-                      'fixed_3': fixed_idx[2],
-                      'fixed_4': fixed_idx[3],
-                      }
+        sample_idx = {}
+        for i in range(len(fixed_idx)):
+            sample_idx.update({c.FIXED + '_' + str(i): fixed_idx[i]})
+
     else:
         for i in range(3):
-            randidx = random.randint(0, dataset.__len__())
-            sample_idx.update({'rand' + str(i): randidx})
+            sample_idx.update({'rand' + str(i): random_idx()})
 
     # add a random sample to all
-    randidx = random.randint(0, dataset.__len__())
-    sample_idx.update({'random': randidx})
+    sample_idx.update({c.RANDOM: random_idx()})
 
     images = {}
     labels = {}
     for key, idx in sample_idx.items():
-        sample = dataset.__getitem__(idx)
+        try:
+            data = dataset.__getitem__(idx)
+        except IndexError:
+            data = dataset.__getitem__(random_idx())
 
-        img = sample[0]
-        images[key] = img.to(device).unsqueeze(0)
+        images[key] = data[0].to(device).unsqueeze(0)
 
+        labels[key] = None
         if dataset.labels is not None:
-            label = sample[2]
-            labels[key] = label.to(device).unsqueeze(0)
+            labels[key] = data[2].to(device, dtype=torch.long).unsqueeze(0)
 
     return images, labels
 
@@ -179,6 +179,34 @@ class StyleFormatter(logging.Formatter):
             self._style = logging.PercentStyle(StyleFormatter.high_style)
 
         return logging.Formatter.format(self, record)
+
+
+def init_layers(modules):
+    for block in modules:
+        for m in modules[block]:
+            if isinstance(m, torch.nn.Conv2d) or isinstance(m, torch.nn.ConvTranspose2d):
+                init.xavier_normal_(m.weight.data)
+            if isinstance(m, torch.nn.Linear):
+                init.kaiming_normal_(m.weight.data)
+
+
+@static_var("Ys", dict())
+def one_hot_embedding(labels, num_classes):
+    """Embedding labels to one-hot form.
+
+    Args:
+      labels: (LongTensor) class labels, sized [N,].
+      num_classes: (int) number of classes.
+
+    Returns:
+      (tensor) encoded labels, sized [N, #classes].
+    """
+    if num_classes not in one_hot_embedding.Ys:
+        one_hot_embedding.Ys[num_classes] = cuda(torch.eye(num_classes))
+
+    y = one_hot_embedding.Ys[num_classes]
+
+    return y[labels]
 
 
 if __name__ == '__main__':

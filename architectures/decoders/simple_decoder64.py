@@ -2,6 +2,7 @@ import torch.nn as nn
 
 from architectures.encoders.base.base_encoder import BaseImageEncoder
 from common.ops import Unsqueeze3D
+from common.utils import init_layers
 
 
 class SimpleDecoder64(BaseImageEncoder):
@@ -27,7 +28,7 @@ class SimpleDecoder64(BaseImageEncoder):
         )
         # output shape = bs x 3 x 64 x 64
 
-        self.init_layers()
+        init_layers(self._modules)
 
     def forward(self, x):
         return self.main(x)

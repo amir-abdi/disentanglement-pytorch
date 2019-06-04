@@ -5,8 +5,8 @@ import logging
 import torch
 import torchvision.utils
 
-from common.utils import grid2gif, dataset_samples
-from common.dataset import return_data
+from common.utils import grid2gif, get_sample_data
+from common.dataset import get_dataloader
 import common.constants as c
 
 DEBUG = False
@@ -16,35 +16,29 @@ class BaseDisentangler(object):
     def __init__(self, args):
 
         # Cuda
-        use_cuda = args.cuda and torch.cuda.is_available()
-        self.device = 'cuda' if use_cuda else 'cpu'
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
         # Misc
         self.name = args.name
+        self.alg = args.alg
+        self.vae_loss = args.vae_loss
 
         # Output directory
-        self.output_dir = os.path.join(args.output_dir, self.name)
-        self.test_dir = os.path.join(args.test_dir, self.name)
+        self.train_output_dir = os.path.join(args.train_output_dir, self.name)
+        self.test_output_dir = os.path.join(args.test_output_dir, self.name)
         self.file_save = args.file_save
         self.gif_save = args.gif_save
-        os.makedirs(self.output_dir, exist_ok=True)
-        os.makedirs(self.test_dir, exist_ok=True)
+        os.makedirs(self.train_output_dir, exist_ok=True)
+        os.makedirs(self.test_output_dir, exist_ok=True)
 
         # Latent space
         self.z_dim = args.z_dim
-        self.w_dim = args.w_dim
+        self.l_dim = args.l_dim
         self.num_labels = args.num_labels
         self.num_classes = args.num_classes
 
-        # Weights
-        self.nabla = args.nabla
-        self.gamma = args.gamma
-        self.eta = args.eta
-        self.beta = args.beta
-        self.kappa = args.kappa
-        self.alpha = args.alpha
-        self.delta = args.delta
-        self.upsilion = args.upsilion
+        # Loss weights
+        self.w_recon = args.w_recon
 
         # Solvers
         self.beta1 = args.beta1
@@ -58,7 +52,7 @@ class BaseDisentangler(object):
         self.dset_dir = args.dset_dir
         self.dset_name = args.dset_name
         self.batch_size = args.batch_size
-        self.data_loader = return_data(args)
+        self.data_loader = get_dataloader(args)
         self.image_size = args.image_size
 
         # Progress bar
@@ -80,7 +74,8 @@ class BaseDisentangler(object):
         self.traverse_max = args.traverse_max
         self.traverse_spacing = args.traverse_spacing
         self.traverse_z = args.traverse_z
-        self.traverse_w = args.traverse_w
+        self.traverse_l = args.traverse_l
+        self.traverse_c = args.traverse_c
         self.white_line = None
 
         self.use_wandb = args.use_wandb
@@ -94,7 +89,6 @@ class BaseDisentangler(object):
         self.ckpt_save_iter = args.ckpt_save_iter
         os.makedirs(self.ckpt_dir, exist_ok=True)
 
-        self.nets = []
         self.net_dict = dict()
         self.optim_dict = dict()
 
@@ -106,10 +100,10 @@ class BaseDisentangler(object):
             self.save_checkpoint()
 
         if self.iter % self.print_iter == 0:
-            msg = '[{}]'.format(self.iter)
+            msg = '[{}]  '.format(self.iter)
             for key, value in kwargs.items():
-                if 'loss' in key:
-                    msg += key + '={:.3f}'.format(value)
+                if c.LOSS in key:
+                    msg += key + '={:.3e}  '.format(value)
             self.pbar.write(msg)
 
         if self.iter % self.float_iter == 0:
@@ -117,7 +111,7 @@ class BaseDisentangler(object):
             for key, value in self.info_cumulative.items():
                 self.info_cumulative[key] /= self.float_iter
 
-            self.info_cumulative['iteration'] = self.iter
+            self.info_cumulative[c.ITERATION] = self.iter
             if self.use_wandb:
                 import wandb
                 wandb.log(self.info_cumulative, step=self.iter)
@@ -151,9 +145,9 @@ class BaseDisentangler(object):
 
         if self.file_save:
             if test:
-                file_name = os.path.join(self.test_dir, '{}_{}.{}'.format(c.RECONSTRUCTION, self.iter, c.JPG))
+                file_name = os.path.join(self.test_output_dir, '{}_{}.{}'.format(c.RECONSTRUCTION, self.iter, c.JPG))
             else:
-                file_name = os.path.join(self.output_dir, '{}.{}'.format(c.RECONSTRUCTION, c.JPG))
+                file_name = os.path.join(self.train_output_dir, '{}.{}'.format(c.RECONSTRUCTION, c.JPG))
             torchvision.utils.save_image(samples, file_name)
 
         if self.use_wandb:
@@ -167,36 +161,41 @@ class BaseDisentangler(object):
         num_cols = interp_values.size(0)
 
         if data is None:
-            sample_images_dict, sample_labels_dict = dataset_samples(self.data_loader.dataset, self.device)
+            sample_images_dict, sample_labels_dict = get_sample_data(self.data_loader.dataset, self.device)
         else:
             sample_images, sample_labels = data
             sample_images_dict = {}
+            sample_labels_dict = {}
             for i, img in enumerate(sample_images):
                 sample_images_dict.update({str(i): img})
+            for i, lbl in enumerate(sample_labels):
+                sample_labels_dict.update({str(i): lbl})
 
-        # todo: handle sample_labels_dict if fader networks got implemented
+        # todo: handle sample_labels_dict if fader networks and cvae got implemented
 
         encodings = dict()
-        for key, value in sample_images_dict.items():
-            encodings[key] = self.encode(value)
+        for key in sample_images_dict.keys():
+            encodings[key] = self.encode_deterministic(images=sample_images_dict[key],
+                                                       labels=sample_labels_dict[key])
 
         gifs = []
         for key in encodings:
             latent_orig = encodings[key]
+            label_orig = sample_labels_dict[key]
             samples = []
 
             # encode original on the first row
-            sample = torch.sigmoid(self.decode(latent_orig.detach()))
+            sample = torch.sigmoid(self.decode(latent=latent_orig.detach(), labels=label_orig))
             for _ in interp_values:
                 samples.append(sample)
 
-            if self.traverse_w:
+            if self.traverse_l:
                 for lid in range(self.num_labels):
-                    for lid_id in range(self.w_dim):
+                    for lid_id in range(self.l_dim):
                         for val in interp_values:
                             latent = latent_orig.clone()
-                            self.set_w(latent, lid, lid_id, val)
-                            sample = torch.sigmoid(self.decode(latent)).detach()
+                            self.set_l(latent, lid, lid_id, val)
+                            sample = torch.sigmoid(self.decode(latent=latent, labels=label_orig)).detach()
 
                             samples.append(sample)
                             gifs.append(sample)
@@ -207,7 +206,17 @@ class BaseDisentangler(object):
                         latent = latent_orig.clone()
                         latent[:, zid] = val
                         self.set_z(latent, zid, val)
-                        sample = torch.sigmoid(self.decode(latent))
+                        sample = torch.sigmoid(self.decode(latent=latent, labels=label_orig))
+
+                        samples.append(sample)
+                        gifs.append(sample)
+
+            if self.traverse_c:
+                for lid in range(self.num_labels):
+                    for temp_i in range(num_cols):
+                        class_id = temp_i % self.num_classes[lid]
+                        label = torch.tensor(class_id).to(self.device, dtype=torch.long).unsqueeze(0)
+                        sample = torch.sigmoid(self.decode(latent=latent_orig, labels=label)).detach()
 
                         samples.append(sample)
                         gifs.append(sample)
@@ -217,9 +226,9 @@ class BaseDisentangler(object):
 
             if self.file_save:
                 if test:
-                    file_name = os.path.join(self.test_dir, '{}_{}_{}.{}'.format(c.TRAVERSE, self.iter, key, c.JPG))
+                    file_name = os.path.join(self.test_output_dir, '{}_{}_{}.{}'.format(c.TRAVERSE, self.iter, key, c.JPG))
                 else:
-                    file_name = os.path.join(self.output_dir, '{}_{}.{}'.format(c.TRAVERSE, key, c.JPG))
+                    file_name = os.path.join(self.train_output_dir, '{}_{}.{}'.format(c.TRAVERSE, key, c.JPG))
                 torchvision.utils.save_image(samples, file_name)
 
             if self.use_wandb:
@@ -228,28 +237,30 @@ class BaseDisentangler(object):
                 wandb.log({'{}_{}'.format(c.TRAVERSE, key): wandb.Image(samples, caption=title)},
                           step=self.iter)
 
-        if self.gif_save:
-            total_rows = self.num_labels * self.w_dim + self.z_dim
+        if self.gif_save and len(gifs) > 0:
+            total_rows = self.num_labels * self.l_dim + \
+                         self.z_dim * int(self.traverse_z) + \
+                         self.num_labels * int(self.traverse_c)
             gifs = torch.cat(gifs)
             gifs = gifs.view(len(encodings), total_rows, num_cols,
                              self.num_channels, self.image_size, self.image_size).transpose(1, 2)
             for i, key in enumerate(encodings.keys()):
                 for j, val in enumerate(interp_values):
-                    file_name = os.path.join(self.output_dir, '{}_{}_{}.{}'.format(c.TEMP, key, j, c.JPG))
+                    file_name = os.path.join(self.train_output_dir, '{}_{}_{}.{}'.format(c.TEMP, key, j, c.JPG))
                     torchvision.utils.save_image(tensor=gifs[i][j].cpu(),
                                                  filename=file_name,
                                                  nrow=total_rows, pad_value=1)
                 if test:
-                    file_name = os.path.join(self.test_dir, '{}_{}_{}.{}'.format(c.GIF, self.iter, key, c.GIF))
+                    file_name = os.path.join(self.test_output_dir, '{}_{}_{}.{}'.format(c.GIF, self.iter, key, c.GIF))
                 else:
-                    file_name = os.path.join(self.output_dir, '{}_{}.{}'.format(c.GIF, key, c.GIF))
+                    file_name = os.path.join(self.train_output_dir, '{}_{}.{}'.format(c.GIF, key, c.GIF))
 
-                grid2gif(str(os.path.join(self.output_dir, '{}_{}*.{}').format(c.TEMP, key, c.JPG)),
+                grid2gif(str(os.path.join(self.train_output_dir, '{}_{}*.{}').format(c.TEMP, key, c.JPG)),
                          file_name, delay=10)
 
                 # Delete temp image files
                 for j, val in enumerate(interp_values):
-                    os.remove(os.path.join(self.output_dir, '{}_{}_{}.{}'.format(c.TEMP, key, j, c.JPG)))
+                    os.remove(os.path.join(self.train_output_dir, '{}_{}_{}.{}'.format(c.TEMP, key, j, c.JPG)))
 
     def save_checkpoint(self, ckptname='last'):
         model_states = dict()
@@ -273,7 +284,7 @@ class BaseDisentangler(object):
             else:
                 optim_states.update({key: value.state_dict()})
 
-        states = {'iter': self.iter,
+        states = {'iter': self.iter + 1,  # to avoid saving right after loading
                   'model_states': model_states,
                   'optim_states': optim_states}
 
@@ -286,9 +297,9 @@ class BaseDisentangler(object):
             except KeyboardInterrupt:
                 pass
 
-        logging.info(">>> saved checkpoint '{}' (iter {})".format(os.path.join(os.getcwd(), filepath), self.iter))
+        logging.info("saved checkpoint '{}' @ iter:{}".format(os.path.join(os.getcwd(), filepath), self.iter))
 
-    def load_checkpoint(self, filepath, load_iternum=True):
+    def load_checkpoint(self, filepath, load_iternum=True, ignore_failure=True):
         if os.path.isfile(filepath):
             with open(filepath, 'rb') as f:
                 checkpoint = torch.load(f)
@@ -306,6 +317,8 @@ class BaseDisentangler(object):
                 except Exception as e:
                     logging.warning("Could not load {}".format(key))
                     logging.warning(str(e))
+                    if not ignore_failure:
+                        raise e
 
             for key, value in self.optim_dict.items():
                 try:
@@ -318,9 +331,11 @@ class BaseDisentangler(object):
                 except Exception as e:
                     logging.warning("Could not load {}".format(key))
                     logging.warning(str(e))
+                    if not ignore_failure:
+                        raise e
 
             self.pbar.update(self.iter)
-            logging.info("Model Loaded: {} @ iter {}".format(filepath, self.iter))
+            logging.info("Model Loaded: {} @ iter:{}".format(filepath, self.iter))
 
         else:
             logging.error("File does not exist: {}".format(filepath))
@@ -329,25 +344,33 @@ class BaseDisentangler(object):
         if not isinstance(train, bool):
             raise ValueError('Only bool type is supported. True|False')
 
-        for net in self.nets:
+        for net in self.net_dict.values():
             if train:
                 net.train()
             else:
                 net.eval()
 
-    def encode(self, input_batch):
-        if len(input_batch.size()) == 3:
-            input_batch = input_batch.unsqueeze(0)
-        return self.model.encode(input_batch)
+    def encode_deterministic(self, **kwargs):
+        images = kwargs['images']
+        if len(images.size()) == 3:
+            images = images.unsqueeze(0)
+        return self.model.encode(images)
 
-    def decode(self, input_batch):
-        if len(input_batch.size()) == 1:
-            input_batch = input_batch.unsqueeze(0)
-        return self.model.decode(input_batch)
+    def encode_stochastic(self, input_batch):
+        raise NotImplementedError
+
+    def decode(self, **kwargs):
+        latent = kwargs['latent']
+        if len(latent.size()) == 1:
+            latent = latent.unsqueeze(0)
+        return self.model.decode(latent)
 
     @staticmethod
     def set_z(z, latent_id, val):
         z[:, latent_id] = val
 
-    def set_w(self, w, label_id, latent_id, val):
-        w[:, label_id * self.w_dim + latent_id] = val
+    def set_l(self, l, label_id, latent_id, val):
+        l[:, label_id * self.l_dim + latent_id] = val
+
+    def loss_fn(self, **kwargs):
+        raise NotImplementedError

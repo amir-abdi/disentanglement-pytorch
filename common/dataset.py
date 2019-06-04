@@ -3,7 +3,7 @@
 import os
 import random
 import numpy as np
-from absl import logging
+import logging
 
 import torch
 from PIL import Image
@@ -27,10 +27,9 @@ class CustomImageFolder(ImageFolder):
                 # todo: assuming binary classes
                 self.label_weights = [[0.5, 0.5]] * labels.shape[1]
 
-    def get_label_weights(self, device):
-        # todo: not tested
+    def get_label_weights(self):
         if self.label_weights is not None:
-            return self.label_weights.to(device, torch.float)
+            return self.label_weights
         return None
 
     def __getitem__(self, index1):
@@ -45,7 +44,9 @@ class CustomImageFolder(ImageFolder):
             img2 = self.transform(img2)
 
         if self.labels is not None:
-            return img1, img2, self.labels[index1], self.labels[index2]
+            label1 = torch.tensor(self.labels[index1], dtype=torch.float)
+            label2 = torch.tensor(self.labels[index2], dtype=torch.float)
+            return img1, img2, label1, label2
         return img1, img2
 
 
@@ -79,8 +80,8 @@ class CustomNpzDataset(Dataset):
             img2 = self.transform(img2)
 
         if self.labels is not None:
-            label1 = torch.tensor(self.labels[index1])
-            label2 = torch.tensor(self.labels[index2])
+            label1 = torch.tensor(self.labels[index1], dtype=torch.float)
+            label2 = torch.tensor(self.labels[index2], dtype=torch.float)
             return img1, img2, label1, label2
         return img1, img2
 
@@ -88,7 +89,7 @@ class CustomNpzDataset(Dataset):
         return self.data_npz.shape[0]
 
 
-def return_data(args):
+def get_dataloader(args):
     name = args.dset_name
     dset_dir = args.dset_dir
     batch_size = args.batch_size
@@ -124,8 +125,8 @@ def return_data(args):
         if label_names is not None:
             labels = []
             labels_all = np.genfromtxt(labels_file, delimiter=',', names=True)
-            for name in label_names:
-                labels.append(labels_all[name])
+            for label_name in label_names:
+                labels.append(labels_all[label_name])
             labels = np.array(labels).transpose()
         elif label_idx is not None:
             labels_all = np.genfromtxt(labels_file, delimiter=',', skip_header=True)
@@ -134,9 +135,12 @@ def return_data(args):
         if labels is not None:
             # celebA labels are all binary with values -1 and +1
             labels[labels == -1] = 0
-            import glob
-            num_images = len(glob.glob(root + '/img_align_celeba_train/*.jpg'))
-            assert num_images == labels.shape[0]
+            from pathlib import Path
+            num_labels = labels.shape[0]
+            num_images = len(list(Path(root).glob('**/*.jpg')))
+
+            # num_images = len(glob.glob(root + '/img_align_celeba_train/*.jpg'))
+            assert num_images == num_labels, 'num_images ({}) != num_labels ({})'.format(num_images, num_labels)
 
             label_weights = []
             for i in range(labels.shape[1]):
@@ -145,15 +149,14 @@ def return_data(args):
                 label_weights.append([prob_one, 1 - prob_one])
             label_weights = np.array(label_weights)
 
-        train_kwargs = {'root': root,
-                        'labels': labels,
-                        'transform': transform,
-                        'label_weights': label_weights,
-                        'name': name}
+        data_kwargs = {'root': root,
+                       'labels': labels,
+                       'transform': transform,
+                       'label_weights': label_weights,
+                       'name': name}
         dset = CustomImageFolder
     elif name.lower() == 'dsprites':
         root = os.path.join(dset_dir, 'dsprites/dsprites_ndarray_co1sh3sc6or40x32y32_64x64.npz')
-        # root = os.path.join(dset_dir, 'dsprites/dSprites_biased_relaxed_mixed.npz')
         npz = np.load(root)
 
         if label_idx is not None:
@@ -165,7 +168,7 @@ def return_data(args):
             label_weights = []
             for i in range(labels.shape[1]):
                 _, count = np.unique(labels[:, i], axis=0, return_counts=True)
-                weight = 1 - count/labels.shape[0]
+                weight = 1 - count / labels.shape[0]
                 if len(weight) == 1:
                     weight = np.array(1)
                 else:
@@ -173,23 +176,23 @@ def return_data(args):
                 label_weights.append(np.array(weight))
             label_weights = np.array(label_weights)
 
-        train_kwargs = {'data_images': npz['imgs'],
-                        'labels': labels,
-                        'transform': transform,
-                        'label_weights': label_weights,
-                        'name': name}
+        data_kwargs = {'data_images': npz['imgs'],
+                       'labels': labels,
+                       'transform': transform,
+                       'label_weights': label_weights,
+                       'name': name}
         dset = CustomNpzDataset
     else:
         raise NotImplementedError
 
-    train_data = dset(**train_kwargs)
-    train_loader = DataLoader(train_data,
-                              batch_size=batch_size,
-                              shuffle=shuffle,
-                              num_workers=num_workers,
-                              pin_memory=True,
-                              drop_last=droplast)
+    data = dset(**data_kwargs)
+    data_loader = DataLoader(data,
+                             batch_size=batch_size,
+                             shuffle=shuffle,
+                             num_workers=num_workers,
+                             pin_memory=True,
+                             drop_last=droplast)
 
-    logging.info('Number of samples: {}'.format(train_data.__len__()))
+    logging.info('Number of samples: {}'.format(data.__len__()))
 
-    return train_loader
+    return data_loader

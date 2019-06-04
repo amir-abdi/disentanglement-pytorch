@@ -9,7 +9,7 @@ from models.base.base_disentangler import BaseDisentangler
 from architectures import encoders, decoders
 
 
-class AE(nn.Module):
+class AEModel(nn.Module):
     def __init__(self, encoder, decoder):
         super().__init__()
 
@@ -23,23 +23,23 @@ class AE(nn.Module):
         return self.decoder(z)
 
     def forward(self, x):
-        z = self.encoder(x)
-        return self.decoder(z)
+        z = self.encode(x)
+        return self.decode(z)
 
 
-class M(BaseDisentangler):
+class AE(BaseDisentangler):
     def __init__(self, args):
         super().__init__(args)
 
         # encoder and decoder
-        self.encoder_name = args.encoder_name
-        self.decoder_name = args.decoder_name
+        self.encoder_name = args.encoder
+        self.decoder_name = args.decoder
         encoder = getattr(encoders, self.encoder_name)
         decoder = getattr(decoders, self.decoder_name)
 
         # model and optimizer
-        self.model = AE(encoder(self.z_dim, self.num_channels, self.image_size),
-                        decoder(self.z_dim, self.num_channels, self.image_size)).to(self.device)
+        self.model = AEModel(encoder(self.z_dim, self.num_channels, self.image_size),
+                             decoder(self.z_dim, self.num_channels, self.image_size)).to(self.device)
         self.optim_G = optim.Adam(self.model.parameters(), lr=self.lr_G, betas=(self.beta1, self.beta2))
 
         # nets
@@ -51,21 +51,23 @@ class M(BaseDisentangler):
             'optim_G': self.optim_G,
         }
 
-        if args.ckpt_load:
-            self.load_checkpoint(args.ckpt_load, load_iternum=args.ckpt_load_iternum)
+    def loss_fn(self, **kwargs):
+        x_recon = kwargs['x_recon']
+        x_true = kwargs['x_true']
+
+        recon_loss = f.binary_cross_entropy(x_recon, x_true, reduction='mean') * self.w_recon
+
+        return recon_loss
 
     def train(self):
         while self.iter < self.max_iter:
             self.net_mode(train=True)
             for x_true1, _ in self.data_loader:
-                self.iter += 1
-                self.pbar.update(1)
-
                 x_true1 = x_true1.to(self.device)
 
                 x_recon = torch.sigmoid(self.model(x_true1))
-                recon_loss = f.binary_cross_entropy_with_logits(x_recon, x_true1, reduction='mean') * self.gamma
 
+                recon_loss = self.loss_fn(x_recon=x_recon, x_true=x_true1)
                 loss = recon_loss
 
                 self.optim_G.zero_grad()
@@ -77,6 +79,9 @@ class M(BaseDisentangler):
                               input_image=x_true1,
                               recon_image=x_recon,
                               )
+                self.iter += 1
+                self.pbar.update(1)
+
         logging.info("-------Training Finished----------")
         self.pbar.close()
 
