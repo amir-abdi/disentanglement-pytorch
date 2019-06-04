@@ -1,2 +1,5 @@
-from .vae import M as VAE
-from .ae import M as AE
+from .ae import AE
+from .vae import VAE
+from .vae import BetaVAE
+from .factor_vae import FactorVAE
+from .cvae import CVAE

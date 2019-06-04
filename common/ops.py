@@ -30,6 +30,12 @@ def kl_divergence_var1(logvar):
 
 
 def permute_dims(z):
+    """
+    This function is borrowed from the implementation by WonKwang Lee
+    https://github.com/1Konny/FactorVAE/blob/master/ops.py
+    :param z: Input latent vector
+    :return: Permuted version of the latent vector
+    """
     assert z.dim() == 2
 
     B, _ = z.size()
@@ -64,8 +70,26 @@ class Flatten3D(nn.Module):
         return x
 
 
+class Reshape(nn.Module):
+    def __init__(self, size):
+        super().__init__()
+        self.size = size
+
+    def forward(self, x):
+        s = [x.size(0)]
+        s += self.size
+        x = x.view(s)
+        return x
+
+
 class Unsqueeze3D(nn.Module):
     def forward(self, x):
         x = x.unsqueeze(-1)
         x = x.unsqueeze(-1)
         return x
+
+
+def reparametrize(mu, logvar):
+    std = logvar.mul(0.5).exp_()
+    eps = std.data.new(std.size()).normal_()
+    return eps.mul(std).add_(mu)
