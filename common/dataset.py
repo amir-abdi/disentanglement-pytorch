@@ -12,15 +12,9 @@ from torchvision.datasets import ImageFolder
 from torchvision import transforms
 
 
-# todo: share code between the two dataset classes
-class CustomImageFolder(ImageFolder):
-    def __init__(self, root, transform, labels, label_weights, name, class_values):
-        super(CustomImageFolder, self).__init__(root, transform)
-        self.indices = range(len(self))
+class LabelHandler(object):
+    def __init__(self, labels, label_weights, class_values):
         self.labels = labels
-        self._label_weights = None
-        self.name = name
-
         self._label_weights = None
         self._num_classes_torch = None
         self._num_classes_list = None
@@ -42,6 +36,44 @@ class CustomImageFolder(ImageFolder):
 
     def get_class_values(self):
         return self._class_values
+
+    def get_label(self, idx):
+        if self.labels is not None:
+            return torch.tensor(self.labels[idx], dtype=torch.float)
+        return None
+
+    def has_labels(self):
+        if self.labels is not None:
+            return True
+        return False
+
+
+class CustomImageFolder(ImageFolder):
+    def __init__(self, root, transform, labels, label_weights, name, class_values, num_channels):
+        super(CustomImageFolder, self).__init__(root, transform)
+        self.indices = range(len(self))
+        self._num_channels = num_channels
+        self._name = name
+
+        self.label_handler = LabelHandler(labels, label_weights, class_values)
+
+    def name(self):
+        return self._name
+
+    def label_weights(self, i):
+        return self.label_handler.get_label_weights(i)
+
+    def num_classes(self, as_tensor=True):
+        return self.label_handler.get_num_classes(as_tensor)
+
+    def class_values(self):
+        return self.label_handler.get_class_values()
+
+    def has_labels(self):
+        return self.label_handler.has_labels()
+
+    def num_channels(self):
+        return self._num_channels
 
     def __getitem__(self, index1):
         index2 = random.choice(self.indices)
@@ -54,45 +86,42 @@ class CustomImageFolder(ImageFolder):
             img1 = self.transform(img1)
             img2 = self.transform(img2)
 
-        if self.labels is not None:
-            label1 = torch.tensor(self.labels[index1], dtype=torch.float)
-            label2 = torch.tensor(self.labels[index2], dtype=torch.float)
+        if self.label_handler.has_labels():
+            label1 = self.label_handler.get_label(index1)
+            label2 = self.label_handler.get_label(index2)
             return img1, img2, label1, label2
         return img1, img2
 
 
 class CustomNpzDataset(Dataset):
-    def __init__(self, data_images, transform, labels, label_weights, name, class_values):
+    def __init__(self, data_images, transform, labels, label_weights, name, class_values, num_channels):
 
         self.data_npz = data_images
-        self.labels = labels
-        self.label_weights = None
-        self.name = name
+        self._name = name
+        self._num_channels = num_channels
 
-        self._label_weights = None
-        self._num_classes_torch = None
-        self._num_classes_list = None
-        self._class_values = None
-        if labels is not None:
-            self._label_weights = [torch.tensor(w) for w in label_weights]
-            self._num_classes_torch = torch.tensor([len(cv) for cv in class_values])
-            self._num_classes_list = [len(cv) for cv in class_values]
-            self._class_values = class_values
+        self.label_handler = LabelHandler(labels, label_weights, class_values)
 
         self.transform = transform
         self.indices = range(len(self))
 
-    def get_label_weights(self, i):
-        return self._label_weights[i]
+    def name(self):
+        return self._name
 
-    def get_num_classes(self, as_tensor=True):
-        if as_tensor:
-            return self._num_classes_torch
-        else:
-            return self._num_classes_list
+    def label_weights(self, i):
+        return self.label_handler.get_label_weights(i)
 
-    def get_class_values(self):
-        return self._class_values
+    def num_classes(self, as_tensor=True):
+        return self.label_handler.get_num_classes(as_tensor)
+
+    def class_values(self):
+        return self.label_handler.get_class_values()
+
+    def has_labels(self):
+        return self.label_handler.has_labels()
+
+    def num_channels(self):
+        return self._num_channels
 
     def __getitem__(self, index1):
         index2 = random.choice(self.indices)
@@ -103,9 +132,9 @@ class CustomNpzDataset(Dataset):
             img1 = self.transform(img1)
             img2 = self.transform(img2)
 
-        if self.labels is not None:
-            label1 = torch.tensor(self.labels[index1], dtype=torch.float)
-            label2 = torch.tensor(self.labels[index2], dtype=torch.float)
+        if self.label_handler.has_labels():
+            label1 = self.label_handler.get_label(index1)
+            label2 = self.label_handler.get_label(index2)
             return img1, img2, label1, label2
         return img1, img2
 
@@ -182,7 +211,8 @@ def get_dataloader(args):
                        'transform': transform,
                        'label_weights': label_weights,
                        'class_values': class_values,
-                       'name': name}
+                       'name': name,
+                       'num_channels': 3}
         dset = CustomImageFolder
     elif name.lower() == 'dsprites':
         root = os.path.join(dset_dir, 'dsprites/dsprites_ndarray_co1sh3sc6or40x32y32_64x64.npz')
@@ -217,7 +247,8 @@ def get_dataloader(args):
                        'transform': transform,
                        'label_weights': label_weights,
                        'class_values': class_values,
-                       'name': name}
+                       'name': name,
+                       'num_channels': 1}
         dset = CustomNpzDataset
     else:
         raise NotImplementedError
