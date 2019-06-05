@@ -47,14 +47,14 @@ class BaseDisentangler(object):
         self.max_iter = int(args.max_iter)
 
         # Data
-        self.num_channels = args.num_channels
         self.dset_dir = args.dset_dir
         self.dset_name = args.dset_name
         self.batch_size = args.batch_size
         self.image_size = args.image_size
         self.data_loader = get_dataloader(args)
-        self.num_classes = self.data_loader.dataset.get_num_classes()
-        self.class_values = self.data_loader.dataset.get_class_values()
+        self.num_classes = self.data_loader.dataset.num_classes()
+        self.class_values = self.data_loader.dataset.class_values()
+        self.num_channels = self.data_loader.dataset.num_channels()
 
         # Progress bar
         if not args.test:
@@ -97,7 +97,7 @@ class BaseDisentangler(object):
         self.model = None
 
     def log_save(self, **kwargs):
-        if self.iter % self.ckpt_save_iter == 0:
+        if self.iter > 0 and self.iter % self.ckpt_save_iter == 0:
             self.save_checkpoint()
 
         if self.iter % self.print_iter == 0:
@@ -211,7 +211,7 @@ class BaseDisentangler(object):
                         gifs.append(sample)
 
             if self.traverse_c:
-                num_classes = self.data_loader.dataset.get_num_classes(False)
+                num_classes = self.data_loader.dataset.num_classes(False)
                 for lid in range(self.num_labels):
                     for temp_i in range(num_cols):
                         class_id = temp_i % num_classes[lid]

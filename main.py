@@ -1,5 +1,6 @@
 '''
 TODO: add author and license info to all files.
+TODO: 3 different divergences in the InfoVAE paper https://arxiv.org/pdf/1706.02262.pdf
 '''
 
 import sys
@@ -102,7 +103,6 @@ def get_args(sys_args):
     parser.add_argument('--dset_dir', default='data', type=str, help='main dataset directory')
     parser.add_argument('--dset_name', default=None, type=str, help='dataset name')
     parser.add_argument('--image_size', default=64, type=int, help='width and height of image')
-    parser.add_argument('--num_channels', default=3, type=int, help='number of input image channels')
     parser.add_argument('--num_workers', default=4, type=int, help='number of workers for the data loader')
 
     # Logging and visualization

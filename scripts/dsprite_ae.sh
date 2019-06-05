@@ -13,10 +13,8 @@ python3 main.py \
 --dset_name=dsprites \
 --encoder=SimpleEncoder64 \
 --decoder=SimpleDecoder64 \
---num_channels=1 \
 --z_dim=8 \
 --use_wandb=false \
---batch_size=32 \
 
 
 
