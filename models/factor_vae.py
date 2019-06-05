@@ -5,7 +5,7 @@ import torch.nn.functional as f
 import torch.optim as optim
 
 from models.vae import VAE as VAE
-from common.ops import kl_divergence_mu0_var1, reparametrize, permute_dims
+from common.ops import reparametrize, permute_dims
 from architectures import discriminators
 
 
