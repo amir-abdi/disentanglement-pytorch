@@ -2,7 +2,6 @@ torch
 torchvision
 numpy
 argparse
-subprocess
 scipy
 Pillow
 wandb
