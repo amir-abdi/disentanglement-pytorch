@@ -13,15 +13,11 @@ ALGS = c.ALGS
 VAE_LOSS = c.VAE_LOSS
 
 class TestAE(object):
-    @pytest.fixture(scope="module", params=itertools.product(DATASETS, ALGS, VAE_LOSS))
+    @pytest.fixture(scope="module", params=itertools.product(DATASETS, ALGS))
     def args(self, request):
         dset_name = request.param[0]
         alg = request.param[1]
-        vae_loss = request.param[2]
 
-        num_channels = 3
-        if dset_name == 'dsprites':
-            num_channels = 1
         encoder = 'SimpleGaussianEncoder64'
         if alg == 'AE':
             encoder='SimpleEncoder64'
@@ -39,13 +35,12 @@ class TestAE(object):
                          '--dset_name={}'.format(dset_name),
                          '--decoder=SimpleDecoder64',
                          '--encoder={}'.format(encoder),
-                         '--num_channels={}'.format(num_channels),
                          '--z_dim=16',
                          '--batch_size=4',
                          '--all_iter=3',
                          '--ckpt_save_iter=3',
                          '--max_iter=4',
-                         '--vae_loss={}'.format(vae_loss),
+                         '--vae_loss={}'.format('AnnealedCapacity'),
                          '--include_labels={}'.format(include_labels),
                          ])
 
