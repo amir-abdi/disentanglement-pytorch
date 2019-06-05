@@ -1,0 +1,9 @@
+torch
+torchvision
+numpy
+logging
+argparse
+subprocess
+scipy
+Pillow
+wandb
