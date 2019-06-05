@@ -3,12 +3,10 @@ import logging
 import torch
 from torch import nn
 import torch.optim as optim
-import torch.nn.functional as f
 
-from models.base.base_disentangler import BaseDisentangler
 from models.vae import VAE
 from architectures import encoders, decoders, others
-from common.ops import kl_divergence_mu0_var1, reparametrize
+from common.ops import reparametrize
 from common.utils import one_hot_embedding
 
 
@@ -27,7 +25,6 @@ class CVAEModel(nn.Module):
         :param y: labels with dtype=long, where the number indicates the class of the input (i.e. not one-hot-encoded)
         :return: latent encoding of the input and labels
         """
-        # todo: hard coded assuming sinlge label
         y_onehot = one_hot_embedding(y, self.num_classes).squeeze(1)
         y_tiled = self.tiler(y_onehot)
         xy = torch.cat((x, y_tiled), dim=1)
@@ -40,7 +37,6 @@ class CVAEModel(nn.Module):
         :param y: labels with dtype=long, where the number indicates the class of the input (i.e. not one-hot-encoded)
         :return: reconstructed data
         """
-        # todo: hard coded assuming sinlge label
         y_onehot = one_hot_embedding(y, self.num_classes).squeeze(1)
         zy = torch.cat((z, y_onehot), dim=1)
         return self.decoder(zy)
