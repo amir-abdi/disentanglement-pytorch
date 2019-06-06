@@ -25,12 +25,6 @@ def static_var(varname, value):
     return decorate
 
 
-def str2list(v, type):
-    if v is None or v == '':
-        return None
-    return [type(item) for item in v.split(',')]
-
-
 def str2bool(v):
     # codes from : https://stackoverflow.com/questions/15008758/parsing-boolean-values-with-argparse
 
@@ -115,7 +109,7 @@ class LinearScheduler:
         return self.start_value + iter * self.inc_per_iter
 
 
-def get_sample_data(dataset, device):
+def get_data_for_visualization(dataset, device):
     def random_idx():
         return random.randint(0, dataset.__len__() - 1)
 
@@ -156,6 +150,20 @@ def get_sample_data(dataset, device):
             labels[key] = data[2].to(device, dtype=torch.long).unsqueeze(0)
 
     return images, labels
+
+
+def prepare_data_for_visualization(data):
+    sample_images, sample_labels = data
+    sample_images_dict = {}
+    sample_labels_dict = {}
+    for i, img in enumerate(sample_images):
+        sample_images_dict.update({str(i): img})
+        if sample_labels is not None:
+            sample_labels_dict.update({str(i): sample_labels[i].to(dtype=torch.long).unsqueeze(0)})
+        else:
+            sample_labels_dict.update({str(i): None})
+
+    return sample_images_dict, sample_labels_dict
 
 
 class StyleFormatter(logging.Formatter):
@@ -211,15 +219,16 @@ def one_hot_embedding(labels, num_classes):
         if num_class not in one_hot_embedding.Ys:
             one_hot_embedding.Ys[num_class] = cuda(torch.eye(num_class))
 
+
         y = one_hot_embedding.Ys[num_class]
         one_hots.append(y[labels[:, i]])
 
     return torch.cat(one_hots, dim=1)
 
 
-if __name__ == '__main__':
-    a = np.random.rand(10) / 10
-    b = np.random.rand(10) / 10
-    astd = np.eye(10) * 10
-    bstd = np.eye(10) * 10
-    print(frechet_distance(a, astd, b, bstd))
+def update_args(args):
+    args.ckpt_load_iternum = False
+    args.use_wandb = False
+    args.file_save = True
+    args.gif_save = True
+    return args

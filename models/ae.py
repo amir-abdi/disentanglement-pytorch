@@ -32,8 +32,8 @@ class AE(BaseDisentangler):
         super().__init__(args)
 
         # encoder and decoder
-        self.encoder_name = args.encoder
-        self.decoder_name = args.decoder
+        self.encoder_name = args.encoder[0]
+        self.decoder_name = args.decoder[0]
         encoder = getattr(encoders, self.encoder_name)
         decoder = getattr(decoders, self.decoder_name)
 

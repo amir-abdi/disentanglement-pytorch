@@ -1,1 +1,1 @@
-from .simple_decoder64 import SimpleDecoder64
+from .simple_decoder_conv64 import SimpleDecoder64

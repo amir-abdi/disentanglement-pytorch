@@ -22,3 +22,32 @@ class SimpleDiscriminator(nn.Module):
 
     def forward(self, x):
         return self.main(x)
+
+
+class SimpleDiscriminatorConv64(SimpleDiscriminator):
+    # TODO: test
+    def __init__(self, num_channels=3, image_size=64, num_classes=2, num_fc_layers=7, fc_layer_size=1000):
+        super().__init__(256, num_classes=num_classes, num_layers=num_fc_layers, layer_size=fc_layer_size)
+        assert image_size == 64, 'The SimpleDiscriminatorConv64 architecture is hardcoded for 64x64 images.'
+
+        self.conv_encode = nn.Sequential(
+            nn.Conv2d(num_channels, 32, 4, 2, 1),
+            nn.ReLU(True),
+            nn.Conv2d(32, 32, 4, 2, 1),
+            nn.ReLU(True),
+            nn.Conv2d(32, 64, 4, 2, 1),
+            nn.ReLU(True),
+            nn.Conv2d(64, 128, 4, 2, 1),
+            nn.ReLU(True),
+            nn.Conv2d(128, 256, 4, 2, 1),
+            nn.ReLU(True),
+            nn.Conv2d(256, 256, 4, 2, 1),
+            nn.ReLU(True),
+            self.Flatten(),
+        )
+
+        init_layers(self._modules)
+
+    def forward(self, x):
+        encoded = self.conv_encode(x)
+        return self.main(encoded)

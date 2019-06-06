@@ -1,6 +1,8 @@
 '''
 TODO: add author and license info to all files.
+TODO: infoVAE
 TODO: 3 different divergences in the InfoVAE paper https://arxiv.org/pdf/1706.02262.pdf
+TODO: evaluation metrics
 '''
 
 import sys
@@ -11,7 +13,7 @@ import os
 import logging
 from imp import reload
 
-from common.utils import str2bool, str2list, StyleFormatter
+from common.utils import str2bool, StyleFormatter, update_args
 from common import constants as c
 import models
 
@@ -48,19 +50,16 @@ def get_args(sys_args):
                         choices=c.VAE_LOSS)
     parser.add_argument('--name', default='unknown_experiment', type=str,
                         help='name of the experiment')
-    parser.add_argument('--encoder', default='SimpleGaussianEncoder64', type=str,
-                        help='name of the encoder network',
-                        choices=('SimpleEncoder64', 'SimpleGaussianEncoder64',))
-    parser.add_argument('--decoder', default='SimpleDecoder64', type=str,
-                        help='name of the decoder network',
-                        choices=('SimpleDecoder64',))
-    parser.add_argument('--discriminator', default='SimpleDiscriminator', type=str,
-                        help='the discriminator network',
-                        choices=('SimpleDiscriminator',))
-    parser.add_argument('--label_tiler', default='MultiTo2DChannel', type=str,
-                        help='the tile network used to convert one hot labels to 2D channels',
-                        choices=('MultiTo2DChannel',)
-                        )
+
+    # Neural architectures
+    parser.add_argument('--encoder', type=str, nargs='+', required=True, choices=c.ENCODERS,
+                        help='name of the encoder network')
+    parser.add_argument('--decoder', type=str, nargs='+', required=True, choices=c.DECODERS,
+                        help='name of the decoder network')
+    parser.add_argument('--label_tiler', type=str, nargs='*', choices=c.TILERS,
+                        help='the tile network used to convert one hot labels to 2D channels')
+    parser.add_argument('--discriminator', type=str, nargs='*', choices=c.DISCRIMINATORS,
+                        help='the discriminator network')
 
     # Test or train
     parser.add_argument('--test', default=False, type=str2bool, help='to test')
@@ -73,22 +72,21 @@ def get_args(sys_args):
 
     # latent encoding
     parser.add_argument('--z_dim', default=16, type=int, help='size of the encoded z space')
-    parser.add_argument('--include_labels', default=None, type=str, help='Labels (indices or names) to include in '
-                                                                         'latent encoding.')
+    parser.add_argument('--include_labels', default=None, type=str, nargs='*',
+                        help='Labels (indices or names) to include in latent encoding.')
     parser.add_argument('--l_dim', default=0, type=str, help='size of the encoded w space (for each label)')
 
     # optimizer
     parser.add_argument('--beta1', default=0.9, type=float, help='beta1 parameter of the Adam optimizer')
     parser.add_argument('--beta2', default=0.999, type=float, help='beta2 parameter of the Adam optimizer')
-    parser.add_argument('--lr_G', default=1e-6, type=float, help='learning rate of the main autoencoder')
+    parser.add_argument('--lr_G', default=1e-4, type=float, help='learning rate of the main autoencoder')
     parser.add_argument('--lr_D', default=1e-4, type=float, help='learning rate of all the discriminators')
 
-    # Architecture hyper-parameters
+    # Neural architectures hyper-parameters
     parser.add_argument('--num_layer_disc', default=6, type=int, help='number of fc layers in discriminators')
     parser.add_argument('--size_layer_disc', default=1000, type=int, help='size of fc layers in discriminators')
 
     # Loss weights and parameters [Common]
-    # parser.add_argument('--mult_all_w', default=100.0, type=float, help='multiply all weights with this value')
     parser.add_argument('--w_recon', default=1.0, type=float, help='reconstruction loss weight')
     parser.add_argument('--w_kld', default=1.0, type=float, help='main KLD loss weight (e.g. in BetaVAE)')
 
@@ -96,8 +94,12 @@ def get_args(sys_args):
     parser.add_argument('--max_c', default=25.0, type=float, help='maximum value of control parameter in CapacityVAE')
     parser.add_argument('--iterations_c', default=1000000, type=int, help='how many iterations to reach max_c')
 
-    # Loss weights and parameters [CapacityVAE]
+    # Loss weights and parameters [FactorVAE]
     parser.add_argument('--w_tc', default=1.0, type=float, help='total correlation loss weight (e.g. in BetaVAE)')
+
+    # Loss weights and parameters [IFCVAE]
+    parser.add_argument('--w_le', default=1.0, type=float, help='label encoding loss weight (e.g. in IFCVAE)')
+    parser.add_argument('--w_aux', default=1.0, type=float, help='auxiliary discriminator loss weight (e.g. in IFCVAE)')
 
     # Dataset
     parser.add_argument('--dset_dir', default='data', type=str, help='main dataset directory')
@@ -141,9 +143,6 @@ def get_args(sys_args):
         args.traverse_iter = args.all_iter
         args.print_iter = args.all_iter
 
-    # Handle list arguments
-    args.include_labels = str2list(args.include_labels, str)
-
     assert args.image_size == 64, 'for now, models are hard coded to support only image size of 64x63'
 
     args.num_labels = 0
@@ -157,10 +156,7 @@ def get_args(sys_args):
     assert os.path.exists(args.dset_dir), 'main dataset directory does not exist'
 
     # test
-    args.ckpt_load_iternum = False if args.test else args.ckpt_load_iternum
-    args.use_wandb = False if args.test else args.use_wandb
-    args.file_save = True if args.test else args.file_save
-    args.gif_save = True if args.test else args.gif_save
+    args = update_args(args) if args.test else args
 
     return args
 

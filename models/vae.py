@@ -24,7 +24,8 @@ class VAEModel(nn.Module):
         return self.decoder(z)
 
     def forward(self, x):
-        z = self.encode(x)
+        mu, logvar = self.encode(x)
+        z = reparametrize(mu, logvar)
         return self.decode(z)
 
 
@@ -48,8 +49,8 @@ class VAE(BaseDisentangler):
                                                        'Please use BetaVAE if intended otherwise.'
 
         # encoder and decoder
-        encoder_name = args.encoder
-        decoder_name = args.decoder
+        encoder_name = args.encoder[0]
+        decoder_name = args.decoder[0]
         encoder = getattr(encoders, encoder_name)
         decoder = getattr(decoders, decoder_name)
 
@@ -68,8 +69,17 @@ class VAE(BaseDisentangler):
 
     def encode_deterministic(self, **kwargs):
         images = kwargs['images']
+        if images.dim() == 3:
+            images = images.unsqueeze(0)
         mu, logvar = self.model.encode(images)
         return mu
+
+    def encode_stochastic(self, **kwargs):
+        images = kwargs['images']
+        if images.dim() == 3:
+            images = images.unsqueeze(0)
+        mu, logvar = self.model.encode(images)
+        return reparametrize(mu, logvar)
 
     def _kld_loss_fn(self, mu, logvar):
         if self.vae_loss == 'Basic':
@@ -150,4 +160,3 @@ class BetaVAE(VAE):
 
     def __init__(self, args):
         super().__init__(args)
-

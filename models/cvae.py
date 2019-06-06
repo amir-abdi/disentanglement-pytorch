@@ -42,8 +42,9 @@ class CVAEModel(nn.Module):
         return self.decoder(zy)
 
     def forward(self, x, y):
-        z = self.encode(x, y)
-        return self.decode(z)
+        mu, logvar = self.encode(x, y)
+        z = reparametrize(mu, logvar)
+        return self.decode(z, y)
 
 
 class CVAE(VAE):
@@ -59,13 +60,11 @@ class CVAE(VAE):
         # checks
         assert self.num_classes is not None, 'please identify the number of classes for each label separated by comma'
 
-        # hyper-parameters
-        # self.w_kld = args.w_kld
-
         # encoder and decoder
-        encoder_name = args.encoder
-        decoder_name = args.decoder
-        label_tiler_name = args.label_tiler
+        encoder_name = args.encoder[0]
+        decoder_name = args.decoder[0]
+        label_tiler_name = args.label_tiler[0]
+
         encoder = getattr(encoders, encoder_name)
         decoder = getattr(decoders, decoder_name)
         tile_network = getattr(others, label_tiler_name)
@@ -94,6 +93,10 @@ class CVAE(VAE):
     def encode_deterministic(self, **kwargs):
         images = kwargs['images']
         labels = kwargs['labels']
+        if images.dim() == 3:
+            images = images.unsqueeze(0)
+        if labels.dim() == 1:
+            labels = labels.unsqueeze(0)
         mu, logvar = self.model.encode(images, labels)
         return mu
 
@@ -109,15 +112,15 @@ class CVAE(VAE):
     def train(self):
         while self.iter < self.max_iter:
             self.net_mode(train=True)
-            for x_true1, _, label1, _ in self.data_loader:
-                x_true1 = x_true1.to(self.device)
-                label1 = label1.to(self.device, dtype=torch.long)
+            for x_true, _, label, _ in self.data_loader:
+                x_true = x_true.to(self.device)
+                label = label.to(self.device, dtype=torch.long)
 
-                mu, logvar = self.model.encode(x_true1, label1)
+                mu, logvar = self.model.encode(x_true, label)
                 z = reparametrize(mu, logvar)
-                x_recon = torch.sigmoid(self.model.decode(z, label1))
+                x_recon = torch.sigmoid(self.model.decode(z, label))
 
-                recon_loss, kld_loss = self.loss_fn(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar)
+                recon_loss, kld_loss = self.loss_fn(x_recon=x_recon, x_true=x_true, mu=mu, logvar=logvar)
                 loss = recon_loss + kld_loss
 
                 self.optim_G.zero_grad()
@@ -127,7 +130,7 @@ class CVAE(VAE):
                 self.log_save(loss=loss.item(),
                               recon_loss=recon_loss.item(),
                               kld_loss=kld_loss.item(),
-                              input_image=x_true1,
+                              input_image=x_true,
                               recon_image=x_recon,
                               )
                 self.iter += 1
@@ -137,15 +140,16 @@ class CVAE(VAE):
         self.pbar.close()
 
     def test(self):
-        raise NotImplementedError
         self.net_mode(train=False)
-        for x_true1, _ in self.data_loader:
+        for x_true, _, label, _ in self.data_loader:
+            x_true = x_true.to(self.device)
+            label = label.to(self.device, dtype=torch.long)
+
+            x_recon = self.model(x_true, label)
+
+            self.visualize_recon(x_true, x_recon, test=True)
+            self.visualize_traverse(limit=(self.traverse_min, self.traverse_max), spacing=self.traverse_spacing,
+                                    data=(x_true, label), test=True)
+
             self.iter += 1
             self.pbar.update(1)
-
-            x_true1 = x_true1.to(self.device)
-            x_recon = self.model(x_true1)
-
-            self.visualize_recon(x_true1, x_recon, test=True)
-            self.visualize_traverse(limit=(self.traverse_min, self.traverse_max), spacing=self.traverse_spacing,
-                                    data=(x_true1, None), test=True)

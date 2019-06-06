@@ -5,7 +5,7 @@ import logging
 import torch
 import torchvision.utils
 
-from common.utils import grid2gif, get_sample_data
+from common.utils import grid2gif, get_data_for_visualization, prepare_data_for_visualization
 from common.dataset import get_dataloader
 import common.constants as c
 
@@ -162,15 +162,9 @@ class BaseDisentangler(object):
         num_cols = interp_values.size(0)
 
         if data is None:
-            sample_images_dict, sample_labels_dict = get_sample_data(self.data_loader.dataset, self.device)
+            sample_images_dict, sample_labels_dict = get_data_for_visualization(self.data_loader.dataset, self.device)
         else:
-            sample_images, sample_labels = data
-            sample_images_dict = {}
-            sample_labels_dict = {}
-            for i, img in enumerate(sample_images):
-                sample_images_dict.update({str(i): img})
-            for i, lbl in enumerate(sample_labels):
-                sample_labels_dict.update({str(i): lbl})
+            sample_images_dict, sample_labels_dict = prepare_data_for_visualization(data)
 
         encodings = dict()
         for key in sample_images_dict.keys():
@@ -344,9 +338,6 @@ class BaseDisentangler(object):
             logging.error("File does not exist: {}".format(filepath))
 
     def net_mode(self, train):
-        if not isinstance(train, bool):
-            raise ValueError('Only bool type is supported. True|False')
-
         for net in self.net_dict.values():
             if train:
                 net.train()
@@ -359,7 +350,7 @@ class BaseDisentangler(object):
             images = images.unsqueeze(0)
         return self.model.encode(images)
 
-    def encode_stochastic(self, input_batch):
+    def encode_stochastic(self, **kwargs):
         raise NotImplementedError
 
     def decode(self, **kwargs):

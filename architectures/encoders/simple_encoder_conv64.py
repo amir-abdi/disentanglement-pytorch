@@ -26,7 +26,6 @@ class SimpleEncoder64(BaseImageEncoder):
             Flatten3D(),
             nn.Linear(256, latent_dim, bias=True)
         )
-        # output shape = bs x 256 x 1 x 1
 
         init_layers(self._modules)
 
@@ -37,10 +36,12 @@ class SimpleEncoder64(BaseImageEncoder):
 class SimpleGaussianEncoder64(SimpleEncoder64):
     def __init__(self, latent_dim, num_channels, image_size):
         super().__init__(latent_dim * 2, num_channels, image_size)
-        self.latent_dim = latent_dim
+
+        # override value of _latent_dim
+        self._latent_dim = latent_dim
 
     def forward(self, x):
         mu_logvar = self.main(x)
-        mu = mu_logvar[:, :self.latent_dim]
-        logvar = mu_logvar[:, self.latent_dim:]
+        mu = mu_logvar[:, :self._latent_dim]
+        logvar = mu_logvar[:, self._latent_dim:]
         return mu, logvar
