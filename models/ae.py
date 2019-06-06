@@ -88,12 +88,12 @@ class AE(BaseDisentangler):
     def test(self):
         self.net_mode(train=False)
         for x_true1, _ in self.data_loader:
-            self.iter += 1
-            self.pbar.update(1)
-
             x_true1 = x_true1.to(self.device)
             x_recon = self.model(x_true1)
 
             self.visualize_recon(x_true1, x_recon, test=True)
             self.visualize_traverse(limit=(self.traverse_min, self.traverse_max), spacing=self.traverse_spacing,
                                     data=(x_true1, None), test=True)
+
+            self.iter += 1
+            self.pbar.update(1)
