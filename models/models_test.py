@@ -9,9 +9,15 @@ from main import get_args
 from common import constants as c
 from common.utils import update_args
 
-DATASETS = ['celebA', 'dsprites']
 ALGS = c.ALGS
 VAE_LOSS = c.VAE_LOSS
+DATASETS = c.DATASETS
+BATCH_SIZE = 4
+MAX_ITER = 4
+CKPT_SAVE_ITER = 3
+Z_DIM = 16
+ALL_ITER = 3
+NUM_SAMPLES = 12  # test datasets (dsprites and CelebA) each contain 12 samples
 
 
 class TestModels(object):
@@ -23,11 +29,11 @@ class TestModels(object):
                          '--alg={}'.format(alg),
                          '--dset_dir=./data/test_dsets',
                          '--dset_name={}'.format(dset_name),
-                         '--z_dim=16',
-                         '--batch_size=4',
-                         '--all_iter=3',
-                         '--ckpt_save_iter=3',
-                         '--max_iter=4',
+                         '--z_dim={}'.format(Z_DIM),
+                         '--batch_size={}'.format(BATCH_SIZE),
+                         '--all_iter={}'.format(ALL_ITER),
+                         '--ckpt_save_iter={}'.format(CKPT_SAVE_ITER),
+                         '--max_iter={}'.format(MAX_ITER),
                          '--vae_loss={}'.format('AnnealedCapacity'),
                          ])
 
@@ -69,8 +75,11 @@ class TestModels(object):
 
         # clean up: delete output and ckpt files
         train_dir = os.path.join(args.train_output_dir, args.name)
+        test_dir = os.path.join(args.test_output_dir, args.name)
         ckpt_dir = os.path.join(args.ckpt_dir, args.name)
+
         shutil.rmtree(train_dir, ignore_errors=True)
+        shutil.rmtree(test_dir, ignore_errors=True)
         shutil.rmtree(ckpt_dir, ignore_errors=True)
 
     def load_model(self, args):
@@ -126,9 +135,10 @@ class TestModels(object):
 
     @staticmethod
     def check_visualization_files_test(output_dir):
-        print(os.path.join(output_dir, '{}_0.{}'.format(c.RECONSTRUCTION, c.JPG)))
-        assert os.path.exists(os.path.join(output_dir, '{}_0.{}'.format(c.RECONSTRUCTION, c.JPG)))
-        assert os.path.exists(os.path.join(output_dir, '{}_0_0.{}'.format(c.TRAVERSE, c.JPG)))
-        assert os.path.exists(os.path.join(output_dir, '{}_0_1.{}'.format(c.TRAVERSE, c.JPG)))
-        assert os.path.exists(os.path.join(output_dir, '{}_0_2.{}'.format(c.TRAVERSE, c.JPG)))
-        assert os.path.exists(os.path.join(output_dir, '{}_0_3.{}'.format(c.TRAVERSE, c.JPG)))
+        for b in range(NUM_SAMPLES // BATCH_SIZE):
+            for s in range(BATCH_SIZE):
+                assert os.path.exists(os.path.join(output_dir, '{}_{}.{}'.format(c.RECONSTRUCTION, b, c.JPG)))
+                assert os.path.exists(os.path.join(output_dir, '{}_{}_{}.{}'.format(c.TRAVERSE, b, s, c.JPG)))
+                assert os.path.exists(os.path.join(output_dir, '{}_{}_{}.{}'.format(c.TRAVERSE, b, s, c.JPG)))
+                assert os.path.exists(os.path.join(output_dir, '{}_{}_{}.{}'.format(c.TRAVERSE, b, s, c.JPG)))
+                assert os.path.exists(os.path.join(output_dir, '{}_{}_{}.{}'.format(c.TRAVERSE, b, s, c.JPG)))

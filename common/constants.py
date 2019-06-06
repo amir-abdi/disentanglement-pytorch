@@ -1,6 +1,7 @@
 # Algorithms
 ALGS = ('AE', 'VAE', 'BetaVAE', 'FactorVAE', 'CVAE', 'IFCVAE')
 VAE_LOSS = ('Basic', 'AnnealedCapacity')
+DATASETS = ('celebA', 'dsprites')
 
 # Architectures
 DISCRIMINATORS = ('SimpleDiscriminator', 'SimpleDiscriminatorConv64')
