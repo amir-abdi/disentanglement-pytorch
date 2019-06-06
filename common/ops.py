@@ -93,3 +93,40 @@ def reparametrize(mu, logvar):
     std = logvar.mul(0.5).exp_()
     eps = std.data.new(std.size()).normal_()
     return eps.mul(std).add_(mu)
+
+
+def cross_entropy_multi_label(pred, target, num_classes):
+    num_labels = len(num_classes)
+    loss = 0
+    start_idx = 0
+    for i in range(num_labels):
+        end_idx = start_idx + num_classes[i]
+        sub_target = target[:, i]
+        sub_pred = pred[:, start_idx:end_idx]
+
+        loss += F.cross_entropy(sub_pred, sub_target)
+        start_idx = end_idx
+    return loss
+
+
+def classification_accuracy(pred, target):
+    batch_size = pred.size(0)
+    _, pred_class = torch.max(pred, 1)
+    return (pred_class == target).sum().item() / batch_size
+
+
+def classification_accuracy_multi_label(pred, target, num_classes):
+    num_labels = len(num_classes)
+    batch_size = pred.size(0)
+
+    acc = 0
+    start_idx = 0
+    for i in range(num_labels):
+        end_idx = start_idx + num_classes[i]
+        sub_target = target[:, i]
+        sub_pred = pred[:, start_idx:end_idx]
+
+        _, sub_pred_class = torch.max(sub_pred, 1)
+        acc += (sub_pred_class == sub_target).sum().item() / batch_size
+        start_idx = end_idx
+    return acc / num_labels

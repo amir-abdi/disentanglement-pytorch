@@ -25,16 +25,16 @@ class LabelHandler(object):
             self._num_classes_list = [len(cv) for cv in class_values]
             self._class_values = class_values
 
-    def get_label_weights(self, i):
+    def label_weights(self, i):
         return self._label_weights[i]
 
-    def get_num_classes(self, as_tensor=True):
+    def num_classes(self, as_tensor=True):
         if as_tensor:
             return self._num_classes_torch
         else:
             return self._num_classes_list
 
-    def get_class_values(self):
+    def class_values(self):
         return self._class_values
 
     def get_label(self, idx):
@@ -61,13 +61,13 @@ class CustomImageFolder(ImageFolder):
         return self._name
 
     def label_weights(self, i):
-        return self.label_handler.get_label_weights(i)
+        return self.label_handler.label_weights(i)
 
     def num_classes(self, as_tensor=True):
-        return self.label_handler.get_num_classes(as_tensor)
+        return self.label_handler.num_classes(as_tensor)
 
     def class_values(self):
-        return self.label_handler.get_class_values()
+        return self.label_handler.class_values()
 
     def has_labels(self):
         return self.label_handler.has_labels()
@@ -109,13 +109,13 @@ class CustomNpzDataset(Dataset):
         return self._name
 
     def label_weights(self, i):
-        return self.label_handler.get_label_weights(i)
+        return self.label_handler.label_weights(i)
 
     def num_classes(self, as_tensor=True):
-        return self.label_handler.get_num_classes(as_tensor)
+        return self.label_handler.num_classes(as_tensor)
 
     def class_values(self):
-        return self.label_handler.get_class_values()
+        return self.label_handler.class_values()
 
     def has_labels(self):
         return self.label_handler.has_labels()
@@ -253,14 +253,17 @@ def get_dataloader(args):
     else:
         raise NotImplementedError
 
-    data = dset(**data_kwargs)
-    data_loader = DataLoader(data,
+    dataset = dset(**data_kwargs)
+    data_loader = DataLoader(dataset,
                              batch_size=batch_size,
                              shuffle=shuffle,
                              num_workers=num_workers,
                              pin_memory=True,
                              drop_last=droplast)
 
-    logging.info('Number of samples: {}'.format(data.__len__()))
+    logging.info('Number of samples: {}'.format(dataset.__len__()))
+    if include_labels is not None:
+        logging.info('num_classes: {}'.format(dataset.num_classes(False)))
+        logging.info('class_values: {}'.format(class_values))
 
     return data_loader

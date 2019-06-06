@@ -1,2 +1,2 @@
-from .simple_encoder64 import SimpleEncoder64
-from .simple_encoder64 import SimpleGaussianEncoder64
+from .simple_encoder_conv64 import SimpleEncoder64
+from .simple_encoder_conv64 import SimpleGaussianEncoder64

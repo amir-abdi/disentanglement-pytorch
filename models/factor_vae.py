@@ -25,9 +25,9 @@ class FactorVAE(VAE):
         self.w_tc = args.w_tc
 
         # Permute discriminator network
-        discriminator_name = args.discriminator
+        discriminator_name = args.discriminator[0]
         discriminator = getattr(discriminators, discriminator_name)
-        self.PermD = discriminator(self.z_dim, 2,
+        self.PermD = discriminator(self.z_dim, num_classes=2,
                                    num_layers=self.num_layer_disc,
                                    layer_size=self.size_layer_disc).to(self.device)
         self.optim_PermD = optim.Adam(self.PermD.parameters(), lr=self.lr_D,
@@ -64,9 +64,9 @@ class FactorVAE(VAE):
                 x_recon = torch.sigmoid(self.model.decode(z))
                 dz_true = self.PermD(z)
 
-                recon_loss, kld_loss, vae_tc_loss = self.loss_fn(x_recon=x_recon, x_true=x_true1, mu=mu,
-                                                                 logvar=logvar, dz_true=dz_true)
-                loss = recon_loss + kld_loss + vae_tc_loss
+                recon_loss, kld_loss, tc_loss = self.loss_fn(x_recon=x_recon, x_true=x_true1, mu=mu,
+                                                             logvar=logvar, dz_true=dz_true)
+                loss = recon_loss + kld_loss + tc_loss
 
                 self.optim_G.zero_grad()
                 loss.backward(retain_graph=True)
@@ -79,18 +79,18 @@ class FactorVAE(VAE):
                 z2_perm = permute_dims(z2).detach()
                 dz2_perm = self.PermD(z2_perm)
 
-                tc_loss = (f.cross_entropy(dz_true, zeros) + f.cross_entropy(dz2_perm, ones)) * 0.5
+                tc_loss_discriminator = (f.cross_entropy(dz_true, zeros) + f.cross_entropy(dz2_perm, ones)) * 0.5
 
                 self.optim_PermD.zero_grad()
-                tc_loss.backward()
+                tc_loss_discriminator.backward()
                 self.optim_PermD.step()
 
                 # --------- Logging and visualization ----------
                 self.log_save(loss=loss.item(),
                               recon_loss=recon_loss.item(),
                               kld_loss=kld_loss.item(),
-                              vae_tc_loss=vae_tc_loss.item(),
-                              tc_loss=tc_loss.item(),
+                              vae_tc_loss=tc_loss.item(),
+                              tc_loss=tc_loss_discriminator.item(),
                               input_image=x_true1,
                               recon_image=x_recon,
                               )
