@@ -19,32 +19,32 @@ class CVAEModel(nn.Module):
         self.tiler = tiler
         self.num_classes = num_classes
 
-    def encode(self, x, y):
+    def encode(self, x, c):
         """
         :param x: input data
-        :param y: labels with dtype=long, where the number indicates the class of the input (i.e. not one-hot-encoded)
+        :param c: labels with dtype=long, where the number indicates the class of the input (i.e. not one-hot-encoded)
         :return: latent encoding of the input and labels
         """
-        y_onehot = one_hot_embedding(y, self.num_classes).squeeze(1)
+        y_onehot = one_hot_embedding(c, self.num_classes).squeeze(1)
         y_tiled = self.tiler(y_onehot)
         xy = torch.cat((x, y_tiled), dim=1)
         return self.encoder(xy)
 
-    def decode(self, z, y):
+    def decode(self, z, c):
         """
 
         :param z: latent vector
-        :param y: labels with dtype=long, where the number indicates the class of the input (i.e. not one-hot-encoded)
+        :param c: labels with dtype=long, where the number indicates the class of the input (i.e. not one-hot-encoded)
         :return: reconstructed data
         """
-        y_onehot = one_hot_embedding(y, self.num_classes).squeeze(1)
+        y_onehot = one_hot_embedding(c, self.num_classes).squeeze(1)
         zy = torch.cat((z, y_onehot), dim=1)
         return self.decoder(zy)
 
-    def forward(self, x, y):
-        mu, logvar = self.encode(x, y)
+    def forward(self, x, c):
+        mu, logvar = self.encode(x, c)
         z = reparametrize(mu, logvar)
-        return self.decode(z, y)
+        return self.decode(z, c)
 
 
 class CVAE(VAE):
@@ -82,13 +82,9 @@ class CVAE(VAE):
                                self.num_classes).to(self.device)
         self.optim_G = optim.Adam(self.model.parameters(), lr=self.lr_G, betas=(self.beta1, self.beta2))
 
-        # nets
-        self.net_dict = {
-            'G': self.model
-        }
-        self.optim_dict = {
-            'optim_G': self.optim_G,
-        }
+        # update nets
+        self.net_dict['G'] = self.model
+        self.optim_dict['optim_G'] = self.optim_G
 
     def encode_deterministic(self, **kwargs):
         images = kwargs['images']
@@ -97,7 +93,7 @@ class CVAE(VAE):
             images = images.unsqueeze(0)
         if labels.dim() == 1:
             labels = labels.unsqueeze(0)
-        mu, logvar = self.model.encode(images, labels)
+        mu, logvar = self.model.encode(x=images, c=labels)
         return mu
 
     def decode(self, **kwargs):
@@ -107,49 +103,4 @@ class CVAE(VAE):
             latent = latent.unsqueeze(0)
         if labels.dim() == 1:
             labels = labels.unsqueeze(0)
-        return self.model.decode(latent, labels)
-
-    def train(self):
-        while self.iter < self.max_iter:
-            self.net_mode(train=True)
-            for x_true, _, label, _ in self.data_loader:
-                x_true = x_true.to(self.device)
-                label = label.to(self.device, dtype=torch.long)
-
-                mu, logvar = self.model.encode(x_true, label)
-                z = reparametrize(mu, logvar)
-                x_recon = torch.sigmoid(self.model.decode(z, label))
-
-                recon_loss, kld_loss = self.loss_fn(x_recon=x_recon, x_true=x_true, mu=mu, logvar=logvar)
-                loss = recon_loss + kld_loss
-
-                self.optim_G.zero_grad()
-                loss.backward(retain_graph=True)
-                self.optim_G.step()
-
-                self.log_save(loss=loss.item(),
-                              recon_loss=recon_loss.item(),
-                              kld_loss=kld_loss.item(),
-                              input_image=x_true,
-                              recon_image=x_recon,
-                              )
-                self.iter += 1
-                self.pbar.update(1)
-
-        logging.info("-------Training Finished----------")
-        self.pbar.close()
-
-    def test(self):
-        self.net_mode(train=False)
-        for x_true, _, label, _ in self.data_loader:
-            x_true = x_true.to(self.device)
-            label = label.to(self.device, dtype=torch.long)
-
-            x_recon = self.model(x_true, label)
-
-            self.visualize_recon(x_true, x_recon, test=True)
-            self.visualize_traverse(limit=(self.traverse_min, self.traverse_max), spacing=self.traverse_spacing,
-                                    data=(x_true, label), test=True)
-
-            self.iter += 1
-            self.pbar.update(1)
+        return self.model.decode(z=latent, c=labels)

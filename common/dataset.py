@@ -39,7 +39,7 @@ class LabelHandler(object):
 
     def get_label(self, idx):
         if self.labels is not None:
-            return torch.tensor(self.labels[idx], dtype=torch.float)
+            return torch.tensor(self.labels[idx], dtype=torch.long)
         return None
 
     def has_labels(self):
@@ -86,11 +86,12 @@ class CustomImageFolder(ImageFolder):
             img1 = self.transform(img1)
             img2 = self.transform(img2)
 
+        label1 = 0
+        label2 = 0
         if self.label_handler.has_labels():
             label1 = self.label_handler.get_label(index1)
             label2 = self.label_handler.get_label(index2)
-            return img1, img2, label1, label2
-        return img1, img2
+        return img1, img2, label1, label2
 
 
 class CustomNpzDataset(Dataset):
@@ -132,11 +133,12 @@ class CustomNpzDataset(Dataset):
             img1 = self.transform(img1)
             img2 = self.transform(img2)
 
+        label1 = 0
+        label2 = 0
         if self.label_handler.has_labels():
             label1 = self.label_handler.get_label(index1)
             label2 = self.label_handler.get_label(index2)
-            return img1, img2, label1, label2
-        return img1, img2
+        return img1, img2, label1, label2
 
     def __len__(self):
         return self.data_npz.shape[0]

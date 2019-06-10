@@ -26,7 +26,12 @@ def static_var(varname, value):
 
 
 def str2bool(v):
-    # codes from : https://stackoverflow.com/questions/15008758/parsing-boolean-values-with-argparse
+    """
+    Thank to stackoverflow user: Maxim
+    https://stackoverflow.com/questions/15008758/parsing-boolean-values-with-argparse/43357954#43357954
+    :param v: A command line argument with values [yes, true, t, y, 1, True, no, false, f, n, 0, False]
+    :return: Boolean version of the command line argument
+    """
 
     if v.lower() in ('yes', 'true', 't', 'y', '1', 'True'):
         return True
@@ -37,12 +42,16 @@ def str2bool(v):
 
 
 def grid2gif(image_str, output_gif, delay=100):
-    """Make GIF from images.
-
-    code from:
-        https://stackoverflow.com/questions/753190/programmatically-generate-video-or-animated-gif-in-python/34555939#34555939
     """
-    str1 = 'convert -delay ' + str(delay) + ' -loop 0 ' + image_str + ' ' + output_gif
+    Makes an animated GIF from input images.
+    Thanks to the stackoverflow user: pkjain (https://stackoverflow.com/users/5241303/pkjain)
+
+    :param image_str: The wildcard path to all images whose names are numerically sorted
+    :param output_gif: Path to the generated GIF
+    :param delay: Delay to introduce in-between showing consecutive images of a GIF
+    """
+
+    str1 = 'convert -delay {} -loop 0 {} {}'.format(delay, image_str, output_gif)
     subprocess.call(str1, shell=True)
 
 

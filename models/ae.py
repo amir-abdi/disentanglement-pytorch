@@ -62,20 +62,18 @@ class AE(BaseDisentangler):
     def train(self):
         while self.iter < self.max_iter:
             self.net_mode(train=True)
-            for x_true1, _ in self.data_loader:
+            for x_true1, _, _, _ in self.data_loader:
                 x_true1 = x_true1.to(self.device)
-
                 x_recon = torch.sigmoid(self.model(x_true1))
 
                 recon_loss = self.loss_fn(x_recon=x_recon, x_true=x_true1)
-                loss = recon_loss
+                loss_dict = {'recon': recon_loss}
 
                 self.optim_G.zero_grad()
-                loss.backward(retain_graph=True)
+                recon_loss.backward(retain_graph=True)
                 self.optim_G.step()
 
-                self.log_save(loss=loss.item(),
-                              recon_loss=recon_loss.item(),
+                self.log_save(loss=loss_dict,
                               input_image=x_true1,
                               recon_image=x_recon,
                               )
@@ -87,7 +85,7 @@ class AE(BaseDisentangler):
 
     def test(self):
         self.net_mode(train=False)
-        for x_true1, _ in self.data_loader:
+        for x_true1, _, _, _ in self.data_loader:
             x_true1 = x_true1.to(self.device)
             x_recon = self.model(x_true1)
 
