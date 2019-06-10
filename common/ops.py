@@ -115,7 +115,7 @@ def classification_accuracy(pred, target):
     return (pred_class == target).sum().item() / batch_size
 
 
-def classification_accuracy_multi_label(pred, target, num_classes):
+def class_acc_multi_label(pred, target, num_classes):
     num_labels = len(num_classes)
     batch_size = pred.size(0)
 

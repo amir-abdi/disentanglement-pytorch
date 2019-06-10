@@ -3,6 +3,8 @@ TODO: add author and license info to all files.
 TODO: infoVAE
 TODO: 3 different divergences in the InfoVAE paper https://arxiv.org/pdf/1706.02262.pdf
 TODO: evaluation metrics
+
+TODO: A version of CVAE where independence between C and Z is enforced
 '''
 
 import sys
@@ -42,14 +44,10 @@ def get_args(sys_args):
     parser = argparse.ArgumentParser(description='disentanglement-pytorch')
 
     # name
-    parser.add_argument('--alg', type=str,
-                        help='the disentanglement algorithm',
-                        choices=c.ALGS)
-    parser.add_argument('--vae_loss', type=str,
-                        help='type of VAE loss',
-                        choices=c.VAE_LOSS)
-    parser.add_argument('--name', default='unknown_experiment', type=str,
-                        help='name of the experiment')
+    parser.add_argument('--alg', type=str, help='the disentanglement algorithm', choices=c.ALGS)
+    parser.add_argument('--vae_loss', type=str, help='type of VAE loss', default=c.VAE_LOSS[0], choices=c.VAE_LOSS)
+    parser.add_argument('--vae_type', type=str, help='type of VAE', nargs='*', default=[], choices=c.VAE_TYPE)
+    parser.add_argument('--name', default='unknown_experiment', type=str, help='name of the experiment')
 
     # Neural architectures
     parser.add_argument('--encoder', type=str, nargs='+', required=True, choices=c.ENCODERS,

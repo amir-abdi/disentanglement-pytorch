@@ -6,8 +6,9 @@ import torch.optim as optim
 import torch.nn.functional as f
 
 from models.base.base_disentangler import BaseDisentangler
-from architectures import encoders, decoders
-from common.ops import kl_divergence_mu0_var1, reparametrize
+from architectures import encoders, decoders, discriminators
+from common.ops import kl_divergence_mu0_var1, reparametrize, permute_dims
+from common import constants as c
 
 
 class VAEModel(nn.Module):
@@ -17,13 +18,13 @@ class VAEModel(nn.Module):
         self.encoder = encoder
         self.decoder = decoder
 
-    def encode(self, x):
+    def encode(self, x, **kwargs):
         return self.encoder(x)
 
-    def decode(self, z):
+    def decode(self, z, **kwargs):
         return self.decoder(z)
 
-    def forward(self, x):
+    def forward(self, x, **kwargs):
         mu, logvar = self.encode(x)
         z = reparametrize(mu, logvar)
         return self.decode(z)
@@ -67,18 +68,38 @@ class VAE(BaseDisentangler):
             'optim_G': self.optim_G,
         }
 
+        # FactorVAE
+        if c.FACTORVAE in self.vae_type:
+            self.ones = torch.ones(self.batch_size, dtype=torch.long, device=self.device, requires_grad=False)
+            self.zeros = torch.zeros(self.batch_size, dtype=torch.long, device=self.device, requires_grad=False)
+
+            self.num_layer_disc = args.num_layer_disc
+            self.size_layer_disc = args.size_layer_disc
+            self.w_tc = args.w_tc
+
+            assert args.discriminator is not None, 'FactorVAE needs a discriminator to detect permuted Zs'
+            discriminator_name = args.discriminator[0]
+            discriminator = getattr(discriminators, discriminator_name)
+
+            self.PermD = discriminator(self.z_dim, num_classes=2, num_layers=self.num_layer_disc,
+                                       layer_size=self.size_layer_disc).to(self.device)
+            self.optim_PermD = optim.Adam(self.PermD.parameters(), lr=self.lr_D, betas=(self.beta1, self.beta2))
+
+            self.net_dict.update({'PermD': self.PermD})
+            self.optim_dict = {'optim_PermD': self.optim_PermD}
+
     def encode_deterministic(self, **kwargs):
         images = kwargs['images']
         if images.dim() == 3:
             images = images.unsqueeze(0)
-        mu, logvar = self.model.encode(images)
+        mu, logvar = self.model.encode(x=images)
         return mu
 
     def encode_stochastic(self, **kwargs):
         images = kwargs['images']
         if images.dim() == 3:
             images = images.unsqueeze(0)
-        mu, logvar = self.model.encode(images)
+        mu, logvar = self.model.encode(x=images)
         return reparametrize(mu, logvar)
 
     def _kld_loss_fn(self, mu, logvar):
@@ -93,39 +114,73 @@ class VAE(BaseDisentangler):
 
         return kld_loss
 
-    def loss_fn(self, **kwargs):
+    def loss_fn(self, input_losses, **kwargs):
         x_recon = kwargs['x_recon']
         x_true = kwargs['x_true']
         mu = kwargs['mu']
         logvar = kwargs['logvar']
+        factorvae_dz_true = kwargs.get('factorvae_dz_true', None)
 
-        recon_loss = f.binary_cross_entropy(x_recon, x_true, reduction='mean') * self.w_recon
-        kld_loss = self._kld_loss_fn(mu, logvar)
+        output_losses = dict()
+        output_losses[c.VAE] = input_losses.get(c.VAE, 0)
 
-        return recon_loss, kld_loss
+        output_losses[c.RECONSTRUCTION] = f.binary_cross_entropy(x_recon, x_true, reduction='mean') * self.w_recon
+        output_losses[c.VAE] += output_losses[c.RECONSTRUCTION]
+        output_losses['kld'] = self._kld_loss_fn(mu, logvar)
+        output_losses[c.VAE] += output_losses['kld']
+
+        if c.FACTORVAE in self.vae_type:
+            output_losses['vae_total_correlation'] = \
+                (factorvae_dz_true[:, 0] - factorvae_dz_true[:, 1]).mean() * self.w_tc
+            output_losses[c.VAE] += output_losses['vae_total_correlation']
+
+        return output_losses
+
+    def vae_base(self, losses, x_true1, x_true2, label1, label2):
+        mu, logvar = self.model.encode(x=x_true1, c=label1)
+        z = reparametrize(mu, logvar)
+        x_recon = torch.sigmoid(self.model.decode(z=z, c=label1))
+        loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar)
+
+        if c.FACTORVAE in self.vae_type:
+            dz_true = self.PermD(z)
+            loss_fn_args.update(factorvae_dz_true=dz_true)
+
+            mu2, logvar2 = self.model.encode(x=x_true2, c=label2)
+            z2 = reparametrize(mu2, logvar2)
+            z2_perm = permute_dims(z2).detach()
+            dz2_perm = self.PermD(z2_perm)
+            tc_loss_discriminator = (f.cross_entropy(dz_true, self.zeros) +
+                                     f.cross_entropy(dz2_perm, self.ones)) * 0.5
+
+            self.optim_PermD.zero_grad()
+            tc_loss_discriminator.backward(retain_graph=True)
+            self.optim_PermD.step()
+            losses['tc_loss_discriminator'] = tc_loss_discriminator
+
+        losses.update(self.loss_fn(losses, **loss_fn_args))
+
+        return losses, {'x_recon': x_recon, 'mu': mu, 'z': z, 'logvar': logvar}
 
     def train(self):
         while self.iter < self.max_iter:
             self.net_mode(train=True)
-            for x_true1, _ in self.data_loader:
+            for x_true1, x_true2, label1, label2 in self.data_loader:
+                losses = dict()
                 x_true1 = x_true1.to(self.device)
+                x_true2 = x_true2.to(self.device)
+                label1 = label1.to(self.device)
+                label2 = label2.to(self.device)
 
-                mu, logvar = self.model.encode(x_true1)
-                z = reparametrize(mu, logvar)
-                x_recon = torch.sigmoid(self.model.decode(z))
-
-                recon_loss, kld_loss = self.loss_fn(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar)
-                loss = recon_loss + kld_loss
+                losses, params = self.vae_base(losses, x_true1, x_true2, label1, label2)
 
                 self.optim_G.zero_grad()
-                loss.backward(retain_graph=True)
+                losses[c.VAE].backward(retain_graph=False)
                 self.optim_G.step()
 
-                self.log_save(loss=loss.item(),
-                              recon_loss=recon_loss.item(),
-                              kld_loss=kld_loss.item(),
-                              input_image=x_true1,
-                              recon_image=x_recon,
+                self.log_save(input_image=x_true1,
+                              recon_image=params['x_recon'],
+                              loss=losses,
                               )
                 self.iter += 1
                 self.pbar.update(1)
@@ -135,13 +190,15 @@ class VAE(BaseDisentangler):
 
     def test(self):
         self.net_mode(train=False)
-        for x_true1, _ in self.data_loader:
-            x_true1 = x_true1.to(self.device)
-            x_recon = self.model(x_true1)
+        for x_true, _, label, _ in self.data_loader:
+            x_true = x_true.to(self.device)
+            label = label.to(self.device, dtype=torch.long)
 
-            self.visualize_recon(x_true1, x_recon, test=True)
+            x_recon = self.model(x=x_true, c=label)
+
+            self.visualize_recon(x_true, x_recon, test=True)
             self.visualize_traverse(limit=(self.traverse_min, self.traverse_max), spacing=self.traverse_spacing,
-                                    data=(x_true1, None), test=True)
+                                    data=(x_true, label), test=True)
 
             self.iter += 1
             self.pbar.update(1)

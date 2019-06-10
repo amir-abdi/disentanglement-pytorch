@@ -22,6 +22,7 @@ class BaseDisentangler(object):
         self.name = args.name
         self.alg = args.alg
         self.vae_loss = args.vae_loss
+        self.vae_type = args.vae_type
 
         # Output directory
         self.train_output_dir = os.path.join(args.train_output_dir, self.name)
@@ -97,14 +98,17 @@ class BaseDisentangler(object):
         self.model = None
 
     def log_save(self, **kwargs):
+        # TODO: add all accuracies
+        # TODO: remove loss from names and add during logging
         if self.iter > 0 and self.iter % self.ckpt_save_iter == 0:
             self.save_checkpoint()
 
         if self.iter % self.print_iter == 0:
             msg = '[{}]  '.format(self.iter)
-            for key, value in kwargs.items():
-                if c.LOSS in key:
-                    msg += key + '={:.3e}  '.format(value)
+            for key, value in kwargs.get(c.LOSS, dict()).items():
+                msg += key + '_{}={:.3f}  '.format(c.LOSS, value)
+            for key, value in kwargs.get(c.ACCURACY, dict()).items():
+                msg += key + '_{}={:.3f}  '.format(c.ACCURACY, value)
             self.pbar.write(msg)
 
         if self.iter % self.float_iter == 0:
@@ -124,10 +128,11 @@ class BaseDisentangler(object):
             # accumulate results
             for key, value in kwargs.items():
                 if isinstance(value, float):
-                    if key in self.info_cumulative.keys():
-                        self.info_cumulative[key] += value
-                    else:
-                        self.info_cumulative[key] = value
+                    self.info_cumulative[key] = value + self.info_cumulative.get(key, 0)
+                elif isinstance(value, dict):
+                    for subkey, subvalue in value.items():
+                        complex_key = key + '_' + subkey
+                        self.info_cumulative[complex_key] = float(subvalue) + self.info_cumulative.get(complex_key, 0)
 
         if self.iter % self.recon_iter == 0:
             self.visualize_recon(kwargs[c.INPUT_IMAGE], kwargs[c.RECON_IMAGE])
@@ -212,6 +217,7 @@ class BaseDisentangler(object):
                         class_value = self.class_values[lid][class_id]
                         label = label_orig.clone()
                         new_label = torch.tensor(class_value).to(self.device, dtype=torch.long).unsqueeze(0)
+                        logging.debug('label: {} --> {}'.format(label[:, lid], new_label))
                         label[:, lid] = new_label
                         sample = torch.sigmoid(self.decode(latent=latent_orig, labels=label)).detach()
 
@@ -243,7 +249,8 @@ class BaseDisentangler(object):
                              self.num_channels, self.image_size, self.image_size).transpose(1, 2)
             for i, key in enumerate(encodings.keys()):
                 for j, val in enumerate(interp_values):
-                    file_name = os.path.join(self.train_output_dir, '{}_{}_{}.{}'.format(c.TEMP, key, j, c.JPG))
+                    file_name = \
+                        os.path.join(self.train_output_dir, '{}_{}_{}.{}'.format(c.TEMP, key, str(j).zfill(2), c.JPG))
                     torchvision.utils.save_image(tensor=gifs[i][j].cpu(),
                                                  filename=file_name,
                                                  nrow=total_rows, pad_value=1)
@@ -257,7 +264,8 @@ class BaseDisentangler(object):
 
                 # Delete temp image files
                 for j, val in enumerate(interp_values):
-                    os.remove(os.path.join(self.train_output_dir, '{}_{}_{}.{}'.format(c.TEMP, key, j, c.JPG)))
+                    os.remove(
+                        os.path.join(self.train_output_dir, '{}_{}_{}.{}'.format(c.TEMP, key, str(j).zfill(2), c.JPG)))
 
     def save_checkpoint(self, ckptname='last'):
         model_states = dict()

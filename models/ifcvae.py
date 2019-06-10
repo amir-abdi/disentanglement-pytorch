@@ -9,8 +9,9 @@ import torch.nn.functional as F
 
 from models.vae import VAE
 from architectures import encoders, decoders, others, discriminators
-from common.ops import reparametrize, cross_entropy_multi_label, classification_accuracy_multi_label
+from common.ops import reparametrize, cross_entropy_multi_label, class_acc_multi_label
 from common.utils import one_hot_embedding
+from common import constants as c
 
 
 class IFCVAEModel(nn.Module):
@@ -23,45 +24,65 @@ class IFCVAEModel(nn.Module):
         self.tiler = tiler
         self.num_classes = num_classes
 
-    def encode(self, x):
+        self.total_classes = sum(num_classes)
+
+    def one_hot(self, c):
+        if c.size(1) == self.total_classes:
+            # c is already one_hot encoded
+            return c
+        return one_hot_embedding(c, self.num_classes).squeeze(1)
+
+    def encode(self, x, **kwargs):
         """
         :param x: input data
         :return: latent encoding of the input and y
         """
-        y_onehot = self.label_encoder(x)
+        encode_c = kwargs.get('encode_c', False)
         mu_logvar = self.z_encoder(x)
-        return mu_logvar, y_onehot
+        if encode_c:
+            c_onehot = self.encode_label(x)
+            return mu_logvar, c_onehot
+        return mu_logvar
 
-    def encode_label(self, x):
+    def encode_label(self, x, **kwargs):
         """
         :param x: input data
         :return: label in a one-hot form
         """
         return self.label_encoder(x)
 
-    def decode(self, z, y=None, y_onehot=None):
+    def encode_z(self, x, **kwargs):
+        """
+        :param x: input data
+        :return: latent vector (z)
+        """
+        return self.z_encoder(x)
+
+    def decode(self, z, c=None, **kwargs):
         """
         :param z: latent vector
-        :param y: labels with dtype=long, where the value indicates the class of the input (i.e. not one-hot-encoded)
-        :param y_onehot:  one-hot version of the label
+        :param c: labels with dtype=long, where the value indicates the class of the input (i.e. not one-hot-encoded)
+        :param c_onehot:  one-hot version of the label
         :return: reconstructed data
         """
-        if y_onehot is None and y is not None:
-            y_onehot = one_hot_embedding(y, self.num_classes).squeeze(1)
-        if y_onehot is None and y is None:
-            # z represents the entire latent space
+        # if c_onehot is None and c is not None:
+        #     c_onehot = one_hot_embedding(c, self.num_classes).squeeze(1)
+
+        if c is None:
+            # z contains the entire latent space (z + condition)
             assert z.size(1) == self.z_encoder.latent_dim() + self.label_encoder.latent_dim()
             return self.decoder(z)
 
-        zy = torch.cat((z, y_onehot), dim=1)
+        c_onehot = self.one_hot(c)
+        zy = torch.cat((z, c_onehot), dim=1)
         return self.decoder(zy)
 
-    def forward(self, x, y):
-        mu_logvar, y_onehot = self.encode(x)
+    def forward(self, x, c):
+        mu_logvar, y_onehot = self.encode(x, encode_c=True)
         mu, logvar = mu_logvar
         z = reparametrize(mu, logvar)
 
-        return self.decode(z, y_onehot=y_onehot)
+        return self.decode(z=z, c=y_onehot)
 
 
 class IFCVAE(VAE):
@@ -70,8 +91,9 @@ class IFCVAE(VAE):
     by Creswell et al.
     https://arxiv.org/pdf/1711.05175.pdf
 
-    Without the GAN loss at the end of the architecture to validate the Real/Fakeness of the generated image. The
-    paper referred to this approach as IFCVAE-GAN, thus, following the same trend, we call this IFCVAE.
+    This model excludes the GAN loss from the original paper from the discriminator at the end of the architecture
+    which validates the Real/Fakeness of the generated image. The paper referred to this approach as IFCVAE-GAN, thus,
+    following the same trend, we call this IFCVAE.
     """
 
     def __init__(self, args):
@@ -87,22 +109,20 @@ class IFCVAE(VAE):
         self.size_layer_disc = args.size_layer_disc
 
         # encoder and decoder
-        encoder_name_z = args.encoder[0]
-        encoder_name_label = args.encoder[1]
-        decoder_name = args.decoder[0]
+        encoder_z = args.encoder[0]
+        encoder_label = args.encoder[1]
+        decoder = args.decoder[0]
         discriminator_name = args.discriminator[0]
         label_tiler_name = args.label_tiler[0]
 
-        encoder_z = getattr(encoders, encoder_name_z)
-        encoder_l = getattr(encoders, encoder_name_label)
-        decoder = getattr(decoders, decoder_name)
+        encoder_z = getattr(encoders, encoder_z)
+        encoder_l = getattr(encoders, encoder_label)
+        decoder = getattr(decoders, decoder)
         tile_network = getattr(others, label_tiler_name)
         discriminator = getattr(discriminators, discriminator_name)
 
         # total number of classes
         total_num_classes = sum(self.data_loader.dataset.num_classes(False))
-        print('self.num_classes', self.num_classes)
-        print('total_num_classes', total_num_classes)
 
         # number of channels
         image_channels = self.num_channels
@@ -125,21 +145,22 @@ class IFCVAE(VAE):
         self.optim_aux_D = optim.Adam(self.aux_D.parameters(), lr=self.lr_D, betas=(self.beta1, self.beta2))
 
         # nets
-        self.net_dict = {
+        # todo: switch to udpate for factorVAE
+        self.net_dict.update({
             'G': self.model,
             'aux_D': self.aux_D
-        }
-        self.optim_dict = {
+        })
+        self.optim_dict.update({
             'optim_G': self.optim_G,
             'optim_aux_D': self.optim_aux_D
-        }
+        })
 
     def encode_deterministic(self, **kwargs):
         images = kwargs['images']
         if images.dim() == 3:
             images = images.unsqueeze(0)
 
-        mu_logvar, y_onehot = self.model.encode(images)
+        mu_logvar, y_onehot = self.model.encode(x=images, encode_c=True)
         mu, _ = mu_logvar
         return torch.cat((mu, y_onehot), dim=1)
 
@@ -147,63 +168,59 @@ class IFCVAE(VAE):
         latent = kwargs['latent']
         if latent.dim() == 1:
             latent = latent.unsqueeze(0)
-        return self.model.decode(latent)
+        return self.model.decode(z=latent)
 
     def train(self):
         while self.iter < self.max_iter:
             self.net_mode(train=True)
-            for x_true, _, label, _ in self.data_loader:
-                x_true = x_true.to(self.device)
-                label = label.to(self.device, dtype=torch.long)
+            for x_true1, x_true2, label1, label2 in self.data_loader:
+                losses = dict()
+                accuracies_dict = dict()
+                x_true1 = x_true1.to(self.device)
+                label1 = label1.to(self.device, dtype=torch.long)
+                x_true2 = x_true2.to(self.device)
+                label2 = label2.to(self.device)
 
-                mu_logvar, y_onehot_hat = self.model.encode(x_true)
-                mu, logvar = mu_logvar
-                z = reparametrize(mu, logvar)
-                x_recon = torch.sigmoid(self.model.decode(z, y_onehot=y_onehot_hat))
+                # train the label encoder bce(y, y_hat)
+                y_onehot_hat = self.model.encode_label(x=x_true1)
+                label_loss = cross_entropy_multi_label(y_onehot_hat, label1, self.num_classes) * self.w_le
+                accuracies_dict['label_orig'] = class_acc_multi_label(y_onehot_hat, label1, self.num_classes)
+                y_onehot_hat_copy = y_onehot_hat.clone().detach()
 
-                # train the label encoder bce(y, y_hat) on all the labels
-                label_loss = cross_entropy_multi_label(y_onehot_hat, label, self.num_classes) * self.w_le
                 self.optim_G.zero_grad()  # only zeroing the gradients, the rest should be fine
-                label_loss.backward(retain_graph=True)
+                label_loss.backward(retain_graph=False)
                 self.optim_G.step()
-                accuracy_label_encoder = classification_accuracy_multi_label(y_onehot_hat, label, self.num_classes)
+                losses['label'] = label_loss
 
-                # train everything else
-                y_onehot_hat_hat = self.model.encode_label(x_recon)
-                label_hat_loss = cross_entropy_multi_label(y_onehot_hat_hat, label, self.num_classes) * self.w_le
-                accuracy_label_recon = classification_accuracy_multi_label(y_onehot_hat_hat, label, self.num_classes)
+                # train the main VAE
+                losses, params = self.vae_base(losses, x_true1, x_true2, y_onehot_hat_copy, label2)
+                x_recon = params['x_recon']
+                z = params['z']
 
-                # todo: mu or z?
+                y_onehot_hat_hat = self.model.encode_label(x=x_recon)
+                losses['label_hat'] = cross_entropy_multi_label(y_onehot_hat_hat, label1, self.num_classes) * self.w_le
+                accuracies_dict['label_recon'] = class_acc_multi_label(y_onehot_hat_hat, label1, self.num_classes)
+
                 aux_y_onehot_hat = self.aux_D(z)
-                aux_loss = cross_entropy_multi_label(aux_y_onehot_hat, label, self.num_classes)
-                aux_loss_weighted = aux_loss * self.w_aux
+                losses['aux'] = cross_entropy_multi_label(aux_y_onehot_hat, label1, self.num_classes) * self.w_aux
 
-                recon_loss, kld_loss = self.loss_fn(x_recon=x_recon, x_true=x_true, mu=mu, logvar=logvar)
-                loss = recon_loss + kld_loss + label_hat_loss - aux_loss_weighted
+                total_loss = losses[c.VAE] + losses['label_hat'] - losses['aux']
 
                 self.optim_G.zero_grad()
-                loss.backward(retain_graph=True)
+                total_loss.backward(retain_graph=True)
                 self.optim_G.step()
 
                 # train auxiliary discriminator
-                # todo: calc accuracy
                 self.optim_aux_D.zero_grad()
-                aux_loss.backward()
+                losses['aux'].backward()
                 self.optim_aux_D.step()
-                accuracy_auxiliary = classification_accuracy_multi_label(aux_y_onehot_hat, label, self.num_classes)
+                accuracies_dict['auxiliary'] = class_acc_multi_label(aux_y_onehot_hat, label1, self.num_classes)
 
                 # logging and visualization
-                self.log_save(loss=loss.item(),
-                              recon_loss=recon_loss.item(),
-                              kld_loss=kld_loss.item(),
-                              label_hat_loss=label_hat_loss.item(),
-                              label_loss=label_loss.item(),
-                              aux_loss=aux_loss.item(),
-                              accuracy_auxiliary=accuracy_auxiliary,
-                              accuracy_label_encoder=accuracy_label_encoder,
-                              accuracy_label_recon=accuracy_label_recon,
-                              input_image=x_true,
+                self.log_save(input_image=x_true1,
                               recon_image=x_recon,
+                              loss=losses,
+                              acc=accuracies_dict
                               )
                 self.iter += 1
                 self.pbar.update(1)
@@ -215,9 +232,9 @@ class IFCVAE(VAE):
         self.net_mode(train=False)
         for x_true, _, label, _ in self.data_loader:
             x_true = x_true.to(self.device)
-            label = label.to(self.device, dtype=torch.long)
+            label = label.to(self.device)
 
-            x_recon = self.model(x_true, label)
+            x_recon = self.model(x=x_true, c=label)
 
             self.visualize_recon(x_true, x_recon, test=True)
             self.visualize_traverse(limit=(self.traverse_min, self.traverse_max), spacing=self.traverse_spacing,

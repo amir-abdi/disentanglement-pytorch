@@ -55,7 +55,7 @@ class FactorVAE(VAE):
 
         while self.iter < self.max_iter:
             self.net_mode(train=True)
-            for x_true1, x_true2 in self.data_loader:
+            for x_true1, x_true2, _, _ in self.data_loader:
                 x_true1 = x_true1.to(self.device)
                 x_true2 = x_true2.to(self.device)
 
@@ -93,6 +93,7 @@ class FactorVAE(VAE):
                               tc_loss=tc_loss_discriminator.item(),
                               input_image=x_true1,
                               recon_image=x_recon,
+                              losses=dict()
                               )
                 self.iter += 1
                 self.pbar.update(1)
