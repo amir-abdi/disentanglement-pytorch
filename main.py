@@ -45,8 +45,8 @@ def get_args(sys_args):
 
     # name
     parser.add_argument('--alg', type=str, help='the disentanglement algorithm', choices=c.ALGS)
-    parser.add_argument('--vae_loss', type=str, help='type of VAE loss', default=c.VAE_LOSS[0], choices=c.VAE_LOSS)
-    parser.add_argument('--vae_type', type=str, help='type of VAE', nargs='*', default=[], choices=c.VAE_TYPE)
+    parser.add_argument('--vae_loss', help='type of VAE loss', default=c.VAE_LOSS[0], choices=c.VAE_LOSS)
+    parser.add_argument('--vae_type', help='type of VAE', nargs='*', default=c.VAE_TYPE[0], choices=c.VAE_TYPE)
     parser.add_argument('--name', default='unknown_experiment', type=str, help='name of the experiment')
 
     # Neural architectures
@@ -103,7 +103,7 @@ def get_args(sys_args):
     parser.add_argument('--dset_dir', default='data', type=str, help='main dataset directory')
     parser.add_argument('--dset_name', default=None, type=str, help='dataset name')
     parser.add_argument('--image_size', default=64, type=int, help='width and height of image')
-    parser.add_argument('--num_workers', default=4, type=int, help='number of workers for the data loader')
+    parser.add_argument('--num_workers', default=2, type=int, help='number of workers for the data loader')
 
     # Logging and visualization
     parser.add_argument('--train_output_dir', default='train_outputs', type=str, help='output directory')

@@ -120,7 +120,7 @@ class TestModels(object):
 
     @staticmethod
     def check_visualization_files_train(output_dir, dset_name):
-        assert os.path.exists(os.path.join(output_dir, '{}.{}'.format(c.RECONSTRUCTION, c.JPG)))
+        assert os.path.exists(os.path.join(output_dir, '{}.{}'.format(c.RECON, c.JPG)))
         if dset_name != 'dsprites':
             assert os.path.exists(os.path.join(output_dir, '{}_{}_0.{}'.format(c.TRAVERSE, c.FIXED, c.JPG)))
             assert os.path.exists(os.path.join(output_dir, '{}_{}_1.{}'.format(c.TRAVERSE, c.FIXED, c.JPG)))
@@ -137,7 +137,7 @@ class TestModels(object):
     def check_visualization_files_test(output_dir):
         for b in range(NUM_SAMPLES // BATCH_SIZE):
             for s in range(BATCH_SIZE):
-                assert os.path.exists(os.path.join(output_dir, '{}_{}.{}'.format(c.RECONSTRUCTION, b, c.JPG)))
+                assert os.path.exists(os.path.join(output_dir, '{}_{}.{}'.format(c.RECON, b, c.JPG)))
                 assert os.path.exists(os.path.join(output_dir, '{}_{}_{}.{}'.format(c.TRAVERSE, b, s, c.JPG)))
                 assert os.path.exists(os.path.join(output_dir, '{}_{}_{}.{}'.format(c.TRAVERSE, b, s, c.JPG)))
                 assert os.path.exists(os.path.join(output_dir, '{}_{}_{}.{}'.format(c.TRAVERSE, b, s, c.JPG)))
