@@ -3,7 +3,7 @@ import logging
 import torch
 from torch import nn
 import torch.optim as optim
-import torch.nn.functional as f
+import torch.nn.functional as F
 
 from models.base.base_disentangler import BaseDisentangler
 from architectures import encoders, decoders, discriminators
@@ -22,7 +22,7 @@ class VAEModel(nn.Module):
         return self.encoder(x)
 
     def decode(self, z, **kwargs):
-        return self.decoder(z)
+        return torch.sigmoid(self.decoder(z))
 
     def forward(self, x, **kwargs):
         mu, logvar = self.encode(x)
@@ -124,7 +124,7 @@ class VAE(BaseDisentangler):
         output_losses = dict()
         output_losses[c.VAE] = input_losses.get(c.VAE, 0)
 
-        output_losses[c.RECON] = f.binary_cross_entropy(x_recon, x_true, reduction='sum') / bs * self.w_recon
+        output_losses[c.RECON] = F.binary_cross_entropy(x_recon, x_true, reduction='sum') / bs * self.w_recon
         output_losses[c.VAE] += output_losses[c.RECON]
         output_losses['kld'] = self._kld_loss_fn(mu, logvar)
         output_losses[c.VAE] += output_losses['kld']
@@ -139,7 +139,7 @@ class VAE(BaseDisentangler):
     def vae_base(self, losses, x_true1, x_true2, label1, label2):
         mu, logvar = self.model.encode(x=x_true1, c=label1)
         z = reparametrize(mu, logvar)
-        x_recon = torch.sigmoid(self.model.decode(z=z, c=label1))
+        x_recon = self.model.decode(z=z, c=label1)
         loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar)
 
         if c.FACTORVAE in self.vae_type:
@@ -150,8 +150,8 @@ class VAE(BaseDisentangler):
             z2 = reparametrize(mu2, logvar2)
             z2_perm = permute_dims(z2).detach()
             dz2_perm = self.PermD(z2_perm)
-            tc_loss_discriminator = (f.cross_entropy(dz_true, self.zeros) +
-                                     f.cross_entropy(dz2_perm, self.ones)) * 0.5
+            tc_loss_discriminator = (F.cross_entropy(dz_true, self.zeros) +
+                                     F.cross_entropy(dz2_perm, self.ones)) * 0.5
 
             self.optim_PermD.zero_grad()
             tc_loss_discriminator.backward(retain_graph=True)

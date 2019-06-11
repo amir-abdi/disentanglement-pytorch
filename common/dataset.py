@@ -16,8 +16,8 @@ class LabelHandler(object):
     def __init__(self, labels, label_weights, class_values):
         self.labels = labels
         self._label_weights = None
-        self._num_classes_torch = None
-        self._num_classes_list = None
+        self._num_classes_torch = torch.tensor((0,))
+        self._num_classes_list = [0]
         self._class_values = None
         if labels is not None:
             self._label_weights = [torch.tensor(w) for w in label_weights]

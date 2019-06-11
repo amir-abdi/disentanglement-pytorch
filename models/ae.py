@@ -3,7 +3,7 @@ import logging
 import torch
 from torch import nn
 import torch.optim as optim
-import torch.nn.functional as f
+import torch.nn.functional as F
 
 from models.base.base_disentangler import BaseDisentangler
 from architectures import encoders, decoders
@@ -20,7 +20,7 @@ class AEModel(nn.Module):
         return self.encoder(x)
 
     def decode(self, z):
-        return self.decoder(z)
+        return torch.sigmoid(self.decoder(z))
 
     def forward(self, x):
         z = self.encode(x)
@@ -55,7 +55,7 @@ class AE(BaseDisentangler):
         x_recon = kwargs['x_recon']
         x_true = kwargs['x_true']
         bs = self.batch_size
-        recon_loss = f.binary_cross_entropy(x_recon, x_true, reduction='sum') / bs * self.w_recon
+        recon_loss = F.binary_cross_entropy(x_recon, x_true, reduction='sum') / bs * self.w_recon
 
         return recon_loss
 
@@ -64,7 +64,7 @@ class AE(BaseDisentangler):
             self.net_mode(train=True)
             for x_true1, _, _, _ in self.data_loader:
                 x_true1 = x_true1.to(self.device)
-                x_recon = torch.sigmoid(self.model(x_true1))
+                x_recon = self.model(x_true1)
 
                 recon_loss = self.loss_fn(x_recon=x_recon, x_true=x_true1)
                 loss_dict = {'recon': recon_loss}

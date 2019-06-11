@@ -1,5 +1,3 @@
-import logging
-
 import torch
 from torch import nn
 import torch.optim as optim
@@ -39,7 +37,7 @@ class CVAEModel(nn.Module):
         """
         y_onehot = one_hot_embedding(c, self.num_classes).squeeze(1)
         zy = torch.cat((z, y_onehot), dim=1)
-        return self.decoder(zy)
+        return torch.sigmoid(self.decoder(zy))
 
     def forward(self, x, c):
         mu, logvar = self.encode(x, c)
