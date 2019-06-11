@@ -151,9 +151,9 @@ class BaseDisentangler(object):
 
         if self.file_save:
             if test:
-                file_name = os.path.join(self.test_output_dir, '{}_{}.{}'.format(c.RECONSTRUCTION, self.iter, c.JPG))
+                file_name = os.path.join(self.test_output_dir, '{}_{}.{}'.format(c.RECON, self.iter, c.JPG))
             else:
-                file_name = os.path.join(self.train_output_dir, '{}.{}'.format(c.RECONSTRUCTION, c.JPG))
+                file_name = os.path.join(self.train_output_dir, '{}.{}'.format(c.RECON, c.JPG))
             torchvision.utils.save_image(samples, file_name)
 
         if self.use_wandb:
