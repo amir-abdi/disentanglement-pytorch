@@ -54,6 +54,7 @@ class BaseDisentangler(object):
         self.image_size = args.image_size
         self.data_loader = get_dataloader(args)
         self.num_classes = self.data_loader.dataset.num_classes()
+        self.total_num_classes = sum(self.data_loader.dataset.num_classes(False))
         self.class_values = self.data_loader.dataset.class_values()
         self.num_channels = self.data_loader.dataset.num_channels()
 
@@ -98,17 +99,15 @@ class BaseDisentangler(object):
         self.model = None
 
     def log_save(self, **kwargs):
-        # TODO: add all accuracies
-        # TODO: remove loss from names and add during logging
         if self.iter > 0 and self.iter % self.ckpt_save_iter == 0:
             self.save_checkpoint()
 
         if self.iter % self.print_iter == 0:
             msg = '[{}]  '.format(self.iter)
             for key, value in kwargs.get(c.LOSS, dict()).items():
-                msg += key + '_{}={:.3f}  '.format(c.LOSS, value)
+                msg += key + '{}_={:.3f}  '.format(c.LOSS, value)
             for key, value in kwargs.get(c.ACCURACY, dict()).items():
-                msg += key + '_{}={:.3f}  '.format(c.ACCURACY, value)
+                msg += key + '{}_={:.3f}  '.format(c.ACCURACY, value)
             self.pbar.write(msg)
 
         if self.iter % self.float_iter == 0:
@@ -180,10 +179,11 @@ class BaseDisentangler(object):
         for key in encodings:
             latent_orig = encodings[key]
             label_orig = sample_labels_dict[key]
+            logging.debug('latent_orig: {}, label_orig: {}'.format(latent_orig, label_orig))
             samples = []
 
             # encode original on the first row
-            sample = torch.sigmoid(self.decode(latent=latent_orig.detach(), labels=label_orig))
+            sample = self.decode(latent=latent_orig.detach(), labels=label_orig)
             for _ in interp_values:
                 samples.append(sample)
 
@@ -193,7 +193,7 @@ class BaseDisentangler(object):
                         for val in interp_values:
                             latent = latent_orig.clone()
                             self.set_l(latent, lid, lid_id, val)
-                            sample = torch.sigmoid(self.decode(latent=latent, labels=label_orig)).detach()
+                            sample = self.decode(latent=latent, labels=label_orig).detach()
 
                             samples.append(sample)
                             gifs.append(sample)
@@ -204,7 +204,7 @@ class BaseDisentangler(object):
                         latent = latent_orig.clone()
                         latent[:, zid] = val
                         self.set_z(latent, zid, val)
-                        sample = torch.sigmoid(self.decode(latent=latent, labels=label_orig))
+                        sample = self.decode(latent=latent, labels=label_orig)
 
                         samples.append(sample)
                         gifs.append(sample)
@@ -216,10 +216,15 @@ class BaseDisentangler(object):
                         class_id = temp_i % num_classes[lid]
                         class_value = self.class_values[lid][class_id]
                         label = label_orig.clone()
+                        latent = latent_orig.clone()
                         new_label = torch.tensor(class_value).to(self.device, dtype=torch.long).unsqueeze(0)
                         logging.debug('label: {} --> {}'.format(label[:, lid], new_label))
                         label[:, lid] = new_label
-                        sample = torch.sigmoid(self.decode(latent=latent_orig, labels=label)).detach()
+
+                        # c is being traversed, so, latent should not contain the condition
+                        if latent.size(1) == self.z_dim + self.total_num_classes:
+                            latent = latent[:, :self.z_dim]
+                        sample = self.decode(latent=latent, labels=label).detach()
 
                         samples.append(sample)
                         gifs.append(sample)

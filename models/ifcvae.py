@@ -5,7 +5,6 @@ import logging
 import torch
 from torch import nn
 import torch.optim as optim
-import torch.nn.functional as F
 
 from models.vae import VAE
 from architectures import encoders, decoders, others, discriminators
@@ -71,11 +70,11 @@ class IFCVAEModel(nn.Module):
         if c is None:
             # z contains the entire latent space (z + condition)
             assert z.size(1) == self.z_encoder.latent_dim() + self.label_encoder.latent_dim()
-            return self.decoder(z)
+            return torch.sigmoid(self.decoder(z))
 
         c_onehot = self.one_hot(c)
         zy = torch.cat((z, c_onehot), dim=1)
-        return self.decoder(zy)
+        return torch.sigmoid(self.decoder(zy))
 
     def forward(self, x, c):
         mu_logvar, y_onehot = self.encode(x, encode_c=True)
@@ -121,25 +120,21 @@ class IFCVAE(VAE):
         tile_network = getattr(others, label_tiler_name)
         discriminator = getattr(discriminators, discriminator_name)
 
-        # total number of classes
-        total_num_classes = sum(self.data_loader.dataset.num_classes(False))
-
         # number of channels
         image_channels = self.num_channels
-        label_channels = total_num_classes
-        # input_channels = image_channels + label_channels
+        label_channels = self.total_num_classes
         decoder_input_channels = self.z_dim + label_channels
 
         # model and optimizer
         self.model = IFCVAEModel(z_encoder=encoder_z(self.z_dim, image_channels, self.image_size),
-                                 label_encoder=encoder_l(total_num_classes, image_channels, self.image_size),
+                                 label_encoder=encoder_l(self.total_num_classes, image_channels, self.image_size),
                                  decoder=decoder(decoder_input_channels, self.num_channels, self.image_size),
                                  tiler=tile_network(label_channels, self.image_size),
                                  num_classes=self.num_classes).to(self.device)
         self.optim_G = optim.Adam(self.model.parameters(), lr=self.lr_G, betas=(self.beta1, self.beta2))
 
         # Auxiliary discriminator on z
-        self.aux_D = discriminator(self.z_dim, num_classes=total_num_classes,
+        self.aux_D = discriminator(self.z_dim, num_classes=self.total_num_classes,
                                    num_layers=self.num_layer_disc,
                                    layer_size=self.size_layer_disc).to(self.device)
         self.optim_aux_D = optim.Adam(self.aux_D.parameters(), lr=self.lr_D, betas=(self.beta1, self.beta2))
@@ -160,15 +155,24 @@ class IFCVAE(VAE):
         if images.dim() == 3:
             images = images.unsqueeze(0)
 
-        mu_logvar, y_onehot = self.model.encode(x=images, encode_c=True)
+        mu_logvar = self.model.encode(x=images, encode_c=False)
         mu, _ = mu_logvar
-        return torch.cat((mu, y_onehot), dim=1)
+        return mu
 
     def decode(self, **kwargs):
         latent = kwargs['latent']
+        labels = kwargs['labels']
+
         if latent.dim() == 1:
             latent = latent.unsqueeze(0)
-        return self.model.decode(z=latent)
+        if labels.dim() == 1:
+            labels = labels.unsqueeze(0)
+
+        # if z contains both latent encoding and the label encoding, ignore the explicit label (condition)
+        if latent.size(1) == self.z_dim + self.total_num_classes:
+            return self.model.decode(z=latent)
+
+        return self.model.decode(z=latent, c=labels)
 
     def train(self):
         while self.iter < self.max_iter:
@@ -182,10 +186,12 @@ class IFCVAE(VAE):
                 label2 = label2.to(self.device)
 
                 # train the label encoder bce(y, y_hat)
-                y_onehot_hat = self.model.encode_label(x=x_true1)
-                label_loss = cross_entropy_multi_label(y_onehot_hat, label1, self.num_classes) * self.w_le
-                accuracies_dict['label_orig'] = class_acc_multi_label(y_onehot_hat, label1, self.num_classes)
-                y_onehot_hat_copy = y_onehot_hat.clone().detach()
+                y_logits_hat = self.model.encode_label(x=x_true1)
+                label_loss = cross_entropy_multi_label(y_logits_hat, label1, self.num_classes) * self.w_le
+                accuracies_dict['label_orig'] = class_acc_multi_label(y_logits_hat, label1, self.num_classes)
+
+                # Apply softmax to create soft one_hot encoding to enable condition traversing
+                y_onehot_hat = y_logits_hat.clone().detach().softmax(dim=1)
 
                 self.optim_G.zero_grad()  # only zeroing the gradients, the rest should be fine
                 label_loss.backward(retain_graph=False)
@@ -193,7 +199,7 @@ class IFCVAE(VAE):
                 losses['label'] = label_loss
 
                 # train the main VAE
-                losses, params = self.vae_base(losses, x_true1, x_true2, y_onehot_hat_copy, label2)
+                losses, params = self.vae_base(losses, x_true1, x_true2, y_onehot_hat, label2)
                 x_recon = params['x_recon']
                 z = params['z']
 
