@@ -120,12 +120,12 @@ class VAE(BaseDisentangler):
         mu = kwargs['mu']
         logvar = kwargs['logvar']
         factorvae_dz_true = kwargs.get('factorvae_dz_true', None)
-
+        bs = self.batch_size
         output_losses = dict()
         output_losses[c.VAE] = input_losses.get(c.VAE, 0)
 
-        output_losses[c.RECONSTRUCTION] = f.binary_cross_entropy(x_recon, x_true, reduction='mean') * self.w_recon
-        output_losses[c.VAE] += output_losses[c.RECONSTRUCTION]
+        output_losses[c.RECON] = f.binary_cross_entropy(x_recon, x_true, reduction='sum') / bs * self.w_recon
+        output_losses[c.VAE] += output_losses[c.RECON]
         output_losses['kld'] = self._kld_loss_fn(mu, logvar)
         output_losses[c.VAE] += output_losses['kld']
 
