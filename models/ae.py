@@ -54,8 +54,8 @@ class AE(BaseDisentangler):
     def loss_fn(self, **kwargs):
         x_recon = kwargs['x_recon']
         x_true = kwargs['x_true']
-
-        recon_loss = f.binary_cross_entropy(x_recon, x_true, reduction='mean') * self.w_recon
+        bs = self.batch_size
+        recon_loss = f.binary_cross_entropy(x_recon, x_true, reduction='sum') / bs * self.w_recon
 
         return recon_loss
 
