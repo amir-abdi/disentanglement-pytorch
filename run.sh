@@ -42,7 +42,10 @@ python main.py \
 --use_wandb=false \
 --w_kld=1 \
 --lr_G=0.0002 \
---max_iter=100000 \
+--max_iter=10000 \
+
+#--ckpt_load=/home/amirabdi/disentanglement-pytorch/checkpoints/last \
+
 
 # Execute the local evaluation
 #echo "----- LOCAL EVALUATION -----"
