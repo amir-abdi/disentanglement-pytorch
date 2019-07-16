@@ -87,7 +87,7 @@ class TestModels(object):
         model = model_cl(args)
         return model
 
-    @pytest.mark.dependency()
+    @pytest.mark.dependency(name='test_train')
     def test_train(self, args):
         model = self.load_model(args)
         model.train()

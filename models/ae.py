@@ -62,7 +62,7 @@ class AE(BaseDisentangler):
     def train(self):
         while self.iter < self.max_iter:
             self.net_mode(train=True)
-            for x_true1, _, _, _ in self.data_loader:
+            for x_true1, _ in self.data_loader:
                 x_true1 = x_true1.to(self.device)
                 x_recon = self.model(x_true1)
 
@@ -85,7 +85,7 @@ class AE(BaseDisentangler):
 
     def test(self):
         self.net_mode(train=False)
-        for x_true1, _, _, _ in self.data_loader:
+        for x_true1, _ in self.data_loader:
             x_true1 = x_true1.to(self.device)
             x_recon = self.model(x_true1)
 

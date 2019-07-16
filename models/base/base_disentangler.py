@@ -52,11 +52,20 @@ class BaseDisentangler(object):
         self.dset_name = args.dset_name
         self.batch_size = args.batch_size
         self.image_size = args.image_size
-        self.data_loader = get_dataloader(args)
-        self.num_classes = self.data_loader.dataset.num_classes()
-        self.total_num_classes = sum(self.data_loader.dataset.num_classes(False))
-        self.class_values = self.data_loader.dataset.class_values()
+        if args.aicrowd_challenge:
+            import common.utils_aicrowd as aicrowd
+            kwargs = {'num_workers': args.num_workers, 'pin_memory': True} if self.device == 'cuda' else {}
+            self.data_loader = aicrowd.get_loader(batch_size=args.batch_size, **kwargs)
+        else:
+            self.data_loader = get_dataloader(args)
+
+            # only used if some supervision was imposed such as in Conditional VAE
+            self.num_classes = self.data_loader.dataset.num_classes()
+            self.total_num_classes = sum(self.data_loader.dataset.num_classes(False))
+            self.class_values = self.data_loader.dataset.class_values()
+
         self.num_channels = self.data_loader.dataset.num_channels()
+        # self.num_channels = self.data_loader.dataset.observation_shape[2]
 
         # Progress bar
         if not args.test:

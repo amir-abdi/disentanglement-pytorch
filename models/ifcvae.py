@@ -177,11 +177,12 @@ class IFCVAE(VAE):
     def train(self):
         while self.iter < self.max_iter:
             self.net_mode(train=True)
-            for x_true1, x_true2, label1, label2 in self.data_loader:
+            for x_true1, label1 in self.data_loader:
                 losses = dict()
                 accuracies_dict = dict()
                 x_true1 = x_true1.to(self.device)
                 label1 = label1.to(self.device, dtype=torch.long)
+                x_true2, label2 = next(iter(self.data_loader))
                 x_true2 = x_true2.to(self.device)
                 label2 = label2.to(self.device)
 
@@ -236,7 +237,7 @@ class IFCVAE(VAE):
 
     def test(self):
         self.net_mode(train=False)
-        for x_true, _, label, _ in self.data_loader:
+        for x_true, label in self.data_loader:
             x_true = x_true.to(self.device)
             label = label.to(self.device)
 

@@ -123,7 +123,7 @@ def get_data_for_visualization(dataset, device):
         return random.randint(0, dataset.__len__() - 1)
 
     sample_idx = {}
-    dset_name = dataset.name()
+    dset_name = dataset.name
     if dset_name.lower() == 'dsprites':
         fixed_idx = [87040, 332800, 578560]  # square ellipse heart
         sample_idx = {'{}_{}'.format(c.FIXED, c.SQUARE): fixed_idx[0],
@@ -156,7 +156,7 @@ def get_data_for_visualization(dataset, device):
 
         labels[key] = None
         if dataset.has_labels():
-            labels[key] = data[2].to(device, dtype=torch.long).unsqueeze(0)
+            labels[key] = data[1].to(device, dtype=torch.long).unsqueeze(0)
 
     return images, labels
 

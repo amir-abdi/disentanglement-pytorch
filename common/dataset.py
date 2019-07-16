@@ -57,6 +57,7 @@ class CustomImageFolder(ImageFolder):
 
         self.label_handler = LabelHandler(labels, label_weights, class_values)
 
+    @property
     def name(self):
         return self._name
 
@@ -76,22 +77,15 @@ class CustomImageFolder(ImageFolder):
         return self._num_channels
 
     def __getitem__(self, index1):
-        index2 = random.choice(self.indices)
-
         path1 = self.imgs[index1][0]
-        path2 = self.imgs[index2][0]
         img1 = self.loader(path1)
-        img2 = self.loader(path2)
         if self.transform is not None:
             img1 = self.transform(img1)
-            img2 = self.transform(img2)
 
         label1 = 0
-        label2 = 0
         if self.label_handler.has_labels():
             label1 = self.label_handler.get_label(index1)
-            label2 = self.label_handler.get_label(index2)
-        return img1, img2, label1, label2
+        return img1, label1
 
 
 class CustomNpzDataset(Dataset):
@@ -106,6 +100,7 @@ class CustomNpzDataset(Dataset):
         self.transform = transform
         self.indices = range(len(self))
 
+    @property
     def name(self):
         return self._name
 
@@ -125,20 +120,14 @@ class CustomNpzDataset(Dataset):
         return self._num_channels
 
     def __getitem__(self, index1):
-        index2 = random.choice(self.indices)
-
         img1 = Image.fromarray(self.data_npz[index1] * 255)
-        img2 = Image.fromarray(self.data_npz[index2] * 255)
         if self.transform is not None:
             img1 = self.transform(img1)
-            img2 = self.transform(img2)
 
         label1 = 0
-        label2 = 0
         if self.label_handler.has_labels():
             label1 = self.label_handler.get_label(index1)
-            label2 = self.label_handler.get_label(index2)
-        return img1, img2, label1, label2
+        return img1, label1
 
     def __len__(self):
         return self.data_npz.shape[0]

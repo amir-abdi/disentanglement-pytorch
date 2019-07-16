@@ -1,0 +1,8 @@
+{
+  "challenge_id": "aicrowd-neurips-2019-disentanglement-challenge",
+  "grader_id": "aicrowd-neurips-2019-disentanglement-challenge",
+  "authors": ["amirabdi"],
+  "description": "Pytorch implementation of disentanglement algorithms",
+  "license": "MIT",
+  "gpu": true
+}
