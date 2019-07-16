@@ -43,6 +43,8 @@ python main.py \
 --w_kld=1 \
 --lr_G=0.0002 \
 --max_iter=10000 \
+--all_iter=100000 \
+
 
 #--ckpt_load=/home/amirabdi/disentanglement-pytorch/checkpoints/last \
 

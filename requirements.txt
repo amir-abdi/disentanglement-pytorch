@@ -1,3 +1,4 @@
+git+git://github.com/google-research/disentanglement_lib
 torch
 torchvision
 numpy
@@ -8,3 +9,13 @@ wandb
 pytest
 tqdm
 pytest-dependency
+crowdai-api==0.1.21
+disentanglement-lib==1.0
+gin-config==0.1.4
+tensorflow-gpu==1.13.1
+tensorboard==1.13.1
+tensorflow-estimator==1.13.0
+tensorflow-gpu==1.13.1
+tensorflow-hub==0.4.0
+tensorflow-probability==0.6.0
+
