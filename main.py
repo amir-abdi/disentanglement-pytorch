@@ -16,11 +16,13 @@ import numpy as np
 import torch
 import os
 import logging
-from imp import reload
+from importlib import reload
 
 from common.utils import str2bool, StyleFormatter, update_args
 from common import constants as c
 import models
+import aicrowd_helpers
+from common import utils_aicrowd as pyu
 
 torch.backends.cudnn.enabled = True
 torch.backends.cudnn.benchmark = True
@@ -37,14 +39,31 @@ def main(args):
     if args.ckpt_load:
         model.load_checkpoint(args.ckpt_load, load_iternum=args.ckpt_load_iternum)
 
+    if args.aicrowd_challenge:
+        aicrowd_helpers.execution_start()
+        aicrowd_helpers.register_progress(0.)
+
     if not args.test:
         model.train()
     else:
         model.test()
 
+    if args.aicrowd_challenge:
+        aicrowd_helpers.register_progress(0.90)
+        # Export the representation extractor
+        path_to_saved = pyu.export_model(pyu.RepresentationExtractor(model.model.encoder, 'mean'),
+                                         input_shape=(1, 3, 64, 64))
+        logging.info('A copy of the model saved in {}'.format(path_to_saved))
+        # Done!
+        aicrowd_helpers.register_progress(1.0)
+        aicrowd_helpers.submit()
+
 
 def get_args(sys_args):
     parser = argparse.ArgumentParser(description='disentanglement-pytorch')
+
+    # NeurIPS2019 AICrowd Challenge
+    parser.add_argument('--aicrowd_challenge', default=False, type=str2bool, help='Run is an AICrowd submission')
 
     # name
     parser.add_argument('--alg', type=str, help='the disentanglement algorithm', choices=c.ALGS)

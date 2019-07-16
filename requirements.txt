@@ -7,3 +7,4 @@ Pillow
 wandb
 pytest
 tqdm
+pytest-dependency
