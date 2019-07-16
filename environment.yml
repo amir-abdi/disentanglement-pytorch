@@ -63,6 +63,7 @@ dependencies:
   - zstd=1.3.7
   - pip:
     - absl-py==0.7.1
+    - aicrowd-repo2docker==0.9.1
     - argh==0.26.2
     - argparse==1.4.0
     - astor==0.7.1
@@ -74,10 +75,13 @@ dependencies:
     - click==7.0
     - crowdai-api==0.1.21
     - cycler==0.10.0
+    - decorator==4.4.0
     - dill==0.3.0
     - disentanglement-lib==1.0
+    - docker==4.0.2
     - docker-pycreds==0.4.0
     - enum34==1.1.6
+    - escapism==1.0.0
     - future==0.17.1
     - gast==0.2.2
     - gin-config==0.1.4
@@ -90,11 +94,14 @@ dependencies:
     - idna==2.8
     - imageio==2.5.0
     - importlib-metadata==0.18
+    - ipython-genutils==0.2.0
+    - jinja2==2.10.1
     - keras-applications==1.0.7
     - keras-preprocessing==1.0.9
     - kiwisolver==1.1.0
     - llvmlite==0.29.0
     - markdown==3.1
+    - markupsafe==1.1.1
     - matplotlib==3.0.3
     - mock==3.0.4
     - more-itertools==7.1.0
@@ -107,19 +114,22 @@ dependencies:
     - pluggy==0.12.0
     - promise==2.2.1
     - protobuf==3.7.1
-    - psutil==5.6.3
     - py==1.8.0
     - pyparsing==2.4.0
     - pytest==5.0.1
+    - pytest-dependency==0.4.0
     - python-dateutil==2.8.0
     - python-gitlab==1.9.0
+    - python-json-logger==0.1.11
     - pytz==2019.1
     - pyyaml==5.1.1
     - redis==3.2.1
     - requests==2.22.0
+    - ruamel-yaml==0.15.99
     - rx==1.6.1
     - scikit-learn==0.20.3
     - scipy==1.2.1
+    - semver==2.8.1
     - sentry-sdk==0.10.2
     - shortuuid==0.5.0
     - simplejson==3.16.0
@@ -131,11 +141,14 @@ dependencies:
     - tensorflow-hub==0.4.0
     - tensorflow-probability==0.6.0
     - termcolor==1.1.0
+    - toml==0.10.0
     - tqdm==4.32.2
+    - traitlets==4.3.2
     - urllib3==1.25.3
     - wandb==0.8.5
     - watchdog==0.9.0
     - wcwidth==0.1.7
+    - websocket-client==0.56.0
     - werkzeug==0.15.2
     - zipp==0.5.2
 prefix: /home/amirabdi/miniconda3/envs/neurips_disent
