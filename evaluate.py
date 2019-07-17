@@ -173,7 +173,7 @@ def _evaluate_with_tensorflow(module_path, evaluation_fn, dataset, random_seed):
 
 
 def _evaluate_with_pytorch(module_path, evalulation_fn, dataset, random_seed):
-    import utils_pytorch
+    import common.utils_aicrowd as utils_pytorch
     # Load model and make a representor
     model = utils_pytorch.import_model(path=module_path)
     _representation_function = utils_pytorch.make_representor(model)
