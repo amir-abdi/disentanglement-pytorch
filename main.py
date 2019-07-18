@@ -110,16 +110,24 @@ def get_args(sys_args):
     parser.add_argument('--w_recon', default=1.0, type=float, help='reconstruction loss weight')
     parser.add_argument('--w_kld', default=1.0, type=float, help='main KLD loss weight (e.g. in BetaVAE)')
 
-    # Loss weights and parameters [CapacityVAE]
+    # Loss weights and parameters for [CapacityVAE]
     parser.add_argument('--max_c', default=25.0, type=float, help='maximum value of control parameter in CapacityVAE')
     parser.add_argument('--iterations_c', default=1000000, type=int, help='how many iterations to reach max_c')
 
-    # Loss weights and parameters [FactorVAE]
+    # Loss weights and parameters for [FactorVAE]
     parser.add_argument('--w_tc', default=1.0, type=float, help='total correlation loss weight (e.g. in BetaVAE)')
 
-    # Loss weights and parameters [IFCVAE]
+    # Loss weights and parameters for [IFCVAE]
     parser.add_argument('--w_le', default=1.0, type=float, help='label encoding loss weight (e.g. in IFCVAE)')
     parser.add_argument('--w_aux', default=1.0, type=float, help='auxiliary discriminator loss weight (e.g. in IFCVAE)')
+
+    # Hyperparameters for [DIP-VAE]
+    parser.add_argument('--lambda_d_factor', default=10.0, type=float,
+                        help='Hyperparameter for diagonal values of covariance matrix')
+    parser.add_argument('--lambda_od', default=1.0, type=float,
+                        help='Hyperparameter for off diagonal values of covariance matrix.')
+    parser.add_argument('--dip_type', default=1.0, type=str, choices=['i', 'ii'],
+                        help='Type of DIP-VAE.')
 
     # Dataset
     parser.add_argument('--dset_dir', default='data', type=str, help='main dataset directory')
@@ -146,7 +154,7 @@ def get_args(sys_args):
     parser.add_argument('--ckpt_dir', default='checkpoints', type=str, help='checkpoint directory')
     parser.add_argument('--ckpt_load', default=None, type=str, help='checkpoint name to load')
     parser.add_argument('--ckpt_load_iternum', default=True, type=str2bool, help='start global iteration from ckpt')
-    parser.add_argument('--ckpt_save_iter', default=2000, type=int, help='checkpoint save iter')
+    parser.add_argument('--ckpt_save_iter', default=1000, type=int, help='checkpoint save iter')
 
     # Iterations
     parser.add_argument('--float_iter', default=100, type=int, help='number of iterations to aggregate float logs')
@@ -163,7 +171,7 @@ def get_args(sys_args):
         args.traverse_iter = args.all_iter
         args.print_iter = args.all_iter
 
-    assert args.image_size == 64, 'for now, models are hard coded to support only image size of 64x63'
+    assert args.image_size == 64, 'for now, models are hard coded to support only image size of 64x64'
 
     args.num_labels = 0
     if args.include_labels is not None:

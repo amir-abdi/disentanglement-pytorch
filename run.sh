@@ -26,7 +26,7 @@ fi
 # 	as pytorch cannot be installed with just `pip`
 #
 export PYTHONPATH=${PYTHONPATH}:${NDC_ROOT}
-python main.py \
+python ${NDC_ROOT}/main.py \
 --aicrowd_challenge=true \
 --name=$NAME \
 --alg=VAE \
@@ -42,7 +42,7 @@ python main.py \
 --use_wandb=false \
 --w_kld=1 \
 --lr_G=0.0002 \
---max_iter=10000 \
+--max_iter=10 \
 --all_iter=100000 \
 
 

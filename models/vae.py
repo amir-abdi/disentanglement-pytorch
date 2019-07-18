@@ -35,6 +35,10 @@ class VAE(BaseDisentangler):
     Auto-Encoding Variational Bayes
     by Kingma and Welling
     https://arxiv.org/pdf/1312.6114.pdf
+    +
+    Disentangling by Factorising
+    by Kim and Mnih
+    https://arxiv.org/pdf/1802.05983.pdf
     """
 
     def __init__(self, args):
@@ -87,6 +91,12 @@ class VAE(BaseDisentangler):
 
             self.net_dict.update({'PermD': self.PermD})
             self.optim_dict = {'optim_PermD': self.optim_PermD}
+
+        # DIP-VAE
+        if c.DIPVAE in self.vae_type:
+            self.lambda_od = args.lambda_od
+            self.lambda_d_factor = args.lambda_d_factor
+            self.dip_type = args.dip_type
 
     def encode_deterministic(self, **kwargs):
         images = kwargs['images']
@@ -157,6 +167,17 @@ class VAE(BaseDisentangler):
             tc_loss_discriminator.backward(retain_graph=True)
             self.optim_PermD.step()
             losses['discriminator_tc'] = tc_loss_discriminator
+
+        if c.DIPVAE in self.vae_type:
+            from common.ops import covariance_z_mean
+            cov_z_mean = covariance_z_mean(mu)
+            lambda_d = self.lambda_d_factor * self.lambda_od
+
+            if self.dip_type == "i":
+                # mu = z_mean is [batch_size, num_latent]
+                # Compute cov_p(x) [mu(x)] = E[mu*mu^T] - E[mu]E[mu]^T]
+                cov_dip_regularizer = regularize_diag_off_diag_dip(cov_z_mean, self.lambda_od, lambda_d)
+
 
         losses.update(self.loss_fn(losses, **loss_fn_args))
 
