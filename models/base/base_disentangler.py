@@ -114,9 +114,9 @@ class BaseDisentangler(object):
         if self.iter % self.print_iter == 0:
             msg = '[{}]  '.format(self.iter)
             for key, value in kwargs.get(c.LOSS, dict()).items():
-                msg += key + '{}_={:.3f}  '.format(c.LOSS, value)
+                msg += '{}_{}={:.3f}  '.format(c.LOSS, key, value)
             for key, value in kwargs.get(c.ACCURACY, dict()).items():
-                msg += key + '{}_={:.3f}  '.format(c.ACCURACY, value)
+                msg += '{}_{}={:.3f}  '.format(c.ACCURACY, key, value)
             self.pbar.write(msg)
 
         if self.iter % self.float_iter == 0:

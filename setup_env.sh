@@ -3,7 +3,9 @@
 # Set up training environment.
 # Feel free to change these as required:
 export AICROWD_EVALUATION_NAME=PytorchEvalVAE
-export AICROWD_DATASET_NAME=cars3d
+export AICROWD_DATASET_NAME=mpi3d_toy
+#mpi3d_toy
+#cars3d
 
 # Change these only if you know what you're doing:
 # Check if the root is set; if not use the location of this script as root

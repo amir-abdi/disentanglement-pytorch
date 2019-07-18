@@ -130,9 +130,9 @@ class VAE(BaseDisentangler):
         output_losses[c.VAE] += output_losses['kld']
 
         if c.FACTORVAE in self.vae_type:
-            output_losses['vae_total_correlation'] = \
+            output_losses['vae_tc'] = \
                 (factorvae_dz_true[:, 0] - factorvae_dz_true[:, 1]).mean() * self.w_tc
-            output_losses[c.VAE] += output_losses['vae_total_correlation']
+            output_losses[c.VAE] += output_losses['vae_tc']
 
         return output_losses
 
@@ -156,7 +156,7 @@ class VAE(BaseDisentangler):
             self.optim_PermD.zero_grad()
             tc_loss_discriminator.backward(retain_graph=True)
             self.optim_PermD.step()
-            losses['tc_loss_discriminator'] = tc_loss_discriminator
+            losses['discriminator_tc'] = tc_loss_discriminator
 
         losses.update(self.loss_fn(losses, **loss_fn_args))
 
