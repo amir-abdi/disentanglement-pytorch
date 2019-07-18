@@ -224,7 +224,7 @@ class DLIBDataset(Dataset):
         assert item < self.iterator_len
         output = self.dataset.sample_observations(1, random_state=self.random_state)[0]
         # Convert output to CHW from HWC
-        return torch.from_numpy(np.moveaxis(output, 2, 0)), 0
+        return torch.from_numpy(np.moveaxis(output, 2, 0), ).type(torch.FloatTensor), 0
 
 
 def get_dataset(name=None, seed=0, iterator_len=50000):
