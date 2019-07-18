@@ -130,3 +130,55 @@ def class_acc_multi_label(pred, target, num_classes):
         acc += (sub_pred_class == sub_target).sum().item() / batch_size
         start_idx = end_idx
     return acc / num_labels
+
+
+def covariance_z_mean(z_mean):
+    """Computes the covariance of z_mean.
+    Borrowed from https://github.com/google-research/disentanglement_lib/
+    Uses cov(z_mean) = E[z_mean*z_mean^T] - E[z_mean]E[z_mean]^T.
+    Args:
+      z_mean: Encoder mean, tensor of size [batch_size, num_latent].
+    Returns:
+      cov_z_mean: Covariance of encoder mean, tensor of size [num_latent, num_latent].
+    """
+    expectation_z_mean_z_mean_t = torch.mean(z_mean.unsqueeze(2) * z_mean.unsqueeze(1), dim=0)
+    expectation_z_mean = torch.mean(z_mean, dim=0)
+    cov_z_mean = expectation_z_mean_z_mean_t - \
+                 (expectation_z_mean.unsqueeze(1) * expectation_z_mean.unsqueeze(0))
+    return cov_z_mean
+
+
+def diag_part(tensor):
+    """
+    return the diagonal elements of batched 2D square matrices
+    :param tensor: batched 2D square matrix
+    :return: diagonal elements of the matrix
+    """
+    assert len(tensor.shape) == 3, 'This is implemented for 2D matrices'
+    assert tensor.shape[1] == tensor.shape[2], 'This only handles square matrices'
+    return tensor[:, range(len(tensor)), range(len(tensor))]
+
+
+def regularize_diag_off_diag_dip(covariance_matrix, lambda_od, lambda_d):
+    """Compute on and off diagonal regularizers for DIP-VAE models.
+    Penalize deviations of covariance_matrix from the identity matrix. Uses
+    different weights for the deviations of the diagonal and off diagonal entries.
+    Borrowed from https://github.com/google-research/disentanglement_lib/
+
+    Args:
+      covariance_matrix: Tensor of size [num_latent, num_latent] to regularize.
+      lambda_od: Weight of penalty for off diagonal elements.
+      lambda_d: Weight of penalty for diagonal elements.
+    Returns:
+      dip_regularizer: Regularized deviation from diagonal of covariance_matrix.
+    """
+    covariance_matrix_diagonal = diag_part(covariance_matrix)
+
+    # why not just set to zero?
+    covariance_matrix_off_diagonal = covariance_matrix - torch.diag(covariance_matrix_diagonal)
+
+    dip_regularizer = lambda_od * torch.sum(covariance_matrix_off_diagonal ** 2) + \
+                      lambda_d * torch.sum((covariance_matrix_diagonal - 1) ** 2)
+
+    return dip_regularizer
+

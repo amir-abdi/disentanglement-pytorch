@@ -17,6 +17,7 @@ class BaseDisentangler(object):
 
         # Cuda
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        logging.info('Device: {}'.format(self.device))
 
         # Misc
         self.name = args.name

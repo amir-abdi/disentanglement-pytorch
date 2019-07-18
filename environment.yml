@@ -1,4 +1,4 @@
-name: disent_worked
+name: disentanglement_challenge
 channels:
   - pytorch
   - anaconda
@@ -106,5 +106,5 @@ dependencies:
     - tqdm==4.32.2
     - urllib3==1.25.3
     - werkzeug==0.15.2
-prefix: /home/amirabdi/miniconda3/envs/disent_worked
+prefix: /home/amirabdi/miniconda3/envs/disentanglement_challenge
 

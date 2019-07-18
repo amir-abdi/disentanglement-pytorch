@@ -16,17 +16,18 @@ TEMP = 'tmp'
 GIF = 'gif'
 JPG = 'jpg'
 FACTORVAE = 'FactorVAE'
+DIPVAE = 'DIPVAE'
 VAE = 'vae'
 
 # Algorithms
 ALGS = ('AE', 'VAE', 'BetaVAE', 'CVAE', 'IFCVAE')
 VAE_LOSS = ('Basic', 'AnnealedCapacity')
-VAE_TYPE = ('Vanilla', FACTORVAE,)
+VAE_TYPE = ('Vanilla', FACTORVAE, DIPVAE)
 DATASETS = ('celebA', 'dsprites')
 
 # Architectures
 DISCRIMINATORS = ('SimpleDiscriminator', 'SimpleDiscriminatorConv64')
 TILERS = ('MultiTo2DChannel',)
 DECODERS = ('SimpleDecoder64',)
-ENCODERS = ('SimpleEncoder64', 'SimpleGaussianEncoder64',)
+ENCODERS = ('SimpleEncoder64', 'SimpleGaussianEncoder64', 'PadlessEncoder64', 'PadlessGaussianEncoder64')
 
