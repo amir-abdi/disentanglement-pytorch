@@ -2,8 +2,8 @@
 
 # Set up training environment.
 # Feel free to change these as required:
-export AICROWD_EVALUATION_NAME=PytorchEvalVAE
 export AICROWD_DATASET_NAME=mpi3d_toy
+export AICROWD_EVALUATION_NAME="PytorchVAE"$AICROWD_DATASET_NAME
 #mpi3d_toy
 #cars3d
 

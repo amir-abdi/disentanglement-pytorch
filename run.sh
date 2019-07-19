@@ -7,7 +7,7 @@ export NDC_ROOT="$( cd "$(dirname "$0")" ; pwd -P )"
 if [ ! -n "${AICROWD_IS_GRADING+set}" ]; then
   # AICROWD_IS_GRADING is not set, so we're not running on the evaluator and it's safe to
   # source the train_environ.sh
-  source ${NDC_ROOT}/setup_env.sh
+  source ${NDC_ROOT}/train_environ.sh
 else
   # We're on the evaluator.
   # Add root to python path, since this would usually be done in train_environ.sh
@@ -51,6 +51,6 @@ python ${NDC_ROOT}/main.py \
 
 # Execute the local evaluation
 #echo "----- LOCAL EVALUATION -----"
-if [ ! -n "${AICROWD_IS_GRADING+set}" ]; then
-    python ${NDC_ROOT}/local_evaluation.py
-fi
+#if [ ! -n "${AICROWD_IS_GRADING+set}" ]; then
+#    python ${NDC_ROOT}/local_evaluation.py
+#fi

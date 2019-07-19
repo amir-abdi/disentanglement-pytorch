@@ -59,7 +59,7 @@ ROOT = os.getenv("NDC_ROOT", ".")
 if not MONKEY:
     print("Evaluating Experiment '{experiment_name}' from {base_path}.")
 else:
-    import common.utils_aicrowd as utils_pytorch
+    import utils_pytorch
     exp_config = utils_pytorch.get_config()
     print("Evaluating Experiment '{exp_config.experiment_name}' "
           "from {exp_config.base_path} on dataset {exp_config.dataset_name}")
