@@ -28,6 +28,7 @@ DATASETS = ('celebA', 'dsprites')
 # Architectures
 DISCRIMINATORS = ('SimpleDiscriminator', 'SimpleDiscriminatorConv64')
 TILERS = ('MultiTo2DChannel',)
-DECODERS = ('SimpleConv64', 'ShallowLinear')
-ENCODERS = ('SimpleConv64', 'SimpleGaussianConv64', 'PadlessConv64', 'PadlessGaussianConv64', 'ShallowGaussianLinear')
+DECODERS = ('SimpleConv64', 'ShallowLinear', 'DeepLinear')
+ENCODERS = ('SimpleConv64', 'SimpleGaussianConv64', 'PadlessConv64', 'PadlessGaussianConv64',
+            'ShallowGaussianLinear', 'DeepGaussianLinear')
 

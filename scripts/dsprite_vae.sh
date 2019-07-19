@@ -8,13 +8,13 @@ echo "name=$NAME"
 
 python3 main.py \
 --name=$NAME \
---alg=VAE \
+--alg=BetaVAE \
 --vae_loss=Basic \
 --dset_dir=/home/amirabdi/data/Datasets/ \
 --dset_name=dsprites \
 --traverse_z=true \
---encoder=SimpleGaussianEncoder64 \
---decoder=SimpleDecoder64 \
+--encoder=SimpleGaussianConv64 \
+--decoder=SimpleConv64 \
 --z_dim=8 \
 --w_kld=1 \
 --ckpt_load=/home/amirabdi/disentanglement-pytorch/checkpoints/dsprite_vae/last \

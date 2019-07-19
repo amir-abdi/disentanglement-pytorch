@@ -169,15 +169,20 @@ class VAE(BaseDisentangler):
             losses['discriminator_tc'] = tc_loss_discriminator
 
         if c.DIPVAE in self.vae_type:
-            from common.ops import covariance_z_mean
+            from common.ops import covariance_z_mean, regularize_diag_off_diag_dip
             cov_z_mean = covariance_z_mean(mu)
             lambda_d = self.lambda_d_factor * self.lambda_od
 
             if self.dip_type == "i":
-                # mu = z_mean is [batch_size, num_latent]
-                # Compute cov_p(x) [mu(x)] = E[mu*mu^T] - E[mu]E[mu]^T]
                 cov_dip_regularizer = regularize_diag_off_diag_dip(cov_z_mean, self.lambda_od, lambda_d)
-
+            elif self.dip_type == "ii":
+                cov_enc = torch.diag(torch.exp(logvar))
+                expectation_cov_enc = torch.mean(cov_enc, dim=0)
+                cov_z = expectation_cov_enc + cov_z_mean
+                cov_dip_regularizer = regularize_diag_off_diag_dip(cov_z, self.lambda_od, lambda_d)
+            else:
+                raise NotImplementedError("DIP variant not supported.")
+            losses['dip'] = cov_dip_regularizer
 
         losses.update(self.loss_fn(losses, **loss_fn_args))
 
@@ -210,11 +215,12 @@ class VAE(BaseDisentangler):
                               loss=losses,
                               )
                 self.iter += 1
-                self.pbar.update(1)
 
                 if self.aicrowd_challenge and self.iter % 100 == 0:
                     import aicrowd_helpers
                     aicrowd_helpers.register_progress(self.iter / self.max_iter)
+                else:
+                    self.pbar.update(1)
 
                 if self.iter >= self.max_iter:
                     break

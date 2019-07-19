@@ -14,8 +14,8 @@ python3 main.py \
 --dset_name=dsprites \
 --traverse_z=true \
 --traverse_c=true \
---encoder SimpleGaussianEncoder64 SimpleEncoder64 \
---decoder=SimpleDecoder64 \
+--encoder SimpleGaussianConv64 SimpleEncoder64 \
+--decoder=SimpleConv64 \
 --discriminator=SimpleDiscriminator \
 --label_tiler=MultiTo2DChannel \
 --z_dim=8 \
