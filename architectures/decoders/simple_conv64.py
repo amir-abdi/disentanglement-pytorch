@@ -5,7 +5,7 @@ from common.ops import Unsqueeze3D
 from common.utils import init_layers
 
 
-class SimpleDecoder64(BaseImageEncoder):
+class SimpleConv64(BaseImageEncoder):
     def __init__(self, latent_dim, num_channels, image_size):
         super().__init__(latent_dim, num_channels, image_size)
         assert image_size == 64, 'This model only works with image size 64x64.'

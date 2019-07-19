@@ -49,7 +49,7 @@ def main(args):
         model.test()
 
     if args.aicrowd_challenge:
-        aicrowd_helpers.register_progress(0.90)
+        # aicrowd_helpers.register_progress(0.90)
         # Export the representation extractor
         path_to_saved = pyu.export_model(pyu.RepresentationExtractor(model.model.encoder, 'mean'),
                                          input_shape=(1, 3, 64, 64))

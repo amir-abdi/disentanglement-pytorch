@@ -198,13 +198,21 @@ class StyleFormatter(logging.Formatter):
         return logging.Formatter.format(self, record)
 
 
+def _init_layer(m):
+    if isinstance(m, torch.nn.Conv2d) or isinstance(m, torch.nn.ConvTranspose2d):
+        init.xavier_normal_(m.weight.data)
+    if isinstance(m, torch.nn.Linear):
+        init.kaiming_normal_(m.weight.data)
+
+
 def init_layers(modules):
     for block in modules:
-        for m in modules[block]:
-            if isinstance(m, torch.nn.Conv2d) or isinstance(m, torch.nn.ConvTranspose2d):
-                init.xavier_normal_(m.weight.data)
-            if isinstance(m, torch.nn.Linear):
-                init.kaiming_normal_(m.weight.data)
+        from collections.abc import Iterable
+        if isinstance(modules[block], Iterable):
+            for m in modules[block]:
+                _init_layer(m)
+        else:
+            _init_layer(modules[block])
 
 
 @static_var("Ys", dict())
