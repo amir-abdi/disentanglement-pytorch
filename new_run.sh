@@ -18,25 +18,38 @@ fi
 # add them to your PYTHONPATH:
 #export PYTHONPATH=${PYTHONPATH}:path/to/your/dependency
 
-# Comment and uncomment as required...
-# Tensorflow:
-#export PYTHONPATH=${PYTHONPATH}:${NDC_ROOT}/tensorflowDISENTANGLEMENT_LIB_DATA
-#python ${NDC_ROOT}/tensorflow/train_tensorflow.py
-
 # Pytorch:
 # 
-# Note: In case of Pytorch, you will have to lexport your software runtime via
+# Note: In case of Pytorch, you will have to export your software runtime via 
 #       Anaconda (After installing pytorch), as shown here : 
 #		https://github.com/AIcrowd/neurips2019_disentanglement_challenge_starter_kit#how-do-i-specify-my-software-runtime-
 # 	as pytorch cannot be installed with just `pip`
 #
-export PYTHONPATH=${PYTHONPATH}:${NDC_ROOT}/pytorch
-python ${NDC_ROOT}/pytorch/train_pytorch.py --epochs 10
+export PYTHONPATH=${PYTHONPATH}:${NDC_ROOT}
+python ${NDC_ROOT}/main.py \
+--aicrowd_challenge=true \
+--name=$NAME \
+--alg=VAE \
+--vae_loss=Basic \
+--vae_type=FactorVAE \
+--dset_dir=/home/amirabdi/data/Datasets/ \
+--dset_name=dsprites \
+--encoder=PadlessGaussianConv64 \
+--decoder=SimpleConv64 \
+--discriminator=SimpleDiscriminator \
+--z_dim=10 \
+--use_wandb=false \
+--w_kld=1 \
+--lr_G=0.0002 \
+--max_iter=100 \
+--all_iter=100000 \
 
-# Numpy:
-#export PYTHONPATH=${PYTHONPATH}:${NDC_ROOT}/numpy
-#python ${NDC_ROOT}/numpy/train_numpy.py
+
+#--ckpt_load=/home/amirabdi/disentanglement-pytorch/checkpoints/last \
+
 
 # Execute the local evaluation
 #echo "----- LOCAL EVALUATION -----"
-#python ${NDC_ROOT}/local_evaluation.py
+#if [ ! -n "${AICROWD_IS_GRADING+set}" ]; then
+#    python ${NDC_ROOT}/local_evaluation.py
+#fi
