@@ -11,8 +11,8 @@ python3 main.py \
 --alg=AE \
 --dset_dir=$DATASETS \
 --dset_name=celebA \
---encoder=SimpleEncoder64 \
---decoder=SimpleDecoder64 \
+--encoder=SimpleConv64 \
+--decoder=SimpleConv64 \
 --z_dim=32 \
 --use_wandb=true \
 --ckpt_load=./saved_models/dsprite_ae/last

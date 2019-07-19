@@ -13,8 +13,8 @@ python3 main.py \
 --dset_dir=/home/amirabdi/data/Datasets/ \
 --dset_name=celebA \
 --traverse_z=true \
---encoder=SimpleGaussianEncoder64 \
---decoder=SimpleDecoder64 \
+--encoder=SimpleGaussianConv64 \
+--decoder=SimpleConv64 \
 --z_dim=8 \
 --use_wandb=false \
 --w_recon=10000 \

@@ -126,11 +126,12 @@ def get_args(sys_args):
                         help='Hyperparameter for diagonal values of covariance matrix')
     parser.add_argument('--lambda_od', default=1.0, type=float,
                         help='Hyperparameter for off diagonal values of covariance matrix.')
-    parser.add_argument('--dip_type', default=1.0, type=str, choices=['i', 'ii'],
+    parser.add_argument('--dip_type', default='i', type=str, choices=['i', 'ii'],
                         help='Type of DIP-VAE.')
 
     # Dataset
-    parser.add_argument('--dset_dir', default='data', type=str, help='main dataset directory')
+    parser.add_argument('--dset_dir', default=os.getenv('DISENTANGLEMENT_LIB_DATA', './data'),
+                        type=str, help='main dataset directory')
     parser.add_argument('--dset_name', default=None, type=str, help='dataset name')
     parser.add_argument('--image_size', default=64, type=int, help='width and height of image')
     parser.add_argument('--num_workers', default=2, type=int, help='number of workers for the data loader')

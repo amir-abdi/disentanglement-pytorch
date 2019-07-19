@@ -10,18 +10,18 @@ python3 main.py \
 --name=$NAME \
 --alg=BetaVAE \
 --vae_loss=Basic \
---vae_type=FactorVAE \
+--vae_type=DIPVAE \
+--dip_type=i \
 --dset_dir=/home/amirabdi/data/Datasets/ \
 --dset_name=dsprites \
 --traverse_z=true \
 --encoder=SimpleGaussianConv64 \
 --decoder=SimpleConv64 \
 --discriminator=SimpleDiscriminator \
---z_dim=8 \
---use_wandb=true \
+--z_dim=20 \
+--use_wandb=True \
 --w_kld=1 \
 --lr_G=0.0002 \
---ckpt_load=/home/amirabdi/disentanglement-pytorch/checkpoints/dsprite_vae_factor/last \
 
 
 

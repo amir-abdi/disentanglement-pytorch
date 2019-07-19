@@ -154,9 +154,9 @@ def diag_part(tensor):
     :param tensor: batched 2D square matrix
     :return: diagonal elements of the matrix
     """
-    assert len(tensor.shape) == 3, 'This is implemented for 2D matrices'
-    assert tensor.shape[1] == tensor.shape[2], 'This only handles square matrices'
-    return tensor[:, range(len(tensor)), range(len(tensor))]
+    assert len(tensor.shape) == 2, 'This is implemented for 2D matrices. Input shape is {}'.format(tensor.shape)
+    assert tensor.shape[0] == tensor.shape[1], 'This only handles square matrices'
+    return tensor[range(len(tensor)), range(len(tensor))]
 
 
 def regularize_diag_off_diag_dip(covariance_matrix, lambda_od, lambda_d):
@@ -173,8 +173,7 @@ def regularize_diag_off_diag_dip(covariance_matrix, lambda_od, lambda_d):
       dip_regularizer: Regularized deviation from diagonal of covariance_matrix.
     """
     covariance_matrix_diagonal = diag_part(covariance_matrix)
-
-    # why not just set to zero?
+    # we can set diagonal to zero too... problem with the gradient?
     covariance_matrix_off_diagonal = covariance_matrix - torch.diag(covariance_matrix_diagonal)
 
     dip_regularizer = lambda_od * torch.sum(covariance_matrix_off_diagonal ** 2) + \
