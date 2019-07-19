@@ -11,14 +11,12 @@ from torch.utils.data.dataset import Dataset
 from torch.utils.data.dataloader import DataLoader
 
 import os
-
 if 'DISENTANGLEMENT_LIB_DATA' not in os.environ:
     os.environ.update({'DISENTANGLEMENT_LIB_DATA': os.path.join(os.path.dirname(__file__),
                                                                 'scratch',
                                                                 'dataset')})
 # noinspection PyUnresolvedReferences
 from disentanglement_lib.data.ground_truth.named_data import get_named_ground_truth_data
-
 # --------------------------
 
 

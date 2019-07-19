@@ -22,7 +22,7 @@ from common.utils import str2bool, StyleFormatter, update_args
 from common import constants as c
 import models
 import aicrowd_helpers
-from common import utils_aicrowd as pyu
+import utils_pytorch as pyu
 
 torch.backends.cudnn.enabled = True
 torch.backends.cudnn.benchmark = True
