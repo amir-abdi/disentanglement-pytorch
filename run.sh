@@ -34,15 +34,14 @@ python ${NDC_ROOT}/main.py \
 --vae_type=FactorVAE \
 --dset_dir=/home/amirabdi/data/Datasets/ \
 --dset_name=dsprites \
---traverse_z=true \
---encoder=SimpleGaussianEncoder64 \
---decoder=SimpleDecoder64 \
+--encoder=PadlessGaussianConv64 \
+--decoder=SimpleConv64 \
 --discriminator=SimpleDiscriminator \
 --z_dim=10 \
 --use_wandb=false \
 --w_kld=1 \
 --lr_G=0.0002 \
---max_iter=10 \
+--max_iter=100 \
 --all_iter=100000 \
 
 

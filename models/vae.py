@@ -212,6 +212,13 @@ class VAE(BaseDisentangler):
                 self.iter += 1
                 self.pbar.update(1)
 
+                if self.aicrowd_challenge:
+                    import aicrowd_helpers
+                    aicrowd_helpers.register_progress(self.iter / self.max_iter)
+
+                if self.iter >= self.max_iter:
+                    break
+
         logging.info("-------Training Finished----------")
         self.pbar.close()
 

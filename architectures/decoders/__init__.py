@@ -1,1 +1,2 @@
-from .simple_decoder_conv64 import SimpleDecoder64
+from .simple_conv64 import SimpleConv64
+from .shallow_linear import ShallowLinear
