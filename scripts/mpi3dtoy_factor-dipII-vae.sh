@@ -11,17 +11,18 @@ python3 main.py \
 --name=$NAME \
 --alg=VAE \
 --vae_loss=Basic \
---vae_type=DIPVAE FactorVAE\
+--vae_type DIPVAE FactorVAE \
 --dip_type=ii \
 --encoder=PadlessGaussianConv64 \
 --decoder=SimpleConv64 \
 --discriminator=SimpleDiscriminator \
 --traverse_z=true \
 --z_dim=20 \
---use_wandb=true \
+--use_wandb=false \
 --w_kld=1 \
 --lr_G=0.02 \
---max_iter=10000 \
+--max_iter=10 \
+--all_iter=1000000 \
 
 #--ckpt_load=/home/amirabdi/disentanglement-pytorch/checkpoints/mpi3dtoy_dipII-vae/last \
 
@@ -30,4 +31,5 @@ python3 main.py \
 
 
 # set all_iter > max_iter
+#wandb false
 
