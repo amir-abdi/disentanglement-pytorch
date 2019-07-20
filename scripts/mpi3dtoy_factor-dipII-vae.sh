@@ -21,7 +21,7 @@ python3 main.py \
 --use_wandb=false \
 --w_kld=1 \
 --lr_G=0.02 \
---max_iter=10 \
+--max_iter=10000 \
 --all_iter=1000000 \
 
 #--ckpt_load=/home/amirabdi/disentanglement-pytorch/checkpoints/mpi3dtoy_dipII-vae/last \
