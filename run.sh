@@ -32,7 +32,6 @@ python ${NDC_ROOT}/main.py \
 --alg=VAE \
 --vae_loss=Basic \
 --vae_type=FactorVAE \
---dset_name=dsprites \
 --encoder=PadlessGaussianConv64 \
 --decoder=SimpleConv64 \
 --discriminator=SimpleDiscriminator \

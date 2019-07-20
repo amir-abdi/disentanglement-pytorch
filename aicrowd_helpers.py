@@ -27,7 +27,7 @@ def register_progress(progress):
     # Register Evaluation Progress event
     # progress : float [0, 1]
     ########################################################################
-    print("Training Progress : {}".format(progress))
+    # print("Training Progress : {}".format(progress))
     crowdai_events.register_event(
                 event_type=crowdai_events.CROWDAI_EVENT_INFO,
                 message="register_progress",
