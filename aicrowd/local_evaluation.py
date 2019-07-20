@@ -23,7 +23,8 @@ import disentanglement_lib
 
 try:
     # Monkey patch in our own evaluate, which supports pytorch *and* tensorflow.
-    import evaluate
+    from aicrowd import evaluate
+
     disentanglement_lib.evaluation.evaluate = evaluate
     MONKEY = True
 except ImportError:
@@ -33,16 +34,8 @@ except ImportError:
 print('Monkey', MONKEY)
 
 from disentanglement_lib.evaluation.metrics import utils
-from disentanglement_lib.methods.unsupervised import train
-from disentanglement_lib.methods.unsupervised import vae
-from disentanglement_lib.postprocessing import postprocess
-from disentanglement_lib.utils import aggregate_results
-from disentanglement_lib.visualize import visualize_model
 from disentanglement_lib.config.unsupervised_study_v1 import sweep as unsupervised_study_v1
-import tensorflow as tf
-import gin.tf
 import json
-import numpy as np
 
 ##############################################################################
 # 0. Settings
@@ -59,8 +52,9 @@ ROOT = os.getenv("NDC_ROOT", ".")
 if not MONKEY:
     print("Evaluating Experiment '{experiment_name}' from {base_path}.")
 else:
-    import utils_pytorch
-    exp_config = utils_pytorch.get_config()
+    from common import utils_aicrowd
+
+    exp_config = utils_aicrowd.get_config()
     print("Evaluating Experiment '{exp_config.experiment_name}' "
           "from {exp_config.base_path} on dataset {exp_config.dataset_name}")
 

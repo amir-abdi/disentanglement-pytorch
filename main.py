@@ -8,6 +8,8 @@ TODO: A version of CVAE where independence between C and Z is enforced
 TODO: Add PixelCNN and PixelCNN++ and PixelVAE
 TODO: Add VQ-VAE (discrete encodings) and VQ-VAE2 --> I guess Version 2 has pixelCNN
 TODO: SCGAN_Disentangled_Representation_Learning_by_Addi
+
+TODO: Update license to MIT
 '''
 
 import sys
@@ -19,10 +21,9 @@ import logging
 from importlib import reload
 
 from common.utils import str2bool, StyleFormatter, update_args
-from common import constants as c
+from common import constants as c, utils_aicrowd as pyu
 import models
-import aicrowd_helpers
-import utils_pytorch as pyu
+from aicrowd import aicrowd_helpers
 
 torch.backends.cudnn.enabled = True
 torch.backends.cudnn.benchmark = True
@@ -182,7 +183,7 @@ def get_args(sys_args):
     os.makedirs(args.ckpt_dir, exist_ok=True)
     os.makedirs(args.train_output_dir, exist_ok=True)
     os.makedirs(args.test_output_dir, exist_ok=True)
-    assert os.path.exists(args.dset_dir), 'main dataset directory does not exist'
+    assert os.path.exists(args.dset_dir), 'Main dataset directory does not exist at {}'.format(args.dset_dir)
 
     # test
     args = update_args(args) if args.test else args
