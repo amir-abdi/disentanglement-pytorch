@@ -217,7 +217,7 @@ class VAE(BaseDisentangler):
                 self.iter += 1
 
                 if self.aicrowd_challenge and self.iter % 100 == 0:
-                    import aicrowd_helpers
+                    from aicrowd import aicrowd_helpers
                     aicrowd_helpers.register_progress(self.iter / self.max_iter)
                 else:
                     self.pbar.update(1)

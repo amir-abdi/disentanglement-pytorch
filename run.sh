@@ -26,21 +26,7 @@ fi
 # 	as pytorch cannot be installed with just `pip`
 #
 export PYTHONPATH=${PYTHONPATH}:${NDC_ROOT}
-python ${NDC_ROOT}/main.py \
---aicrowd_challenge=true \
---name=$NAME \
---alg=VAE \
---vae_loss=Basic \
---vae_type=FactorVAE \
---encoder=PadlessGaussianConv64 \
---decoder=SimpleConv64 \
---discriminator=SimpleDiscriminator \
---z_dim=10 \
---use_wandb=false \
---w_kld=1 \
---lr_G=0.0002 \
---max_iter=10000 \
---all_iter=100000 \
+bash ${NDC_ROOT}/scripts/mpi3dtoy_factor-dipII-vae.sh
 
 
 #--ckpt_load=/home/amirabdi/disentanglement-pytorch/checkpoints/last \
