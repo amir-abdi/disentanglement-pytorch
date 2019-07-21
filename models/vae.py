@@ -214,13 +214,15 @@ class VAE(BaseDisentangler):
                               recon_image=params['x_recon'],
                               loss=losses,
                               )
+                #TODO step
+                #self.step()
+
                 self.iter += 1
+                self.pbar.update(1)
 
                 if self.aicrowd_challenge and self.iter % 100 == 0:
                     from aicrowd import aicrowd_helpers
                     aicrowd_helpers.register_progress(self.iter / self.max_iter)
-                else:
-                    self.pbar.update(1)
 
                 if self.iter >= self.max_iter:
                     break

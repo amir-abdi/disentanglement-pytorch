@@ -20,6 +20,16 @@ from __future__ import print_function
 import os
 import time
 from disentanglement_lib.data.ground_truth import named_data
+from disentanglement_lib.evaluation.metrics import beta_vae  # pylint: disable=unused-import
+from disentanglement_lib.evaluation.metrics import dci  # pylint: disable=unused-import
+from disentanglement_lib.evaluation.metrics import downstream_task  # pylint: disable=unused-import
+from disentanglement_lib.evaluation.metrics import factor_vae  # pylint: disable=unused-import
+from disentanglement_lib.evaluation.metrics import irs  # pylint: disable=unused-import
+from disentanglement_lib.evaluation.metrics import mig  # pylint: disable=unused-import
+from disentanglement_lib.evaluation.metrics import modularity_explicitness  # pylint: disable=unused-import
+from disentanglement_lib.evaluation.metrics import reduced_downstream_task  # pylint: disable=unused-import
+from disentanglement_lib.evaluation.metrics import sap_score  # pylint: disable=unused-import
+from disentanglement_lib.evaluation.metrics import unsupervised_metrics  # pylint: disable=unused-import
 from disentanglement_lib.utils import results
 import numpy as np
 import tensorflow as tf
@@ -163,10 +173,10 @@ def _evaluate_with_tensorflow(module_path, evaluation_fn, dataset, random_seed):
 
 
 def _evaluate_with_pytorch(module_path, evalulation_fn, dataset, random_seed):
-    from common import utils_aicrowd
+    from aicrowd import utils_pytorch
     # Load model and make a representor
-    model = utils_aicrowd.import_model(path=module_path)
-    _representation_function = utils_aicrowd.make_representor(model)
+    model = utils_pytorch.import_model(path=module_path)
+    _representation_function = utils_pytorch.make_representor(model)
     # Evaluate score with the evaluation_fn
     results_dict = evalulation_fn(
         dataset,

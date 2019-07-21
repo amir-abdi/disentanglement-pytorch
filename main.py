@@ -21,9 +21,9 @@ import logging
 from importlib import reload
 
 from common.utils import str2bool, StyleFormatter, update_args
-from common import constants as c, utils_aicrowd as pyu
+from common import constants as c
 import models
-from aicrowd import aicrowd_helpers
+from aicrowd import utils_pytorch as pyu, aicrowd_helpers
 
 torch.backends.cudnn.enabled = True
 torch.backends.cudnn.benchmark = True
@@ -58,6 +58,10 @@ def main(args):
         # Done!
         aicrowd_helpers.register_progress(1.0)
         aicrowd_helpers.submit()
+
+        on_server = os.getenv('AICROWD_IS_GRADING', 'false')
+        if on_server == 'false':
+            from aicrowd import local_evaluation
 
 
 def get_args(sys_args):
@@ -113,7 +117,7 @@ def get_args(sys_args):
 
     # Loss weights and parameters for [CapacityVAE]
     parser.add_argument('--max_c', default=25.0, type=float, help='maximum value of control parameter in CapacityVAE')
-    parser.add_argument('--iterations_c', default=1000000, type=int, help='how many iterations to reach max_c')
+    parser.add_argument('--iterations_c', default=100000, type=int, help='how many iterations to reach max_c')
 
     # Loss weights and parameters for [FactorVAE]
     parser.add_argument('--w_tc', default=1.0, type=float, help='total correlation loss weight (e.g. in BetaVAE)')
