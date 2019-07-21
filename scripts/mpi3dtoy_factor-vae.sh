@@ -22,8 +22,8 @@ python3 main.py \
 --use_wandb=true \
 --w_kld=1.0 \
 --lr_G=0.0008 \
---max_iter=100000 \
---iterations_c=120000 \
+--max_iter=120000 \
+--iterations_c=60000 \
 
 #--ckpt_load=/home/amirabdi/disentanglement-pytorch/checkpoints/mpi3dtoy_factor-vae/last \
 
