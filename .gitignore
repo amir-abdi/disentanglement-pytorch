@@ -6,6 +6,7 @@ outputs
 train_outputs
 test_outputs
 .idea
+scripts
 
 ### default python ignores
 
