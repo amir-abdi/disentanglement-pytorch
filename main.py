@@ -39,6 +39,7 @@ def main(args):
         aicrowd_helpers.execution_start()
         aicrowd_helpers.register_progress(0.)
         args.use_wandb = False
+        args.all_iter = args.max_iter + 1
     model_cl = getattr(models, args.alg)
     model = model_cl(args)
     if args.ckpt_load:
