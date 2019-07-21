@@ -35,12 +35,11 @@ np.random.seed(init_seed)
 
 
 def main(args):
-   if args.aicrowd_challenge:
+    if args.aicrowd_challenge:
         aicrowd_helpers.execution_start()
         aicrowd_helpers.register_progress(0.)
         args.use_wandb = False
-
-   model_cl = getattr(models, args.alg)
+    model_cl = getattr(models, args.alg)
     model = model_cl(args)
     if args.ckpt_load:
         model.load_checkpoint(args.ckpt_load, load_iternum=args.ckpt_load_iternum)
