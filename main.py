@@ -23,7 +23,6 @@ from importlib import reload
 from common.utils import str2bool, StyleFormatter, update_args
 from common import constants as c
 import models
-from aicrowd import utils_pytorch as pyu, aicrowd_helpers
 
 torch.backends.cudnn.enabled = True
 torch.backends.cudnn.benchmark = True
@@ -35,11 +34,15 @@ np.random.seed(init_seed)
 
 
 def main(args):
-    if args.aicrowd_challenge:
+    on_server = os.getenv('AICROWD_IS_GRADING', False)
+    on_server = True if on_server != False else on_server
+    if on_server and args.aicrowd_challenge:
+        from aicrowd import aicrowd_helpers
         aicrowd_helpers.execution_start()
         aicrowd_helpers.register_progress(0.)
         args.use_wandb = False
         args.all_iter = args.max_iter + 1
+
     model_cl = getattr(models, args.alg)
     model = model_cl(args)
     if args.ckpt_load:
@@ -51,17 +54,16 @@ def main(args):
         model.test()
 
     if args.aicrowd_challenge:
-        # aicrowd_helpers.register_progress(0.90)
+        from aicrowd import utils_pytorch as pyu, aicrowd_helpers
         # Export the representation extractor
         path_to_saved = pyu.export_model(pyu.RepresentationExtractor(model.model.encoder, 'mean'),
                                          input_shape=(1, 3, 64, 64))
         logging.info('A copy of the model saved in {}'.format(path_to_saved))
-        # Done!
-        aicrowd_helpers.register_progress(1.0)
-        aicrowd_helpers.submit()
-
-        on_server = os.getenv('AICROWD_IS_GRADING', 'false')
-        if on_server == 'false':
+        
+        if on_server:
+            aicrowd_helpers.register_progress(1.0)
+            aicrowd_helpers.submit()
+        else:
             from aicrowd import local_evaluation
 
 
