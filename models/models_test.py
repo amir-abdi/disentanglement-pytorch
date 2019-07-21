@@ -39,9 +39,9 @@ class TestModels(object):
 
         encoder = (c.ENCODERS[1],)
         if alg == 'AE':
-            encoder = ('SimpleEncoder64',)
+            encoder = (c.ENCODERS[0],)
         elif alg == 'IFCVAE':
-            encoder = 'SimpleGaussianEncoder64', 'SimpleEncoder64'
+            encoder = c.ENCODERS[1], c.ENCODERS[0]
         sys_args.append('--encoder')
         sys_args.extend(encoder)
 
