@@ -26,7 +26,7 @@ fi
 # 	as pytorch cannot be installed with just `pip`
 #
 export PYTHONPATH=${PYTHONPATH}:${NDC_ROOT}
-bash ${NDC_ROOT}/scripts/mpi3dtoy_factor-vae.sh
+bash ${NDC_ROOT}/scripts/mpi3dtoy_dip-vae.sh
 
 
 #--ckpt_load=/home/amirabdi/disentanglement-pytorch/checkpoints/last \
