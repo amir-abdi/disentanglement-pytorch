@@ -55,7 +55,7 @@ class BaseDisentangler(object):
         self.image_size = args.image_size
         self.aicrowd_challenge = args.aicrowd_challenge
         if self.aicrowd_challenge:
-            from common import utils_aicrowd as aicrowd
+            from aicrowd import utils_pytorch as aicrowd
             kwargs = {'num_workers': args.num_workers, 'pin_memory': True} if self.device == 'cuda' else {}
             self.data_loader = aicrowd.get_loader(batch_size=args.batch_size, **kwargs)
         else:
