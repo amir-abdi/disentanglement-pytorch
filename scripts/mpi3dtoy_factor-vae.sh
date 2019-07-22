@@ -22,9 +22,9 @@ python3 main.py \
 --use_wandb=true \
 --w_kld=1.0 \
 --w_tc=1.0 \
---lr_G=0.0008 \
---max_iter=30000 \
---iterations_c=20000 \
+--lr_G=0.001 \
+--max_iter=5000 \
+--iterations_c=2000 \
 --ckpt_load=./saved_models/mpi3dtoy_ae_gaussian/saved2 \
 --ckpt_load_iter=false \
 
