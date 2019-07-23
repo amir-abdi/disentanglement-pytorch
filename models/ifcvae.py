@@ -174,7 +174,7 @@ class IFCVAE(VAE):
         return self.model.decode(z=latent, c=labels)
 
     def train(self):
-        while self.iter < self.max_iter:
+        while not self.training_complete():
             self.net_mode(train=True)
             for x_true1, label1 in self.data_loader:
                 losses = dict()
@@ -230,7 +230,6 @@ class IFCVAE(VAE):
                               acc=accuracies_dict
                               )
 
-        logging.info("-------Training Finished----------")
         self.pbar.close()
 
     def test(self):

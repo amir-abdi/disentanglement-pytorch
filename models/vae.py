@@ -141,12 +141,11 @@ class VAE(BaseDisentangler):
         loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar, z=z,
                             x_true2=x_true2, label2=label2)
 
-        # todo: not happy with how the VAE loss is considered the main loss and being accumulated over multiple fns
         losses.update(self.loss_fn(losses, **loss_fn_args))
         return losses, {'x_recon': x_recon, 'mu': mu, 'z': z, 'logvar': logvar}
 
     def train(self):
-        while self.epoch < self.max_epoch or self.iter > self.max_iter:
+        while not self.training_complete():
             self.net_mode(train=True)
             vae_loss_epoch = 0
             for x_true1, label1 in self.data_loader:
@@ -175,7 +174,6 @@ class VAE(BaseDisentangler):
 
             # end of epoch
             self.lr_scheduler_step(validation_loss=vae_loss_epoch / self.num_batches)
-        logging.info("-------Training Finished----------")
         self.pbar.close()
 
     def factorvae_init(self, args):
@@ -239,7 +237,8 @@ class VAE(BaseDisentangler):
         logvar = kwargs['logvar']
         z = kwargs['z']
 
-        return (self.w_tc_analytical - 1.) * common.ops.total_correlation(z, mu, logvar)
+        # Instead of substracting w_tc_analytical by 1, we just used w_tc_analytical to keep things consistent
+        return self.w_tc_analytical * common.ops.total_correlation(z, mu, logvar)
 
     def test(self):
         self.net_mode(train=False)
