@@ -35,9 +35,9 @@ np.random.seed(init_seed)
 
 
 def main(args):
-    args.on_aicrowd_server = is_on_aicrowd_server()
+    on_aicrowd_server = is_on_aicrowd_server()
 
-    if args.on_aicrowd_server:
+    if on_aicrowd_server:
         from aicrowd import aicrowd_helpers
         aicrowd_helpers.execution_start()
         aicrowd_helpers.register_progress(0.)
@@ -63,7 +63,7 @@ def main(args):
                                          input_shape=(1, model.num_channels, model.image_size, model.image_size))
         logging.info('A copy of the model saved in {}'.format(path_to_saved))
         
-        if args.on_aicrowd_server:
+        if on_aicrowd_server:
             aicrowd_helpers.register_progress(1.0)
             aicrowd_helpers.submit()
         else:
@@ -128,7 +128,10 @@ def get_args(sys_args):
     parser.add_argument('--iterations_c', default=100000, type=int, help='how many iterations to reach max_c')
 
     # Loss weights and parameters for [FactorVAE]
-    parser.add_argument('--w_tc', default=1.0, type=float, help='total correlation loss weight (e.g. in BetaVAE)')
+    parser.add_argument('--w_tc_empirical', default=1.0, type=float, help='total correlation loss weight (e.g. in FactorVAE)')
+
+    # Loss weights and parameters for [BetaTCVAE]
+    parser.add_argument('--w_tc_analytical', default=1.0, type=float, help='total correlation loss weight (e.g. in BetaTCVAE)')
 
     # Loss weights and parameters for [IFCVAE]
     parser.add_argument('--w_le', default=1.0, type=float, help='label encoding loss weight (e.g. in IFCVAE)')

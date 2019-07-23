@@ -8,6 +8,7 @@ import torchvision.utils
 from common.utils import grid2gif, get_data_for_visualization, prepare_data_for_visualization, get_lr
 from common.dataset import get_dataloader
 import common.constants as c
+from aicrowd.aicrowd_utils import is_on_aicrowd_server
 
 DEBUG = False
 
@@ -24,7 +25,7 @@ class BaseDisentangler(object):
         self.alg = args.alg
         self.vae_loss = args.vae_loss
         self.vae_type = args.vae_type
-        self.on_aicrowd_server = args.on_aicrowd_server
+        self.on_aicrowd_server = is_on_aicrowd_server()
         self.lr_scheduler = None
 
         # Output directory
@@ -132,7 +133,8 @@ class BaseDisentangler(object):
         self.zeros = torch.zeros(self.batch_size, dtype=torch.long, device=self.device, requires_grad=False)
         self.num_layer_disc = args.num_layer_disc
         self.size_layer_disc = args.size_layer_disc
-        self.w_tc = args.w_tc
+        self.w_tc_empirical = args.w_tc_empirical
+        self.w_tc_analytical = args.w_tc_analytical
 
         # DIPVAE args
         self.lambda_od = args.lambda_od
@@ -440,13 +442,9 @@ class BaseDisentangler(object):
             aicrowd_helpers.register_progress(self.iter / self.max_iter)
 
     def lr_scheduler_step(self, validation_loss):
-        print('****validation loss', validation_loss)
-        print(self.lr_scheduler)
         if self.lr_scheduler is None:
             return
-        # Learning rate scheduler step
         if isinstance(self.lr_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
-            print('******* scheduler step')
             self.lr_scheduler.step(validation_loss)
         else:
             self.lr_scheduler.step()

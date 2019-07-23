@@ -220,7 +220,7 @@ def gaussian_log_density(samples, mean, log_var):
     :return:
     """
     import math
-    pi = torch.tensor(math.pi)
+    pi = torch.tensor(math.pi, requires_grad=False)
     normalization = torch.log(2. * pi)
     inv_sigma = torch.exp(-log_var)
     tmp = samples - mean

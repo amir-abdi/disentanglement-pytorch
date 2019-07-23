@@ -160,7 +160,6 @@ class VAE(BaseDisentangler):
 
                 # if the last batch did not have enough samples, skip it
                 if x_true1.shape != x_true2.shape:
-                    print('x_true1 x_true2', x_true1.shape, x_true2.shape)
                     continue
 
                 losses, params = self.vae_base(losses, x_true1, x_true2, label1, label2)
@@ -200,7 +199,7 @@ class VAE(BaseDisentangler):
         z = kwargs['z']
 
         factorvae_dz_true = self.PermD(z)
-        vae_tc_loss = (factorvae_dz_true[:, 0] - factorvae_dz_true[:, 1]).mean() * self.w_tc
+        vae_tc_loss = (factorvae_dz_true[:, 0] - factorvae_dz_true[:, 1]).mean() * self.w_tc_empirical
 
         # Train discriminator of FactorVAE
         mu2, logvar2 = self.model.encode(x=x_true2, c=label2)
@@ -222,6 +221,7 @@ class VAE(BaseDisentangler):
         from common.ops import covariance_z_mean, regularize_diag_off_diag_dip
         cov_z_mean = covariance_z_mean(mu)
 
+        # todo: get rid of dip_type argument
         if self.dip_type == "i":
             cov_dip_regularizer = regularize_diag_off_diag_dip(cov_z_mean, self.lambda_od, self.lambda_d)
         elif self.dip_type == "ii":
@@ -239,7 +239,7 @@ class VAE(BaseDisentangler):
         logvar = kwargs['logvar']
         z = kwargs['z']
 
-        return common.ops.total_correlation(z, mu, logvar)
+        return (self.w_tc_analytical - 1.) * common.ops.total_correlation(z, mu, logvar)
 
     def test(self):
         self.net_mode(train=False)
