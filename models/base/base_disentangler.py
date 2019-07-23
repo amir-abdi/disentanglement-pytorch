@@ -127,6 +127,19 @@ class BaseDisentangler(object):
         # model is the only attribute that all sub-classes should have
         self.model = None
 
+        # FactorVAE args
+        self.ones = torch.ones(self.batch_size, dtype=torch.long, device=self.device, requires_grad=False)
+        self.zeros = torch.zeros(self.batch_size, dtype=torch.long, device=self.device, requires_grad=False)
+        self.num_layer_disc = args.num_layer_disc
+        self.size_layer_disc = args.size_layer_disc
+        self.w_tc = args.w_tc
+
+        # DIPVAE args
+        self.lambda_od = args.lambda_od
+        self.lambda_d_factor = args.lambda_d_factor
+        self.lambda_d = self.lambda_d_factor * self.lambda_od
+        self.dip_type = args.dip_type
+
     def log_save(self, **kwargs):
         self.step()
 

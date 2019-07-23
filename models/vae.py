@@ -7,6 +7,7 @@ import torch.nn.functional as F
 
 from models.base.base_disentangler import BaseDisentangler
 from architectures import encoders, decoders, discriminators
+import common
 from common.ops import kl_divergence_mu0_var1, reparametrize, permute_dims
 from common import constants as c
 from common.utils import get_scheduler
@@ -36,10 +37,6 @@ class VAE(BaseDisentangler):
     Auto-Encoding Variational Bayes
     by Kingma and Welling
     https://arxiv.org/pdf/1312.6114.pdf
-    +
-    Disentangling by Factorising
-    by Kim and Mnih
-    https://arxiv.org/pdf/1802.05983.pdf
     """
 
     def __init__(self, args):
@@ -75,30 +72,9 @@ class VAE(BaseDisentangler):
 
         # FactorVAE
         if c.FACTORVAE in self.vae_type:
-            self.ones = torch.ones(self.batch_size, dtype=torch.long, device=self.device, requires_grad=False)
-            self.zeros = torch.zeros(self.batch_size, dtype=torch.long, device=self.device, requires_grad=False)
-
-            self.num_layer_disc = args.num_layer_disc
-            self.size_layer_disc = args.size_layer_disc
-            self.w_tc = args.w_tc
-
-            assert args.discriminator is not None, 'FactorVAE needs a discriminator to detect permuted Zs'
-            discriminator_name = args.discriminator[0]
-            discriminator = getattr(discriminators, discriminator_name)
-
-            self.PermD = discriminator(self.z_dim, num_classes=2, num_layers=self.num_layer_disc,
-                                       layer_size=self.size_layer_disc).to(self.device)
-            self.optim_PermD = optim.Adam(self.PermD.parameters(), lr=self.lr_D, betas=(self.beta1, self.beta2))
-
+            self.PermD, self.optim_PermD = self.factorvae_init(args)
             self.net_dict.update({'PermD': self.PermD})
             self.optim_dict.update({'optim_PermD': self.optim_PermD})
-
-        # DIP-VAE
-        if c.DIPVAE in self.vae_type:
-            self.lambda_od = args.lambda_od
-            self.lambda_d_factor = args.lambda_d_factor
-            self.lambda_d = self.lambda_d_factor * self.lambda_od
-            self.dip_type = args.dip_type
 
         self.lr_scheduler = get_scheduler(self.optim_G, args.lr_scheduler, args.lr_scheduler_args)
 
@@ -129,14 +105,10 @@ class VAE(BaseDisentangler):
         return kld_loss
 
     def loss_fn(self, input_losses, **kwargs):
-        # loss args
         x_recon = kwargs['x_recon']
         x_true = kwargs['x_true']
-        x_true2 = kwargs['x_true2']
-        label2 = kwargs['label2']
         mu = kwargs['mu']
         logvar = kwargs['logvar']
-        z = kwargs['z']
 
         bs = self.batch_size
         output_losses = dict()
@@ -149,41 +121,15 @@ class VAE(BaseDisentangler):
         output_losses[c.TOTAL_VAE] += output_losses['kld']
 
         if c.FACTORVAE in self.vae_type:
-            factorvae_dz_true = self.PermD(z)
-            output_losses['vae_tc'] = (factorvae_dz_true[:, 0] - factorvae_dz_true[:, 1]).mean() * self.w_tc
+            output_losses['vae_tc'], output_losses['discriminator_tc'] = self._factorvae_loss_fn(**kwargs)
             output_losses[c.TOTAL_VAE] += output_losses['vae_tc']
 
-            # Train discriminator of FactorVAE
-            mu2, logvar2 = self.model.encode(x=x_true2, c=label2)
-            z2 = reparametrize(mu2, logvar2)
-            z2_perm = permute_dims(z2).detach()
-            dz2_perm = self.PermD(z2_perm)
-            tc_loss_discriminator = (F.cross_entropy(factorvae_dz_true, self.zeros) +
-                                     F.cross_entropy(dz2_perm, self.ones)) * 0.5
-            self.optim_PermD.zero_grad()
-            tc_loss_discriminator.backward(retain_graph=True)
-            self.optim_PermD.step()
-            output_losses['discriminator_tc'] = tc_loss_discriminator
-
         if c.DIPVAE in self.vae_type:
-            from common.ops import covariance_z_mean, regularize_diag_off_diag_dip
-            cov_z_mean = covariance_z_mean(mu)
-
-            if self.dip_type == "i":
-                cov_dip_regularizer = regularize_diag_off_diag_dip(cov_z_mean, self.lambda_od, self.lambda_d)
-            elif self.dip_type == "ii":
-                cov_enc = torch.diag(torch.exp(logvar))
-                expectation_cov_enc = torch.mean(cov_enc, dim=0)
-                cov_z = expectation_cov_enc + cov_z_mean
-                cov_dip_regularizer = regularize_diag_off_diag_dip(cov_z, self.lambda_od, self.lambda_d)
-            else:
-                raise NotImplementedError("DIP variant not supported.")
-            output_losses['vae_dip'] = cov_dip_regularizer
+            output_losses['vae_dip'] = self._dipvae_loss_fn(**kwargs)
             output_losses[c.TOTAL_VAE] += output_losses['vae_dip']
 
         if c.BetaTCVAE in self.vae_type:
-            from common.ops import total_correlation
-            output_losses['vae_tc_analytical'] = total_correlation(z, mu, logvar)
+            output_losses['vae_tc_analytical'] = self._betatcvae_loss_fn(**kwargs)
             output_losses[c.TOTAL_VAE] += output_losses['vae_tc_analytical']
 
         return output_losses
@@ -232,6 +178,68 @@ class VAE(BaseDisentangler):
             self.lr_scheduler_step(validation_loss=vae_loss_epoch / self.num_batches)
         logging.info("-------Training Finished----------")
         self.pbar.close()
+
+    def factorvae_init(self, args):
+        """
+          Disentangling by Factorising
+          by Kim and Mnih
+          https://arxiv.org/pdf/1802.05983.pdf
+          """
+        assert args.discriminator is not None, 'FactorVAE needs a discriminator to detect permuted Zs'
+        discriminator_name = args.discriminator[0]
+        discriminator = getattr(discriminators, discriminator_name)
+
+        PermD = discriminator(self.z_dim, num_classes=2, num_layers=self.num_layer_disc,
+                              layer_size=self.size_layer_disc).to(self.device)
+        optim_PermD = optim.Adam(PermD.parameters(), lr=self.lr_D, betas=(self.beta1, self.beta2))
+        return PermD, optim_PermD
+
+    def _factorvae_loss_fn(self, **kwargs):
+        x_true2 = kwargs['x_true2']
+        label2 = kwargs['label2']
+        z = kwargs['z']
+
+        factorvae_dz_true = self.PermD(z)
+        vae_tc_loss = (factorvae_dz_true[:, 0] - factorvae_dz_true[:, 1]).mean() * self.w_tc
+
+        # Train discriminator of FactorVAE
+        mu2, logvar2 = self.model.encode(x=x_true2, c=label2)
+        z2 = reparametrize(mu2, logvar2)
+        z2_perm = permute_dims(z2).detach()
+        dz2_perm = self.PermD(z2_perm)
+        discriminator_tc_loss = (F.cross_entropy(factorvae_dz_true, self.zeros) +
+                                 F.cross_entropy(dz2_perm, self.ones)) * 0.5
+        self.optim_PermD.zero_grad()
+        discriminator_tc_loss.backward(retain_graph=True)
+        self.optim_PermD.step()
+
+        return vae_tc_loss, discriminator_tc_loss
+
+    def _dipvae_loss_fn(self, **kwargs):
+        mu = kwargs['mu']
+        logvar = kwargs['logvar']
+
+        from common.ops import covariance_z_mean, regularize_diag_off_diag_dip
+        cov_z_mean = covariance_z_mean(mu)
+
+        if self.dip_type == "i":
+            cov_dip_regularizer = regularize_diag_off_diag_dip(cov_z_mean, self.lambda_od, self.lambda_d)
+        elif self.dip_type == "ii":
+            cov_enc = torch.diag(torch.exp(logvar))
+            expectation_cov_enc = torch.mean(cov_enc, dim=0)
+            cov_z = expectation_cov_enc + cov_z_mean
+            cov_dip_regularizer = regularize_diag_off_diag_dip(cov_z, self.lambda_od, self.lambda_d)
+        else:
+            raise NotImplementedError("DIP variant not supported.")
+
+        return cov_dip_regularizer
+
+    def _betatcvae_loss_fn(self, **kwargs):
+        mu = kwargs['mu']
+        logvar = kwargs['logvar']
+        z = kwargs['z']
+
+        return common.ops.total_correlation(z, mu, logvar)
 
     def test(self):
         self.net_mode(train=False)

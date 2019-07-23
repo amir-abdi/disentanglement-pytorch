@@ -21,14 +21,10 @@ python3 main.py \
 --use_wandb=true \
 --w_kld=1 \
 --lr_G=0.0002 \
---max_iter=1000000 \
---ckpt_load=/home/amirabdi/disentanglement-pytorch/checkpoints/mpi3dtoy_factor-dipII-vae/last \
+--lr_scheduler=ReduceLROnPlateau \
+--lr_scheduler_args mode=min factor=0.8 patience=0 min_lr=0.000001 \
+--max_iter=30000 \
+--ckpt_load=./saved_models/mpi3dtoy_ae_gaussian/saved2 \
+--ckpt_load_iter=false \
 
-
-
-
-
-
-# set all_iter > max_iter
-#wandb false
 
