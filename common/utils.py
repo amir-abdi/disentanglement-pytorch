@@ -249,3 +249,34 @@ def update_args(args):
     args.file_save = True
     args.gif_save = True
     return args
+
+
+class StoreDictKeyPair(argparse.Action):
+    def __init__(self, option_strings, dest, nargs=None, **kwargs):
+        self._nargs = nargs
+        super(StoreDictKeyPair, self).__init__(option_strings, dest, nargs=nargs, **kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        my_dict = {}
+        for kv in values:
+            k, v = kv.split("=")
+            try:
+                my_dict[k] = float(v)
+            except ValueError:
+                my_dict[k] = v
+        setattr(namespace, self.dest, my_dict)
+
+
+def get_scheduler(optimizer, scheduler_type, scheduler_args):
+    print('scheduler_type ', scheduler_type, scheduler_args)
+    if scheduler_type is None:
+        return
+    scheduler_class = getattr(torch.optim.lr_scheduler, scheduler_type)
+    scheduler = scheduler_class(optimizer, **scheduler_args)
+    print(scheduler)
+    return scheduler
+
+
+def get_lr(optimizer):
+    for param_group in optimizer.param_groups:
+        return param_group['lr']

@@ -21,7 +21,7 @@ python3 main.py \
 --z_dim=20 \
 --use_wandb=True \
 --w_kld=1 \
---lr_G=0.005 \
+--lr_G=0.0005 \
 --ckpt_load=/home/amirabdi/disentanglement-pytorch/checkpoints/dsprite_dip-vae/last \
 
 

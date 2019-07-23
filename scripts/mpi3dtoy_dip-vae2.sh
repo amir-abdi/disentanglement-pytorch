@@ -20,10 +20,12 @@ python3 main.py \
 --z_dim=20 \
 --use_wandb=True \
 --w_kld=1 \
---lr_G=0.0005 \
---max_iter=30000 \
---ckpt_load=./saved_models/mpi3dtoy_ae_gaussian/saved2 \
---ckpt_load_iter=false \
+--lr_G=0.0008 \
+--max_iter=60000 \
+--ckpt_load=/home/amirabdi/disentanglement-pytorch/checkpoints/mpi3dtoy_dip-vae2/saved40000
+
+#--ckpt_load=./saved_models/mpi3dtoy_ae_gaussian/saved2 \
+#--ckpt_load_iter=false \
 
 
 

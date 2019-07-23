@@ -20,8 +20,12 @@ python3 main.py \
 --z_dim=8 \
 --use_wandb=true \
 --w_kld=1 \
---lr_G=0.0002 \
---ckpt_load=/home/amirabdi/disentanglement-pytorch/checkpoints/dsprite_vae_factor/last \
+--lr_G=0.02 \
+--lr_scheduler=ReduceLROnPlateau \
+--lr_scheduler_args mode=min factor=0.8 patience=0 min_lr=0.000001 \
+--num_workers=1 \
+--ckpt_load=/home/amirabdi/disentanglement-pytorch/checkpoints/dsprite_factor-vae/last \
+
 
 
 

@@ -9,6 +9,7 @@ from models.base.base_disentangler import BaseDisentangler
 from architectures import encoders, decoders, discriminators
 from common.ops import kl_divergence_mu0_var1, reparametrize, permute_dims
 from common import constants as c
+from common.utils import get_scheduler
 
 
 class VAEModel(nn.Module):
@@ -90,13 +91,16 @@ class VAE(BaseDisentangler):
             self.optim_PermD = optim.Adam(self.PermD.parameters(), lr=self.lr_D, betas=(self.beta1, self.beta2))
 
             self.net_dict.update({'PermD': self.PermD})
-            self.optim_dict = {'optim_PermD': self.optim_PermD}
+            self.optim_dict.update({'optim_PermD': self.optim_PermD})
 
         # DIP-VAE
         if c.DIPVAE in self.vae_type:
             self.lambda_od = args.lambda_od
             self.lambda_d_factor = args.lambda_d_factor
+            self.lambda_d = self.lambda_d_factor * self.lambda_od
             self.dip_type = args.dip_type
+
+        self.lr_scheduler = get_scheduler(self.optim_G, args.lr_scheduler, args.lr_scheduler_args)
 
     def encode_deterministic(self, **kwargs):
         images = kwargs['images']
@@ -125,24 +129,62 @@ class VAE(BaseDisentangler):
         return kld_loss
 
     def loss_fn(self, input_losses, **kwargs):
+        # loss args
         x_recon = kwargs['x_recon']
         x_true = kwargs['x_true']
+        x_true2 = kwargs['x_true2']
+        label2 = kwargs['label2']
         mu = kwargs['mu']
         logvar = kwargs['logvar']
-        factorvae_dz_true = kwargs.get('factorvae_dz_true', None)
+        z = kwargs['z']
+
         bs = self.batch_size
         output_losses = dict()
-        output_losses[c.VAE] = input_losses.get(c.VAE, 0)
+        output_losses[c.TOTAL_VAE] = input_losses.get(c.TOTAL_VAE, 0)
 
         output_losses[c.RECON] = F.binary_cross_entropy(x_recon, x_true, reduction='sum') / bs * self.w_recon
-        output_losses[c.VAE] += output_losses[c.RECON]
+        output_losses[c.TOTAL_VAE] += output_losses[c.RECON]
+
         output_losses['kld'] = self._kld_loss_fn(mu, logvar)
-        output_losses[c.VAE] += output_losses['kld']
+        output_losses[c.TOTAL_VAE] += output_losses['kld']
 
         if c.FACTORVAE in self.vae_type:
-            output_losses['vae_tc'] = \
-                (factorvae_dz_true[:, 0] - factorvae_dz_true[:, 1]).mean() * self.w_tc
-            output_losses[c.VAE] += output_losses['vae_tc']
+            factorvae_dz_true = self.PermD(z)
+            output_losses['vae_tc'] = (factorvae_dz_true[:, 0] - factorvae_dz_true[:, 1]).mean() * self.w_tc
+            output_losses[c.TOTAL_VAE] += output_losses['vae_tc']
+
+            # Train discriminator of FactorVAE
+            mu2, logvar2 = self.model.encode(x=x_true2, c=label2)
+            z2 = reparametrize(mu2, logvar2)
+            z2_perm = permute_dims(z2).detach()
+            dz2_perm = self.PermD(z2_perm)
+            tc_loss_discriminator = (F.cross_entropy(factorvae_dz_true, self.zeros) +
+                                     F.cross_entropy(dz2_perm, self.ones)) * 0.5
+            self.optim_PermD.zero_grad()
+            tc_loss_discriminator.backward(retain_graph=True)
+            self.optim_PermD.step()
+            output_losses['discriminator_tc'] = tc_loss_discriminator
+
+        if c.DIPVAE in self.vae_type:
+            from common.ops import covariance_z_mean, regularize_diag_off_diag_dip
+            cov_z_mean = covariance_z_mean(mu)
+
+            if self.dip_type == "i":
+                cov_dip_regularizer = regularize_diag_off_diag_dip(cov_z_mean, self.lambda_od, self.lambda_d)
+            elif self.dip_type == "ii":
+                cov_enc = torch.diag(torch.exp(logvar))
+                expectation_cov_enc = torch.mean(cov_enc, dim=0)
+                cov_z = expectation_cov_enc + cov_z_mean
+                cov_dip_regularizer = regularize_diag_off_diag_dip(cov_z, self.lambda_od, self.lambda_d)
+            else:
+                raise NotImplementedError("DIP variant not supported.")
+            output_losses['vae_dip'] = cov_dip_regularizer
+            output_losses[c.TOTAL_VAE] += output_losses['vae_dip']
+
+        if c.BetaTCVAE in self.vae_type:
+            from common.ops import total_correlation
+            output_losses['vae_tc_analytical'] = total_correlation(z, mu, logvar)
+            output_losses[c.TOTAL_VAE] += output_losses['vae_tc_analytical']
 
         return output_losses
 
@@ -150,49 +192,20 @@ class VAE(BaseDisentangler):
         mu, logvar = self.model.encode(x=x_true1, c=label1)
         z = reparametrize(mu, logvar)
         x_recon = self.model.decode(z=z, c=label1)
-        loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar)
+        loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar, z=z,
+                            x_true2=x_true2, label2=label2)
 
-        if c.FACTORVAE in self.vae_type:
-            dz_true = self.PermD(z)
-            loss_fn_args.update(factorvae_dz_true=dz_true)
-
-            mu2, logvar2 = self.model.encode(x=x_true2, c=label2)
-            z2 = reparametrize(mu2, logvar2)
-            z2_perm = permute_dims(z2).detach()
-            dz2_perm = self.PermD(z2_perm)
-            tc_loss_discriminator = (F.cross_entropy(dz_true, self.zeros) +
-                                     F.cross_entropy(dz2_perm, self.ones)) * 0.5
-
-            self.optim_PermD.zero_grad()
-            tc_loss_discriminator.backward(retain_graph=True)
-            self.optim_PermD.step()
-            losses['discriminator_tc'] = tc_loss_discriminator
-
-        if c.DIPVAE in self.vae_type:
-            from common.ops import covariance_z_mean, regularize_diag_off_diag_dip
-            cov_z_mean = covariance_z_mean(mu)
-            lambda_d = self.lambda_d_factor * self.lambda_od
-
-            if self.dip_type == "i":
-                cov_dip_regularizer = regularize_diag_off_diag_dip(cov_z_mean, self.lambda_od, lambda_d)
-            elif self.dip_type == "ii":
-                cov_enc = torch.diag(torch.exp(logvar))
-                expectation_cov_enc = torch.mean(cov_enc, dim=0)
-                cov_z = expectation_cov_enc + cov_z_mean
-                cov_dip_regularizer = regularize_diag_off_diag_dip(cov_z, self.lambda_od, lambda_d)
-            else:
-                raise NotImplementedError("DIP variant not supported.")
-            losses['dip'] = cov_dip_regularizer
-
+        # todo: not happy with how the VAE loss is considered the main loss and being accumulated over multiple fns
         losses.update(self.loss_fn(losses, **loss_fn_args))
-
         return losses, {'x_recon': x_recon, 'mu': mu, 'z': z, 'logvar': logvar}
 
     def train(self):
-        while self.iter < self.max_iter:
+        while self.epoch < self.max_epoch or self.iter > self.max_iter:
             self.net_mode(train=True)
+            vae_loss_epoch = 0
             for x_true1, label1 in self.data_loader:
                 losses = dict()
+
                 x_true1 = x_true1.to(self.device)
                 label1 = label1.to(self.device)
                 x_true2, label2 = next(iter(self.data_loader))
@@ -207,26 +220,16 @@ class VAE(BaseDisentangler):
                 losses, params = self.vae_base(losses, x_true1, x_true2, label1, label2)
 
                 self.optim_G.zero_grad()
-                losses[c.VAE].backward(retain_graph=False)
+                losses[c.TOTAL_VAE].backward(retain_graph=False)
                 self.optim_G.step()
 
                 self.log_save(input_image=x_true1,
                               recon_image=params['x_recon'],
-                              loss=losses,
-                              )
-                #TODO step
-                #self.step()
+                              loss=losses)
+                vae_loss_epoch += losses[c.TOTAL_VAE]
 
-                self.iter += 1
-                self.pbar.update(1)
-
-                if self.aicrowd_challenge and self.iter % 100 == 0:
-                    from aicrowd import aicrowd_helpers
-                    aicrowd_helpers.register_progress(self.iter / self.max_iter)
-
-                if self.iter >= self.max_iter:
-                    break
-
+            # end of epoch
+            self.lr_scheduler_step(validation_loss=vae_loss_epoch / self.num_batches)
         logging.info("-------Training Finished----------")
         self.pbar.close()
 

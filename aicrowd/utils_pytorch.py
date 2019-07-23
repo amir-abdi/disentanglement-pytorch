@@ -3,6 +3,7 @@ import os
 from collections import namedtuple
 
 import numpy as np
+import logging
 import torch
 from torch.jit import trace
 
@@ -270,8 +271,8 @@ def get_loader(name=None, batch_size=32, seed=0, iterator_len=50000, num_workers
     DataLoader
     """
     name = get_dataset_name() if name is None else name
-    dlib_dataset = DLIBDataset(name, seed=seed, iterator_len=iterator_len)
-    loader = DataLoader(dlib_dataset, batch_size=batch_size, shuffle=True,
+    dataset = DLIBDataset(name, seed=seed, iterator_len=iterator_len)
+    loader = DataLoader(dataset, batch_size=batch_size, shuffle=True,
                         num_workers=num_workers, **dataloader_kwargs)
     return loader
 
