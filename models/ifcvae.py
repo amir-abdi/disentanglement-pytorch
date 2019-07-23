@@ -140,7 +140,6 @@ class IFCVAE(VAE):
         self.optim_aux_D = optim.Adam(self.aux_D.parameters(), lr=self.lr_D, betas=(self.beta1, self.beta2))
 
         # nets
-        # todo: switch to udpate for factorVAE
         self.net_dict.update({
             'G': self.model,
             'aux_D': self.aux_D
@@ -180,6 +179,7 @@ class IFCVAE(VAE):
             for x_true1, label1 in self.data_loader:
                 losses = dict()
                 accuracies_dict = dict()
+
                 x_true1 = x_true1.to(self.device)
                 label1 = label1.to(self.device, dtype=torch.long)
                 x_true2, label2 = next(iter(self.data_loader))
@@ -211,7 +211,7 @@ class IFCVAE(VAE):
                 aux_y_onehot_hat = self.aux_D(z)
                 losses['aux'] = cross_entropy_multi_label(aux_y_onehot_hat, label1, self.num_classes) * self.w_aux
 
-                total_loss = losses[c.VAE] + losses['label_hat'] - losses['aux']
+                total_loss = losses[c.TOTAL_VAE] + losses['label_hat'] - losses['aux']
 
                 self.optim_G.zero_grad()
                 total_loss.backward(retain_graph=True)
@@ -229,8 +229,6 @@ class IFCVAE(VAE):
                               loss=losses,
                               acc=accuracies_dict
                               )
-                self.iter += 1
-                self.pbar.update(1)
 
         logging.info("-------Training Finished----------")
         self.pbar.close()

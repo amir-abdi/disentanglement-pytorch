@@ -77,8 +77,6 @@ class AE(BaseDisentangler):
                               input_image=x_true1,
                               recon_image=x_recon,
                               )
-                self.iter += 1
-                self.pbar.update(1)
 
         logging.info("-------Training Finished----------")
         self.pbar.close()

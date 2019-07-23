@@ -20,8 +20,9 @@ import os
 import logging
 from importlib import reload
 
-from common.utils import str2bool, StyleFormatter, update_args
+from common.utils import str2bool, StyleFormatter, update_args, StoreDictKeyPair
 from common import constants as c
+from aicrowd.aicrowd_utils import is_on_aicrowd_server
 import models
 
 torch.backends.cudnn.enabled = True
@@ -34,12 +35,14 @@ np.random.seed(init_seed)
 
 
 def main(args):
-    on_server = os.getenv('AICROWD_IS_GRADING', False)
-    on_server = True if on_server != False else on_server
-    if on_server and args.aicrowd_challenge:
+    args.on_aicrowd_server = is_on_aicrowd_server()
+
+    if args.on_aicrowd_server:
         from aicrowd import aicrowd_helpers
         aicrowd_helpers.execution_start()
         aicrowd_helpers.register_progress(0.)
+
+        # turn off any logging
         args.use_wandb = False
         args.all_iter = args.max_iter + 1
 
@@ -57,13 +60,14 @@ def main(args):
         from aicrowd import utils_pytorch as pyu, aicrowd_helpers
         # Export the representation extractor
         path_to_saved = pyu.export_model(pyu.RepresentationExtractor(model.model.encoder, 'mean'),
-                                         input_shape=(1, 3, 64, 64))
+                                         input_shape=(1, model.num_channels, model.image_size, model.image_size))
         logging.info('A copy of the model saved in {}'.format(path_to_saved))
         
-        if on_server:
+        if args.on_aicrowd_server:
             aicrowd_helpers.register_progress(1.0)
             aicrowd_helpers.submit()
         else:
+            # The local_evaluation is implemented by aicrowd in the global namespace, so importing it suffices.
             from aicrowd import local_evaluation
 
 
@@ -94,6 +98,7 @@ def get_args(sys_args):
 
     # training hyper-params
     parser.add_argument('--max_iter', default=3e7, type=float, help='maximum training iteration')
+    parser.add_argument('--max_epoch', default=3e7, type=float, help='maximum training epochs')
     parser.add_argument('--batch_size', default=64, type=int, help='batch size')
     parser.add_argument('--num_disc_layers', default=5, type=int, help='number of fc layers in discriminators')
     parser.add_argument('--size_disc_layers', default=1000, type=int, help='size of fc layers in discriminators')
@@ -165,20 +170,25 @@ def get_args(sys_args):
     parser.add_argument('--ckpt_load_iternum', default=True, type=str2bool, help='start global iteration from ckpt')
     parser.add_argument('--ckpt_save_iter', default=1000, type=int, help='checkpoint save iter')
 
-    # Iterations
-    parser.add_argument('--float_iter', default=100, type=int, help='number of iterations to aggregate float logs')
-    parser.add_argument('--recon_iter', default=2000, type=int, help='iterations to reconstruct input image')
-    parser.add_argument('--traverse_iter', default=2000, type=int, help='iterations to traverse latent spaces')
-    parser.add_argument('--print_iter', default=500, type=int, help='iterations to print float values')
-    parser.add_argument('--all_iter', default=None, type=int, help='use same iteration for all')
+    # Iterations [default for all is equal to 1 epoch]
+    parser.add_argument('--float_iter', default=None, type=int,
+                        help='number of iterations to aggregate float logs [default: 1 epoch]')
+    parser.add_argument('--recon_iter', default=None, type=int,
+                        help='iterations to reconstruct input image [default: 1 epoch]')
+    parser.add_argument('--traverse_iter', default=None, type=int,
+                        help='iterations to traverse latent spaces [default: 1 epoch]')
+    parser.add_argument('--print_iter', default=None, type=int,
+                        help='iterations to print float values [default: 1 epoch]')
+    parser.add_argument('--all_iter', default=None, type=int,
+                        help='use same iteration for all [default: 1 epoch]')
+
+    # Learning rate scheduler
+    parser.add_argument('--lr_scheduler', default=None, type=str, choices=c.LR_SCHEDULERS,
+                        help='Type of learning rate scheduler [default: no scheduler]')
+    parser.add_argument("--lr_scheduler_args", dest='lr_scheduler_args',action=StoreDictKeyPair, nargs="+",
+                        metavar="KEY=VAL", help="Arguments of the for the lr_scheduler. See PyTorch docs.")
 
     args = parser.parse_args(sys_args)
-
-    if args.all_iter is not None:
-        args.float_iter = args.all_iter
-        args.recon_iter = args.all_iter
-        args.traverse_iter = args.all_iter
-        args.print_iter = args.all_iter
 
     assert args.image_size == 64, 'for now, models are hard coded to support only image size of 64x64'
 

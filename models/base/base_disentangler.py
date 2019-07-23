@@ -5,7 +5,7 @@ import logging
 import torch
 import torchvision.utils
 
-from common.utils import grid2gif, get_data_for_visualization, prepare_data_for_visualization
+from common.utils import grid2gif, get_data_for_visualization, prepare_data_for_visualization, get_lr
 from common.dataset import get_dataloader
 import common.constants as c
 
@@ -24,6 +24,8 @@ class BaseDisentangler(object):
         self.alg = args.alg
         self.vae_loss = args.vae_loss
         self.vae_type = args.vae_type
+        self.on_aicrowd_server = args.on_aicrowd_server
+        self.lr_scheduler = None
 
         # Output directory
         self.train_output_dir = os.path.join(args.train_output_dir, self.name)
@@ -47,6 +49,7 @@ class BaseDisentangler(object):
         self.lr_G = args.lr_G
         self.lr_D = args.lr_D
         self.max_iter = int(args.max_iter)
+        self.max_epoch = int(args.max_epoch)
 
         # Data
         self.dset_dir = args.dset_dir
@@ -67,7 +70,10 @@ class BaseDisentangler(object):
             self.class_values = self.data_loader.dataset.class_values()
 
         self.num_channels = self.data_loader.dataset.num_channels()
-        # self.num_channels = self.data_loader.dataset.observation_shape[2]
+        self.num_batches = len(self.data_loader)
+
+        logging.info('Number of samples: {}'.format(len(self.data_loader.dataset)))
+        logging.info('Number of batches per epoch: {}'.format(self.num_batches))
 
         # Progress bar
         if not args.test:
@@ -80,10 +86,22 @@ class BaseDisentangler(object):
 
         # logging
         self.iter = 0
-        self.print_iter = args.print_iter
-        self.float_iter = args.float_iter
-        self.recon_iter = args.recon_iter
-        self.traverse_iter = args.traverse_iter
+        self.epoch = 0
+
+        # logging iterations
+        self.print_iter = args.print_iter if args.print_iter is not None else self.num_batches
+        self.float_iter = args.float_iter if args.float_iter is not None else self.num_batches
+        self.recon_iter = args.recon_iter if args.recon_iter is not None else self.num_batches
+        self.traverse_iter = args.traverse_iter if args.traverse_iter is not None else self.num_batches
+
+        # override logging iterations if all_iter is set
+        if args.all_iter is not None:
+            self.float_iter = args.all_iter
+            self.recon_iter = args.all_iter
+            self.traverse_iter = args.all_iter
+            self.print_iter = args.all_iter
+
+        # traversing the latent space
         self.traverse_min = args.traverse_min
         self.traverse_max = args.traverse_max
         self.traverse_spacing = args.traverse_spacing
@@ -110,11 +128,13 @@ class BaseDisentangler(object):
         self.model = None
 
     def log_save(self, **kwargs):
+        self.step()
+
         if self.iter > 0 and self.iter % self.ckpt_save_iter == 0:
             self.save_checkpoint()
 
         if self.iter % self.print_iter == 0:
-            msg = '[{}]  '.format(self.iter)
+            msg = '[{}:{}]  '.format(self.epoch, self.iter)
             for key, value in kwargs.get(c.LOSS, dict()).items():
                 msg += '{}_{}={:.3f}  '.format(c.LOSS, key, value)
             for key, value in kwargs.get(c.ACCURACY, dict()).items():
@@ -126,7 +146,10 @@ class BaseDisentangler(object):
             for key, value in self.info_cumulative.items():
                 self.info_cumulative[key] /= self.float_iter
 
+            # other values to log
             self.info_cumulative[c.ITERATION] = self.iter
+            self.info_cumulative[c.LEARNING_RATE] = get_lr(self.optim_dict['optim_G'])  # assuming we want optim_G
+
             if self.use_wandb:
                 import wandb
                 wandb.log(self.info_cumulative, step=self.iter)
@@ -245,7 +268,8 @@ class BaseDisentangler(object):
 
             if self.file_save:
                 if test:
-                    file_name = os.path.join(self.test_output_dir, '{}_{}_{}.{}'.format(c.TRAVERSE, self.iter, key, c.JPG))
+                    file_name = os.path.join(self.test_output_dir,
+                                             '{}_{}_{}.{}'.format(c.TRAVERSE, self.iter, key, c.JPG))
                 else:
                     file_name = os.path.join(self.train_output_dir, '{}_{}.{}'.format(c.TRAVERSE, key, c.JPG))
                 torchvision.utils.save_image(samples, file_name)
@@ -392,3 +416,24 @@ class BaseDisentangler(object):
 
     def loss_fn(self, **kwargs):
         raise NotImplementedError
+
+    def step(self):
+        self.iter += 1
+        self.pbar.update(1)
+        self.epoch = self.iter // self.num_batches
+
+        if self.aicrowd_challenge and self.on_aicrowd_server:
+            from aicrowd import aicrowd_helpers
+            aicrowd_helpers.register_progress(self.iter / self.max_iter)
+
+    def lr_scheduler_step(self, validation_loss):
+        print('****validation loss', validation_loss)
+        print(self.lr_scheduler)
+        if self.lr_scheduler is None:
+            return
+        # Learning rate scheduler step
+        if isinstance(self.lr_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
+            print('******* scheduler step')
+            self.lr_scheduler.step(validation_loss)
+        else:
+            self.lr_scheduler.step()

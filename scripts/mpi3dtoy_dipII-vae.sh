@@ -20,14 +20,8 @@ python3 main.py \
 --z_dim=20 \
 --use_wandb=true \
 --w_kld=1 \
---lr_G=0.005 \
---max_iter=10000 \
-
-#--ckpt_load=/home/amirabdi/disentanglement-pytorch/checkpoints/mpi3dtoy_dipII-vae/last \
-
-
-
-
-
-# set all_iter > max_iter
+--lr_G=0.0008 \
+--max_iter=20000 \
+--ckpt_load=/home/amirabdi/disentanglement-pytorch/checkpoints/mpi3dtoy_ae/saved \
+--ckpt_load_iter=false \
 

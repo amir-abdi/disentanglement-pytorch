@@ -252,7 +252,6 @@ def get_dataloader(args):
                              pin_memory=True,
                              drop_last=droplast)
 
-    logging.info('Number of samples: {}'.format(dataset.__len__()))
     if include_labels is not None:
         logging.info('num_classes: {}'.format(dataset.num_classes(False)))
         logging.info('class_values: {}'.format(class_values))
