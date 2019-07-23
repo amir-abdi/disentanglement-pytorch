@@ -18,7 +18,7 @@ JPG = 'jpg'
 FACTORVAE = 'FactorVAE'
 DIPVAE = 'DIPVAE'
 BetaTCVAE = 'BetaTCVAE'
-TOTAL_VAE = 'TOTAL_VAE'
+TOTAL_VAE = 'total_vae'
 LR_SCHEDULERS = ('ReduceLROnPlateau', 'StepLR', 'MultiStepLR', 'ExponentialLR',
                  'CosineAnnealingLR', 'CyclicLR', 'LambdaLR')
 LEARNING_RATE = 'learning_rate'

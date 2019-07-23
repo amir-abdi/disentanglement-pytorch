@@ -22,6 +22,7 @@ python3 main.py \
 --w_kld=1 \
 --lr_G=0.0008 \
 --max_iter=20000 \
---ckpt_load=/home/amirabdi/disentanglement-pytorch/checkpoints/mpi3dtoy_ae/saved \
+--lr_scheduler=ReduceLROnPlateau \
+--lr_scheduler_args mode=min factor=0.8 patience=0 min_lr=0.000001 \
+--ckpt_load=./saved_models/mpi3dtoy_ae_gaussian/saved2 \
 --ckpt_load_iter=false \
-
