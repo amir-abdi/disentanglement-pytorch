@@ -268,12 +268,10 @@ class StoreDictKeyPair(argparse.Action):
 
 
 def get_scheduler(optimizer, scheduler_type, scheduler_args):
-    print('scheduler_type ', scheduler_type, scheduler_args)
     if scheduler_type is None:
         return
     scheduler_class = getattr(torch.optim.lr_scheduler, scheduler_type)
     scheduler = scheduler_class(optimizer, **scheduler_args)
-    print(scheduler)
     return scheduler
 
 
