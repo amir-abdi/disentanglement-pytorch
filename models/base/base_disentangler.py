@@ -359,7 +359,7 @@ class BaseDisentangler(object):
 
         logging.info("saved checkpoint '{}' @ iter:{}".format(os.path.join(os.getcwd(), filepath), self.iter))
 
-    def load_checkpoint(self, filepath, load_iternum=True, ignore_failure=True):
+    def load_checkpoint(self, filepath, load_iternum=True, ignore_failure=True, load_optim=True):
         if os.path.isfile(filepath):
             with open(filepath, 'rb') as f:
                 checkpoint = torch.load(f)
@@ -379,20 +379,20 @@ class BaseDisentangler(object):
                     logging.warning(str(e))
                     if not ignore_failure:
                         raise e
-
-            for key, value in self.optim_dict.items():
-                try:
-                    if isinstance(value, dict):
-                        state_dicts = checkpoint['optim_states'][key]
-                        for sub_key, net in value.items():
-                            value[sub_key].load_state_dict(state_dicts[sub_key])
-                    else:
-                        value.load_state_dict(checkpoint['optim_states'][key])
-                except Exception as e:
-                    logging.warning("Could not load {}".format(key))
-                    logging.warning(str(e))
-                    if not ignore_failure:
-                        raise e
+            if load_optim:
+                for key, value in self.optim_dict.items():
+                    try:
+                        if isinstance(value, dict):
+                            state_dicts = checkpoint['optim_states'][key]
+                            for sub_key, net in value.items():
+                                value[sub_key].load_state_dict(state_dicts[sub_key])
+                        else:
+                            value.load_state_dict(checkpoint['optim_states'][key])
+                    except Exception as e:
+                        logging.warning("Could not load {}".format(key))
+                        logging.warning(str(e))
+                        if not ignore_failure:
+                            raise e
 
             self.pbar.update(self.iter)
             logging.info("Model Loaded: {} @ iter:{}".format(filepath, self.iter))
@@ -448,3 +448,10 @@ class BaseDisentangler(object):
             self.lr_scheduler.step(validation_loss)
         else:
             self.lr_scheduler.step()
+
+    def training_complete(self):
+        if self.epoch > self.max_epoch or self.iter > self.max_iter:
+            logging.info("-------Training Finished----------")
+            return True
+        return False
+

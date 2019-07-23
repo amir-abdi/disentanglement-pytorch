@@ -1,1 +1,2 @@
 saved_models/mpi3dtoy_ae_gaussian/saved2 filter=lfs diff=lfs merge=lfs -text
+saved_models/mpi3dtoy_dip/saved filter=lfs diff=lfs merge=lfs -text

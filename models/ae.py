@@ -60,7 +60,7 @@ class AE(BaseDisentangler):
         return recon_loss
 
     def train(self):
-        while self.iter < self.max_iter:
+        while not self.training_complete():
             self.net_mode(train=True)
             for x_true1, _ in self.data_loader:
                 x_true1 = x_true1.to(self.device)
@@ -78,7 +78,6 @@ class AE(BaseDisentangler):
                               recon_image=x_recon,
                               )
 
-        logging.info("-------Training Finished----------")
         self.pbar.close()
 
     def test(self):

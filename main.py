@@ -171,6 +171,7 @@ def get_args(sys_args):
     parser.add_argument('--ckpt_dir', default='checkpoints', type=str, help='checkpoint directory')
     parser.add_argument('--ckpt_load', default=None, type=str, help='checkpoint name to load')
     parser.add_argument('--ckpt_load_iternum', default=True, type=str2bool, help='start global iteration from ckpt')
+    parser.add_argument('--ckpt_load_optim', default=True, type=str2bool, help='load the optimizer state')
     parser.add_argument('--ckpt_save_iter', default=1000, type=int, help='checkpoint save iter')
 
     # Iterations [default for all is equal to 1 epoch]
