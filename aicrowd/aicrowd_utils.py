@@ -1,14 +1,6 @@
 import os
-import numpy as np
 import gin
 import logging
-
-from aicrowd import utils_pytorch
-from disentanglement_lib.config.unsupervised_study_v1 import sweep as unsupervised_study_v1
-import gin.tf
-from disentanglement_lib.data.ground_truth import named_data
-from aicrowd.evaluate import evaluate
-from common import constants as c
 
 
 def is_on_aicrowd_server():
@@ -37,6 +29,12 @@ def get_gin_config(config_files, metric_name):
 
 
 def evaluate_disentanglement_metric(model, metric_name='mig', dataset_name='mpi3d_toy'):
+    # These imports are included only inside this function for code base to run on systems without
+    # proper installation of tensorflow and libcublas
+    from aicrowd import utils_pytorch
+    from aicrowd.evaluate import evaluate
+    from disentanglement_lib.config.unsupervised_study_v1 import sweep as unsupervised_study_v1
+
     _study = unsupervised_study_v1.UnsupervisedStudyV1()
     evaluation_configs = sorted(_study.get_eval_config_files())
     evaluation_configs.append(os.path.join(os.getenv("PWD", ""), "extra_metrics_configs/irs.gin"))
