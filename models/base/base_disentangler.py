@@ -8,7 +8,7 @@ import torchvision.utils
 from common.utils import grid2gif, get_data_for_visualization, prepare_data_for_visualization, get_lr
 from common.dataset import get_dataloader
 import common.constants as c
-from aicrowd.aicrowd_utils import is_on_aicrowd_server
+from aicrowd.aicrowd_utils import is_on_aicrowd_server, evaluate_disentanglement_metric
 
 DEBUG = False
 
@@ -88,12 +88,14 @@ class BaseDisentangler(object):
         # logging
         self.iter = 0
         self.epoch = 0
+        self.eval_result = 0
 
         # logging iterations
         self.print_iter = args.print_iter if args.print_iter is not None else self.num_batches
         self.float_iter = args.float_iter if args.float_iter is not None else self.num_batches
         self.recon_iter = args.recon_iter if args.recon_iter is not None else self.num_batches
         self.traverse_iter = args.traverse_iter if args.traverse_iter is not None else self.num_batches
+        self.evaluate_iter = args.evaluate_iter if args.evaluate_iter is not None else self.num_batches
 
         # override logging iterations if all_iter is set
         if args.all_iter is not None:
@@ -101,6 +103,7 @@ class BaseDisentangler(object):
             self.recon_iter = args.all_iter
             self.traverse_iter = args.all_iter
             self.print_iter = args.all_iter
+            self.evaluate_iter = args.all_iter
 
         # traversing the latent space
         self.traverse_min = args.traverse_min
@@ -144,6 +147,8 @@ class BaseDisentangler(object):
 
     def log_save(self, **kwargs):
         self.step()
+        if self.on_aicrowd_server:
+            return
 
         if self.iter > 0 and self.iter % self.ckpt_save_iter == 0:
             self.save_checkpoint()
@@ -164,6 +169,7 @@ class BaseDisentangler(object):
             # other values to log
             self.info_cumulative[c.ITERATION] = self.iter
             self.info_cumulative[c.LEARNING_RATE] = get_lr(self.optim_dict['optim_G'])  # assuming we want optim_G
+            self.info_cumulative['eval_result'] = self.eval_result
 
             if self.use_wandb:
                 import wandb
@@ -187,6 +193,9 @@ class BaseDisentangler(object):
 
         if self.iter % self.traverse_iter == 0:
             self.visualize_traverse(limit=(self.traverse_min, self.traverse_max), spacing=self.traverse_spacing)
+
+        # if self.iter % self.evaluate_iter == self.evaluate_iter - 1:
+        #     self.eval_result = evaluate_disentanglement_metric(self)
 
     def visualize_recon(self, input_image, recon_image, test=False):
         input_image = torchvision.utils.make_grid(input_image)
@@ -395,7 +404,10 @@ class BaseDisentangler(object):
                             raise e
 
             self.pbar.update(self.iter)
-            logging.info("Model Loaded: {} @ iter:{}".format(filepath, self.iter))
+            # TODO: remove the following hard coded lr assumption on optim_G
+            # Assuming optim_G to be the optimizer for the generator and the one we are interested in
+            logging.info("Model Loaded: {} @ iter:{}, lr:{}".format(filepath, self.iter,
+                                                                    get_lr(self.optim_dict['optim_G'])))
 
         else:
             logging.error("File does not exist: {}".format(filepath))

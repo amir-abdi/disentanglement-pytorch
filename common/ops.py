@@ -214,9 +214,9 @@ def total_correlation(z, z_mean, z_logvar):
 def gaussian_log_density(samples, mean, log_var):
     """ Estimate the log density of a Gaussian distribution
     Borrowed from https://github.com/google-research/disentanglement_lib/
-    :param samples:
-    :param mean:
-    :param log_var:
+    :param samples: batched samples of the Gaussian densities with mean=mean and log of variance = log_var
+    :param mean: batched means of Gaussian densities
+    :param log_var: batches means of log_vars
     :return:
     """
     import math

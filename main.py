@@ -49,7 +49,7 @@ def main(args):
     model_cl = getattr(models, args.alg)
     model = model_cl(args)
     if args.ckpt_load:
-        model.load_checkpoint(args.ckpt_load, load_iternum=args.ckpt_load_iternum)
+        model.load_checkpoint(args.ckpt_load, load_iternum=args.ckpt_load_iternum, load_optim=args.ckpt_load_optim)
 
     if not args.test:
         model.train()
@@ -175,6 +175,8 @@ def get_args(sys_args):
     parser.add_argument('--ckpt_save_iter', default=1000, type=int, help='checkpoint save iter')
 
     # Iterations [default for all is equal to 1 epoch]
+    parser.add_argument('--evaluate_iter', default=None, type=int,
+                        help='number of iters to evaluate the disentanglement with the mig metric [default: 1 epoch]')
     parser.add_argument('--float_iter', default=None, type=int,
                         help='number of iterations to aggregate float logs [default: 1 epoch]')
     parser.add_argument('--recon_iter', default=None, type=int,

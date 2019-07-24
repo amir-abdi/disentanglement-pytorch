@@ -24,6 +24,7 @@ import disentanglement_lib
 try:
     # Monkey patch in our own evaluate, which supports pytorch *and* tensorflow.
     from aicrowd import evaluate
+
     disentanglement_lib.evaluation.evaluate = evaluate
     MONKEY = True
 except ImportError:
@@ -48,7 +49,7 @@ import numpy as np
 # 0. Settings
 # By default, we save all the results in subdirectories of the following path.
 ##############################################################################
-base_path = os.getenv("AICROWD_OUTPUT_PATH","./scratch/shared")
+base_path = os.getenv("AICROWD_OUTPUT_PATH", "./scratch/shared")
 experiment_name = os.getenv("AICROWD_EVALUATION_NAME", "experiment_name")
 DATASET_NAME = "auto"
 overwrite = True
@@ -60,9 +61,11 @@ if not MONKEY:
     print("Evaluating Experiment '{experiment_name}' from {base_path}.")
 else:
     from aicrowd import utils_pytorch
+
     exp_config = utils_pytorch.get_config()
     print("Evaluating Experiment '{exp_config.experiment_name}' "
           "from {exp_config.base_path} on dataset {exp_config.dataset_name}")
+
 
 # ----- Helpers -----
 
@@ -76,44 +79,44 @@ def get_full_path(filename):
 ##############################################################################
 _study = unsupervised_study_v1.UnsupervisedStudyV1()
 evaluation_configs = sorted(_study.get_eval_config_files())
-#Add IRS
+# Add IRS
 evaluation_configs.append(get_full_path("extra_metrics_configs/irs.gin"))
 
 # Compute individual metrics
 expected_evaluation_metrics = [
     'dci',
     'factor_vae_metric',
-    'sap_score',    
+    'sap_score',
     'mig',
     'irs'
 ]
 
 for gin_eval_config in evaluation_configs:
     metric_name = gin_eval_config.split("/")[-1].replace(".gin", "")
-    if  metric_name not in expected_evaluation_metrics:
+    if metric_name not in expected_evaluation_metrics:
         # Ignore unneeded evaluation configs
         continue
     print("Evaluating Metric : {}".format(metric_name))
     result_path = os.path.join(
-                    experiment_output_path,
-                    "metrics",
-                    metric_name
-                )
+        experiment_output_path,
+        "metrics",
+        metric_name
+    )
     representation_path = os.path.join(
-                            experiment_output_path,
-                            "representation"
-                        )
+        experiment_output_path,
+        "representation"
+    )
     eval_bindings = [
         "evaluation.random_seed = {}".format(0),
         "evaluation.name = '{}'".format(metric_name)
-    ]                        
+    ]
     evaluate.evaluate_with_gin(
-                representation_path,
-                result_path,
-                overwrite,
-                [gin_eval_config],
-                eval_bindings
-                )
+        representation_path,
+        result_path,
+        overwrite,
+        [gin_eval_config],
+        eval_bindings
+    )
 
 # Gather evaluation results
 evaluation_result_template = "{}/metrics/{}/results/aggregate/evaluation.json"
@@ -124,7 +127,7 @@ for _metric_name in expected_evaluation_metrics:
         _metric_name
     )
     evaluation_results = json.loads(
-            open(evaluation_json_path, "r").read()
+        open(evaluation_json_path, "r").read()
     )
     if _metric_name == "factor_vae_metric":
         _score = evaluation_results["evaluation_results.eval_accuracy"]
@@ -145,7 +148,6 @@ for _metric_name in expected_evaluation_metrics:
         raise Exception("Unknown metric name : {}".format(_metric_name))
 
 print("Final Scores : ", final_scores)
-
 
 ##############################################################################
 # (Optional) Generate Visualizations
