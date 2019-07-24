@@ -121,6 +121,7 @@ for gin_eval_config in evaluation_configs:
 # Gather evaluation results
 evaluation_result_template = "{}/metrics/{}/results/aggregate/evaluation.json"
 final_scores = {}
+sum_scores = 0
 for _metric_name in expected_evaluation_metrics:
     evaluation_json_path = evaluation_result_template.format(
         experiment_output_path,
@@ -146,8 +147,10 @@ for _metric_name in expected_evaluation_metrics:
         final_scores["irs"] = _score
     else:
         raise Exception("Unknown metric name : {}".format(_metric_name))
+    sum_scores += _score
 
 print("Final Scores : ", final_scores)
+print('sum_scores : ', sum_scores)
 
 ##############################################################################
 # (Optional) Generate Visualizations

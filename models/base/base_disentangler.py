@@ -5,7 +5,7 @@ import logging
 import torch
 import torchvision.utils
 
-from common.utils import grid2gif, get_data_for_visualization, prepare_data_for_visualization, get_lr
+from common.utils import grid2gif, get_data_for_visualization, prepare_data_for_visualization, get_lr, is_time_for
 from common.dataset import get_dataloader
 import common.constants as c
 from aicrowd.aicrowd_utils import is_on_aicrowd_server, evaluate_disentanglement_metric
@@ -26,6 +26,7 @@ class BaseDisentangler(object):
         self.vae_loss = args.vae_loss
         self.vae_type = args.vae_type
         self.on_aicrowd_server = is_on_aicrowd_server()
+        self.evaluate_metric = args.evaluate_metric
         self.lr_scheduler = None
 
         # Output directory
@@ -150,10 +151,10 @@ class BaseDisentangler(object):
         if self.on_aicrowd_server:
             return
 
-        if self.iter > 0 and self.iter % self.ckpt_save_iter == 0:
+        if is_time_for(self.iter, self.ckpt_save_iter):
             self.save_checkpoint()
 
-        if self.iter % self.print_iter == 0:
+        if is_time_for(self.iter, self.print_iter):
             msg = '[{}:{}]  '.format(self.epoch, self.iter)
             for key, value in kwargs.get(c.LOSS, dict()).items():
                 msg += '{}_{}={:.3f}  '.format(c.LOSS, key, value)
@@ -161,7 +162,7 @@ class BaseDisentangler(object):
                 msg += '{}_{}={:.3f}  '.format(c.ACCURACY, key, value)
             self.pbar.write(msg)
 
-        if self.iter % self.float_iter == 0:
+        if is_time_for(self.iter, self.float_iter):
             # average results
             for key, value in self.info_cumulative.items():
                 self.info_cumulative[key] /= self.float_iter
@@ -188,14 +189,14 @@ class BaseDisentangler(object):
                         complex_key = key + '_' + subkey
                         self.info_cumulative[complex_key] = float(subvalue) + self.info_cumulative.get(complex_key, 0)
 
-        if self.iter % self.recon_iter == 0:
+        if is_time_for(self.iter, self.recon_iter):
             self.visualize_recon(kwargs[c.INPUT_IMAGE], kwargs[c.RECON_IMAGE])
 
-        if self.iter % self.traverse_iter == 0:
+        if is_time_for(self.iter, self.traverse_iter):
             self.visualize_traverse(limit=(self.traverse_min, self.traverse_max), spacing=self.traverse_spacing)
 
-        # if self.iter % self.evaluate_iter == self.evaluate_iter - 1:
-        #     self.eval_result = evaluate_disentanglement_metric(self)
+        if self.evaluate_metric is not None and is_time_for(self.iter, self.evaluate_iter):
+            self.eval_result = evaluate_disentanglement_metric(self, metric_name=self.evaluate_metric)
 
     def visualize_recon(self, input_image, recon_image, test=False):
         input_image = torchvision.utils.make_grid(input_image)
@@ -406,8 +407,8 @@ class BaseDisentangler(object):
             self.pbar.update(self.iter)
             # TODO: remove the following hard coded lr assumption on optim_G
             # Assuming optim_G to be the optimizer for the generator and the one we are interested in
-            logging.info("Model Loaded: {} @ iter:{}, lr:{}".format(filepath, self.iter,
-                                                                    get_lr(self.optim_dict['optim_G'])))
+            logging.info("Model Loaded: {} @ iter:{}, lr:{:.6f}".format(filepath, self.iter,
+                                                                        get_lr(self.optim_dict['optim_G'])))
 
         else:
             logging.error("File does not exist: {}".format(filepath))
@@ -466,4 +467,3 @@ class BaseDisentangler(object):
             logging.info("-------Training Finished----------")
             return True
         return False
-

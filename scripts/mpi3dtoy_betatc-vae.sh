@@ -26,7 +26,7 @@ python3 main.py \
 --max_iter=50000 \
 --iterations_c=2000 \
 --ckpt_load_iter=false \
---ckpt_load=./saved_models/mpi3dtoy_betatc/saved \
+--ckpt_load=./saved_models/mpi3dtoy_betatc/saved2 \
 --ckpt_load_optim=false \
 
 

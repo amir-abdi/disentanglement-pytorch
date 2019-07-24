@@ -30,6 +30,10 @@ python3 main.py \
 --ckpt_load=./saved_models/mpi3dtoy_ae_gaussian/saved2 \
 --ckpt_load_iter=false \
 --float_iter=10 \
+--evaluate_iter=10 \
+--evaluate_metric=irs \
+
+
 
 
 
