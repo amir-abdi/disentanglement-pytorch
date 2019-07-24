@@ -154,6 +154,7 @@ def evaluate(model_dir,
     results_dict["elapsed_time"] = time.time() - experiment_timer
     results.update_result_directory(results_dir, "evaluation", results_dict,
                                     original_results_dir)
+    return results_dict
 
 
 def _evaluate_with_tensorflow(module_path, evaluation_fn, dataset, random_seed):

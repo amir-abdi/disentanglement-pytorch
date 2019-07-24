@@ -36,3 +36,4 @@ DECODERS = ('SimpleConv64', 'ShallowLinear', 'DeepLinear')
 ENCODERS = ('SimpleConv64', 'SimpleGaussianConv64', 'PadlessConv64', 'PadlessGaussianConv64',
             'ShallowGaussianLinear', 'DeepGaussianLinear')
 
+EVALUATION_METRICS = ('dci', 'factor_vae_metric', 'sap_score', 'mig', 'irs')

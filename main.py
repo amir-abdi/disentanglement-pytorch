@@ -76,6 +76,8 @@ def get_args(sys_args):
 
     # NeurIPS2019 AICrowd Challenge
     parser.add_argument('--aicrowd_challenge', default=False, type=str2bool, help='Run is an AICrowd submission')
+    parser.add_argument('--evaluate_metric', default=None, type=str, choices=c.EVALUATION_METRICS,
+                        help='Metric to evaluate the model during training')
 
     # name
     parser.add_argument('--alg', type=str, help='the disentanglement algorithm', choices=c.ALGS)

@@ -279,3 +279,7 @@ def get_scheduler(optimizer, scheduler_type, scheduler_args):
 def get_lr(optimizer):
     for param_group in optimizer.param_groups:
         return param_group['lr']
+
+
+def is_time_for(iteration, milestone):
+    return iteration % milestone == milestone - 1
