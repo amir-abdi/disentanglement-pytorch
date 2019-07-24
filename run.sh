@@ -28,8 +28,8 @@ fi
 export PYTHONPATH=${PYTHONPATH}:${NDC_ROOT}
 #bash ${NDC_ROOT}/scripts/mpi3dtoy_factor-vae.sh
 #bash ${NDC_ROOT}/scripts/mpi3dtoy_dipII-vae.sh
-#bash ${NDC_ROOT}/scripts/mpi3dtoy_betatc-vae.sh
-bash ${NDC_ROOT}/scripts/mpi3dtoy_diptc-vae.sh
+bash ${NDC_ROOT}/scripts/mpi3dtoy_betatc-vae.sh
+#bash ${NDC_ROOT}/scripts/mpi3dtoy_diptc-vae.sh
 
 #--ckpt_load=/home/amirabdi/disentanglement-pytorch/checkpoints/last \
 
