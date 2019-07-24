@@ -32,6 +32,7 @@ class TestModels(object):
                          '--z_dim={}'.format(Z_DIM),
                          '--batch_size={}'.format(BATCH_SIZE),
                          '--all_iter={}'.format(ALL_ITER),
+                         '--evaluate_iter={}'.format(MAX_ITER*2),
                          '--ckpt_save_iter={}'.format(CKPT_SAVE_ITER),
                          '--max_iter={}'.format(MAX_ITER),
                          '--vae_loss={}'.format('AnnealedCapacity'),

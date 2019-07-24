@@ -180,9 +180,10 @@ class StyleFormatter(logging.Formatter):
     YELLOW = '33;40m'
     RED = '31;40m'
 
-    high_style = '{}{}(%(levelname)s)[%(asctime)s %(filename)s:%(lineno)d]  %(message)s{}0m'.format(CSI, RED, CSI)
-    medium_style = '{}{}(%(levelname)s)[%(asctime)s %(filename)s:%(lineno)d]  %(message)s{}0m'.format(CSI, YELLOW, CSI)
-    low_style = '(%(levelname)s)[%(asctime)s %(filename)s:%(lineno)d]  %(message)s'
+    # Add %(asctime)s after [ to include the time-date of the log
+    high_style = '{}{}(%(levelname)s)[%(filename)s:%(lineno)d]  %(message)s{}0m'.format(CSI, RED, CSI)
+    medium_style = '{}{}(%(levelname)s)[%(filename)s:%(lineno)d]  %(message)s{}0m'.format(CSI, YELLOW, CSI)
+    low_style = '(%(levelname)s)[%(filename)s:%(lineno)d]  %(message)s'
 
     def __init__(self, fmt=None, datefmt='%b-%d %H:%M', style='%'):
         super().__init__(fmt, datefmt, style)

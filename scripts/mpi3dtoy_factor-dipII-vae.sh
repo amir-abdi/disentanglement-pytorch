@@ -20,11 +20,13 @@ python3 main.py \
 --z_dim=20 \
 --use_wandb=true \
 --w_kld=1 \
---lr_G=0.0002 \
+--lr_G=0.0001 \
 --lr_scheduler=ReduceLROnPlateau \
 --lr_scheduler_args mode=min factor=0.8 patience=0 min_lr=0.000001 \
 --max_iter=30000 \
---ckpt_load=./saved_models/mpi3dtoy_ae_gaussian/saved2 \
+--ckpt_load=./checkpoints/mpi3dtoy_dipII-vae2/last \
 --ckpt_load_iter=false \
+--ckpt_load_optim=false \
+
 
 
