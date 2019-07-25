@@ -62,7 +62,7 @@ def main(args):
         path_to_saved = pyu.export_model(pyu.RepresentationExtractor(model.model.encoder, 'mean'),
                                          input_shape=(1, model.num_channels, model.image_size, model.image_size))
         logging.info('A copy of the model saved in {}'.format(path_to_saved))
-        
+
         if on_aicrowd_server:
             aicrowd_helpers.register_progress(1.0)
             aicrowd_helpers.submit()
@@ -76,7 +76,7 @@ def get_args(sys_args):
 
     # NeurIPS2019 AICrowd Challenge
     parser.add_argument('--aicrowd_challenge', default=False, type=str2bool, help='Run is an AICrowd submission')
-    parser.add_argument('--evaluate_metric', default=None, type=str, choices=c.EVALUATION_METRICS,
+    parser.add_argument('--evaluate_metric', default=None, type=str, choices=c.EVALUATION_METRICS, nargs='+',
                         help='Metric to evaluate the model during training')
 
     # name
@@ -130,10 +130,20 @@ def get_args(sys_args):
     parser.add_argument('--iterations_c', default=100000, type=int, help='how many iterations to reach max_c')
 
     # Loss weights and parameters for [FactorVAE]
-    parser.add_argument('--w_tc_empirical', default=1.0, type=float, help='total correlation loss weight (e.g. in FactorVAE)')
+    parser.add_argument('--w_tc_empirical', default=1.0, type=float,
+                        help='total correlation loss weight (e.g. in FactorVAE)')
 
     # Loss weights and parameters for [BetaTCVAE]
-    parser.add_argument('--w_tc_analytical', default=1.0, type=float, help='total correlation loss weight (e.g. in BetaTCVAE)')
+    parser.add_argument('--w_tc_analytical', default=1.0, type=float,
+                        help='total correlation loss weight (e.g. in BetaTCVAE)')
+
+    # Loss weights and parameters for [InfoVAE]
+    parser.add_argument('--w_infovae', default=1.0, type=float,
+                        help='mmd loss weight (e.g. in InfoVAE)')
+
+    # Loss weights and parameters for [DIPVAE]
+    parser.add_argument('--w_dipvae', default=1.0, type=float,
+                        help='covariance regularizer loss weight (e.g. in DIPVAE I and II)')
 
     # Loss weights and parameters for [IFCVAE]
     parser.add_argument('--w_le', default=1.0, type=float, help='label encoding loss weight (e.g. in IFCVAE)')
@@ -152,7 +162,7 @@ def get_args(sys_args):
                         type=str, help='main dataset directory')
     parser.add_argument('--dset_name', default=None, type=str, help='dataset name')
     parser.add_argument('--image_size', default=64, type=int, help='width and height of image')
-    parser.add_argument('--num_workers', default=2, type=int, help='number of workers for the data loader')
+    parser.add_argument('--num_workers', default=1, type=int, help='number of workers for the data loader')
 
     # Logging and visualization
     parser.add_argument('--train_output_dir', default='train_outputs', type=str, help='output directory')
@@ -174,26 +184,27 @@ def get_args(sys_args):
     parser.add_argument('--ckpt_load', default=None, type=str, help='checkpoint name to load')
     parser.add_argument('--ckpt_load_iternum', default=True, type=str2bool, help='start global iteration from ckpt')
     parser.add_argument('--ckpt_load_optim', default=True, type=str2bool, help='load the optimizer state')
-    parser.add_argument('--ckpt_save_iter', default=1000, type=int, help='checkpoint save iter')
 
     # Iterations [default for all is equal to 1 epoch]
-    parser.add_argument('--evaluate_iter', default=None, type=int,
-                        help='number of iters to evaluate the disentanglement with the mig metric [default: 1 epoch]')
-    parser.add_argument('--float_iter', default=None, type=int,
-                        help='number of iterations to aggregate float logs [default: 1 epoch]')
-    parser.add_argument('--recon_iter', default=None, type=int,
-                        help='iterations to reconstruct input image [default: 1 epoch]')
-    parser.add_argument('--traverse_iter', default=None, type=int,
-                        help='iterations to traverse latent spaces [default: 1 epoch]')
-    parser.add_argument('--print_iter', default=None, type=int,
-                        help='iterations to print float values [default: 1 epoch]')
-    parser.add_argument('--all_iter', default=None, type=int,
-                        help='use same iteration for all [default: 1 epoch]')
+    parser.add_argument('--ckpt_save_iter', default=None, type=int, help='iters to save checkpoint '
+                                                                         '[default: 1 epoch]')
+    parser.add_argument('--evaluate_iter', default=None, type=int, help='iters to evaluate the disentanglement '
+                                                                        '[default: 1 epoch]')
+    parser.add_argument('--float_iter', default=None, type=int, help='iters to aggregate float logs '
+                                                                     '[default: 1 epoch]')
+    parser.add_argument('--recon_iter', default=None, type=int, help='iters to reconstruct input image '
+                                                                     '[default: 1 epoch]')
+    parser.add_argument('--traverse_iter', default=None, type=int, help='iters to traverse and visualize latent spaces '
+                                                                        '[default: 1 epoch]')
+    parser.add_argument('--print_iter', default=None, type=int, help='iters to print float values '
+                                                                     '[default: 1 epoch]')
+    parser.add_argument('--all_iter', default=None, type=int, help='use same iteration for all '
+                                                                   '[default: 1 epoch]')
 
     # Learning rate scheduler
     parser.add_argument('--lr_scheduler', default=None, type=str, choices=c.LR_SCHEDULERS,
                         help='Type of learning rate scheduler [default: no scheduler]')
-    parser.add_argument("--lr_scheduler_args", dest='lr_scheduler_args',action=StoreDictKeyPair, nargs="+",
+    parser.add_argument("--lr_scheduler_args", dest='lr_scheduler_args', action=StoreDictKeyPair, nargs="+",
                         metavar="KEY=VAL", help="Arguments of the for the lr_scheduler. See PyTorch docs.")
 
     args = parser.parse_args(sys_args)
@@ -212,6 +223,8 @@ def get_args(sys_args):
 
     # test
     args = update_args(args) if args.test else args
+
+    # todo: check wandb import and turn it off it fails
 
     return args
 

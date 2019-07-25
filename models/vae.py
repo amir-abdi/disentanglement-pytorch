@@ -132,6 +132,10 @@ class VAE(BaseDisentangler):
             output_losses['vae_tc_analytical'] = self._betatcvae_loss_fn(**kwargs)
             output_losses[c.TOTAL_VAE] += output_losses['vae_tc_analytical']
 
+        if c.INFOVAE in self.vae_type:
+            output_losses['vae_mmd'] = self._infovae_loss_fn(**kwargs)
+            output_losses[c.TOTAL_VAE] += output_losses['vae_mmd']
+
         return output_losses
 
     def vae_base(self, losses, x_true1, x_true2, label1, label2):
@@ -192,6 +196,7 @@ class VAE(BaseDisentangler):
         return PermD, optim_PermD
 
     def _factorvae_loss_fn(self, **kwargs):
+        # todo: add documentation and paper
         x_true2 = kwargs['x_true2']
         label2 = kwargs['label2']
         z = kwargs['z']
@@ -213,6 +218,7 @@ class VAE(BaseDisentangler):
         return vae_tc_loss, discriminator_tc_loss
 
     def _dipvae_loss_fn(self, **kwargs):
+        # todo: add documentation and paper
         mu = kwargs['mu']
         logvar = kwargs['logvar']
 
@@ -230,15 +236,23 @@ class VAE(BaseDisentangler):
         else:
             raise NotImplementedError("DIP variant not supported.")
 
-        return cov_dip_regularizer
+        return cov_dip_regularizer * self.w_dipvae
 
     def _betatcvae_loss_fn(self, **kwargs):
+        # todo: add documentation and paper
         mu = kwargs['mu']
         logvar = kwargs['logvar']
         z = kwargs['z']
 
         # Instead of substracting w_tc_analytical by 1, we just used w_tc_analytical to keep things consistent
-        return self.w_tc_analytical * common.ops.total_correlation(z, mu, logvar)
+        return common.ops.total_correlation(z, mu, logvar) * self.w_tc_analytical
+
+    def _infovae_loss_fn(self, **kwargs):
+        # todo: add documentation and paper
+        from common.ops import compute_mmd
+        z = kwargs['z']
+        z_true = torch.randn(1000, self.z_dim).to(self.device)
+        return compute_mmd(z_true, z) * self.w_infovae
 
     def test(self):
         self.net_mode(train=False)
