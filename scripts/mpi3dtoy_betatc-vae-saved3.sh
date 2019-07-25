@@ -20,15 +20,15 @@ python3 main.py \
 --use_wandb=true \
 --w_kld=1.0 \
 --w_tc_analytical=1.0 \
---lr_G=0.0004 \
+--lr_G=0.001 \
 --lr_scheduler=ReduceLROnPlateau \
---lr_scheduler_args mode=min factor=0.99 patience=2 min_lr=0.000001 \
+--lr_scheduler_args mode=min factor=0.97 patience=1 min_lr=0.000001 \
 --max_iter=10000 \
 --iterations_c=2000 \
 --ckpt_load=./saved_models/mpi3dtoy_betatc/saved3 \
 --ckpt_load_iter=false \
 --ckpt_load_optim=false \
---evaluate_metric=mig \
+--evaluate_metric mig sap_score irs \
 --batch_size=512 \
 
 #--ckpt_load=/home/amirabdi/disentanglement-pytorch/checkpoints/mpi3dtoy_betatc-vae-saved2/last \
