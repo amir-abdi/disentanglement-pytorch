@@ -11,7 +11,7 @@ python3 main.py \
 --name=$NAME \
 --alg=BetaVAE \
 --vae_loss=AnnealedCapacity \
---vae_type=BetaTCVAE \
+--vae_type=InfoVAE \
 --traverse_z=true \
 --encoder=PadlessGaussianConv64 \
 --decoder=SimpleConv64 \
@@ -22,20 +22,22 @@ python3 main.py \
 --w_tc_analytical=1.0 \
 --lr_G=0.001 \
 --lr_scheduler=ReduceLROnPlateau \
---lr_scheduler_args mode=min factor=0.97 patience=1 min_lr=0.000001 \
+--lr_scheduler_args mode=min factor=0.96 patience=2 min_lr=0.000001 \
 --max_iter=10000 \
 --iterations_c=2000 \
---ckpt_load=./saved_models/mpi3dtoy_betatc/saved3 \
---ckpt_load_iter=false \
+--evaluate_metric=mig \
+--ckpt_load=./saved_models/mpi3dtoy_infovae/saved \
+--ckpt_load_iternum=false \
 --ckpt_load_optim=false \
---evaluate_metric mig sap_score irs \
---batch_size=512 \
-
-#--ckpt_load=/home/amirabdi/disentanglement-pytorch/checkpoints/mpi3dtoy_betatc-vae-saved2/last \
+--batch_size=700 \
+--w_infovae=100 \
 
 
 
-#--ckpt_load=./checkpoints/mpi3dtoy_betatc-vae/last \
+#--ckpt_load_iter=false \
+#--ckpt_load=./saved_models/mpi3dtoy_betatc/saved2 \
+#--ckpt_load_optim=false \
+
 #--ckpt_load_iter=false \
 
 

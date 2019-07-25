@@ -89,7 +89,7 @@ class BaseDisentangler(object):
         # logging
         self.iter = 0
         self.epoch = 0
-        self.eval_result = 0
+        self.evaluate_results = dict()
 
         # logging iterations
         self.print_iter = args.print_iter if args.print_iter is not None else self.num_batches
@@ -182,7 +182,7 @@ class BaseDisentangler(object):
 
             # todo: not happy with this architecture for logging... should make it easier to add new variables to log
             if self.evaluate_metric is not None:
-                for key, value in self.eval_result.item():
+                for key, value in self.evaluate_results.items():
                     self.info_cumulative[key] = value
 
             if self.use_wandb:
@@ -209,7 +209,7 @@ class BaseDisentangler(object):
             self.visualize_traverse(limit=(self.traverse_min, self.traverse_max), spacing=self.traverse_spacing)
 
         if self.evaluate_metric is not None and is_time_for(self.iter, self.evaluate_iter):
-            self.eval_result = evaluate_disentanglement_metric(self, metric_name=self.evaluate_metric)
+            self.evaluate_results = evaluate_disentanglement_metric(self, metric_names=self.evaluate_metric)
 
     def visualize_recon(self, input_image, recon_image, test=False):
         input_image = torchvision.utils.make_grid(input_image)
