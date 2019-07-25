@@ -97,6 +97,7 @@ class BaseDisentangler(object):
         self.recon_iter = args.recon_iter if args.recon_iter is not None else self.num_batches
         self.traverse_iter = args.traverse_iter if args.traverse_iter is not None else self.num_batches
         self.evaluate_iter = args.evaluate_iter if args.evaluate_iter is not None else self.num_batches
+        self.ckpt_save_iter = args.ckpt_save_iter if args.ckpt_save_iter is not None else self.num_batches
 
         # override logging iterations if all_iter is set
         if args.all_iter is not None:
@@ -105,6 +106,7 @@ class BaseDisentangler(object):
             self.traverse_iter = args.all_iter
             self.print_iter = args.all_iter
             self.evaluate_iter = args.all_iter
+            self.ckpt_save_iter = args.all_iter
 
         # traversing the latent space
         self.traverse_min = args.traverse_min
@@ -123,7 +125,6 @@ class BaseDisentangler(object):
 
         # Checkpoint
         self.ckpt_dir = os.path.join(args.ckpt_dir, args.name)
-        self.ckpt_save_iter = args.ckpt_save_iter
         os.makedirs(self.ckpt_dir, exist_ok=True)
 
         self.net_dict = dict()
@@ -138,7 +139,15 @@ class BaseDisentangler(object):
         self.num_layer_disc = args.num_layer_disc
         self.size_layer_disc = args.size_layer_disc
         self.w_tc_empirical = args.w_tc_empirical
+
+        # BetaTCVAE args
         self.w_tc_analytical = args.w_tc_analytical
+
+        # InfoVAE args
+        self.w_infovae = args.w_infovae
+
+        # DIPVAE args
+        self.w_dipvae = args.w_dipvae
 
         # DIPVAE args
         self.lambda_od = args.lambda_od
@@ -170,7 +179,11 @@ class BaseDisentangler(object):
             # other values to log
             self.info_cumulative[c.ITERATION] = self.iter
             self.info_cumulative[c.LEARNING_RATE] = get_lr(self.optim_dict['optim_G'])  # assuming we want optim_G
-            self.info_cumulative['eval_result'] = self.eval_result
+
+            # todo: not happy with this architecture for logging... should make it easier to add new variables to log
+            if self.evaluate_metric is not None:
+                for key, value in self.eval_result.item():
+                    self.info_cumulative[key] = value
 
             if self.use_wandb:
                 import wandb

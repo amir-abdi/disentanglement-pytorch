@@ -18,6 +18,7 @@ JPG = 'jpg'
 FACTORVAE = 'FactorVAE'
 DIPVAE = 'DIPVAE'
 BetaTCVAE = 'BetaTCVAE'
+INFOVAE = 'InfoVAE'
 TOTAL_VAE = 'total_vae'
 LR_SCHEDULERS = ('ReduceLROnPlateau', 'StepLR', 'MultiStepLR', 'ExponentialLR',
                  'CosineAnnealingLR', 'CyclicLR', 'LambdaLR')
@@ -26,7 +27,7 @@ LEARNING_RATE = 'learning_rate'
 # Algorithms
 ALGS = ('AE', 'VAE', 'BetaVAE', 'CVAE', 'IFCVAE')
 VAE_LOSS = ('Basic', 'AnnealedCapacity')
-VAE_TYPE = ('Vanilla', FACTORVAE, DIPVAE, BetaTCVAE)
+VAE_TYPE = ('Vanilla', FACTORVAE, DIPVAE, BetaTCVAE, INFOVAE)
 DATASETS = ('celebA', 'dsprites')
 
 # Architectures
