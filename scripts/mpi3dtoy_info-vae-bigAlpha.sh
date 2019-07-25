@@ -20,18 +20,17 @@ python3 main.py \
 --use_wandb=true \
 --w_kld=1.0 \
 --w_tc_analytical=1.0 \
---lr_G=0.001 \
+--lr_G=0.002 \
 --lr_scheduler=ReduceLROnPlateau \
---lr_scheduler_args mode=min factor=0.96 patience=2 min_lr=0.000001 \
+--lr_scheduler_args mode=min factor=0.90 patience=2 min_lr=0.000001 \
 --max_iter=10000 \
 --iterations_c=2000 \
---evaluate_metric=mig \
+--evaluate_metric mig irs sap_score \
+--batch_size=256 \
+--w_infovae=100 \
 --ckpt_load=./saved_models/mpi3dtoy_infovae/saved \
 --ckpt_load_iternum=false \
 --ckpt_load_optim=false \
---batch_size=700 \
---w_infovae=100 \
-
 
 
 #--ckpt_load_iter=false \
