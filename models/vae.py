@@ -121,6 +121,7 @@ class VAE(BaseDisentangler):
         output_losses[c.TOTAL_VAE] += output_losses['kld']
 
         if c.FACTORVAE in self.vae_type:
+            # todo: rename tc values to more descriptive accronyms rather than anal vs empirical
             output_losses['vae_tc'], output_losses['discriminator_tc'] = self._factorvae_loss_fn(**kwargs)
             output_losses[c.TOTAL_VAE] += output_losses['vae_tc']
 
