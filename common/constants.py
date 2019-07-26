@@ -27,7 +27,7 @@ LEARNING_RATE = 'learning_rate'
 # Algorithms
 ALGS = ('AE', 'VAE', 'BetaVAE', 'CVAE', 'IFCVAE')
 VAE_LOSS = ('Basic', 'AnnealedCapacity')
-VAE_TYPE = ('Vanilla', FACTORVAE, DIPVAE, BetaTCVAE, INFOVAE)
+VAE_TYPE = ('Basic', FACTORVAE, DIPVAE, BetaTCVAE, INFOVAE)
 DATASETS = ('celebA', 'dsprites')
 
 # Architectures
