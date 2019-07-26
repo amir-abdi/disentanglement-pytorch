@@ -23,13 +23,13 @@ python3 main.py \
 --lr_G=0.004 \
 --lr_scheduler=ReduceLROnPlateau \
 --lr_scheduler_args mode=min factor=0.92 patience=2 min_lr=0.000001 \
---max_iter=15000 \
+--max_iter=30000 \
 --iterations_c=2000 \
 --ckpt_load_iternum=false \
 --ckpt_load=./saved_models/mpi3dtoy_betatc/saved4 \
 --ckpt_load_optim=false \
 --evaluate_metric mig sap_score irs \
---batch_size=700 \
+--batch_size=256 \
 
 #--ckpt_load=/home/amirabdi/disentanglement-pytorch/checkpoints/mpi3dtoy_betatc-vae-saved4/last \
 #--wandb_resume_id=r9r2nbvn \
