@@ -172,6 +172,7 @@ class BaseDisentangler(object):
             self.pbar.write(msg)
 
         if is_time_for(self.iter, self.float_iter):
+            print('******** logging floats', self.iter, self.float_iter)
             # average results
             for key, value in self.info_cumulative.items():
                 self.info_cumulative[key] /= self.float_iter
