@@ -5,4 +5,5 @@ saved_models/mpi3dtoy_betatc/saved2 filter=lfs diff=lfs merge=lfs -text
 saved_models/mpi3dtoy_betatc/saved3 filter=lfs diff=lfs merge=lfs -text
 saved_models/mpi3dtoy_infovae/saved filter=lfs diff=lfs merge=lfs -text
 saved_models/mpi3dtoy_betatc/saved4 filter=lfs diff=lfs merge=lfs -text
+saved_models/** filter=lfs diff=lfs merge=lfs -text
 . text !filter !merge !diff
