@@ -79,9 +79,10 @@ class BaseDisentangler(object):
 
         # Progress bar
         if not args.test:
+            self.max_iter = min(self.max_iter, self.max_epoch * self.num_batches)
             self.pbar = tqdm(total=self.max_iter)
         else:
-            self.pbar = tqdm(total=self.data_loader.dataset.__len__() // self.batch_size)
+            self.pbar = tqdm(self.num_batches)
 
         # logging
         self.info_cumulative = {}
@@ -172,7 +173,6 @@ class BaseDisentangler(object):
             self.pbar.write(msg)
 
         if is_time_for(self.iter, self.float_iter):
-            print('******** logging floats', self.iter, self.float_iter)
             # average results
             for key, value in self.info_cumulative.items():
                 self.info_cumulative[key] /= self.float_iter
