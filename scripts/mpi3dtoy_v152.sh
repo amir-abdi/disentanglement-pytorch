@@ -26,14 +26,9 @@ python3 main.py \
 --max_iter=100000 \
 --iterations_c=2000 \
 --evaluate_metric mig sap_score irs \
---ckpt_load_iter=false \
---ckpt_load=./saved_models/mpi3dtoy_betatc/saved \
---ckpt_load_optim=false \
+--wandb_resume_id=v9relbqu \
+--ckpt_load=./checkpoints/mpi3dtoy_betatc-vae-1.9-try11/saved \
 
-
-#--ckpt_load=./saved_models/mpi3dtoy_betatc/saved \
-
-#--ckpt_load=./checkpoints/mpi3dtoy_betatc-vae/last \
 #--ckpt_load_iter=false \
 
 
