@@ -1,0 +1,55 @@
+The infamous 1.9:
+https://app.wandb.ai/amirabdi/disentanglement/runs/v9relbqu?workspace=user-amirabdi
+'dci': 0.39434186301006174,
+'factor_vae_metric': 0.4722,
+'sap_score': 0.12654285714285715,
+'mig': 0.20417340091652889,
+'irs': 0.6058661836189893
+sum_scores :  1.803124304688437
+
+It was set to end on 30000 iters...
+Let's continue for more iterations and see where we end up.
+The rest (till 60000) will be written to the same log: https://app.wandb.ai/amirabdi/disentanglement/runs/v9relbqu?workspace=user-amirabdi
+
+-----------
+This learning rate makes more sense than the LRStep
+--lr_G=0.001 \
+--lr_scheduler=ReduceLROnPlateau \
+--lr_scheduler_args mode=min factor=0.93 patience=2 min_lr=0.00005 \
+--max_iter=60000 \
+
+---------------------------
+mpi3dtoy_betatc-vae-1.9 --> 1.902
+|
+|
+|---mpi3dtoy_betatc-vae-1.9-try9
+|   doubled batch_size to 128 --> 1.779
+|   |
+|   |
+|   |---mpi3dtoy_factor-betatc-vae-1.9-try9 (9985)
+|       added FactorVAE --> 1.810
+|       |
+|       |---v156: w_tcs=10, w_kld=2, lr=0.002, 100k
+|
+|---mpi3dtoy_betatc-vae-1.9-try11 (9983)
+    70000 and min_lr=0.00005 --> 1.798
+    |
+    |
+    |---mpi3dtoy_betatc-vae-1.9-try12 (9986)
+    |   w_tc_analytical=2 --> 1.638
+    |
+    |---mpi3dtoy_v150.sh (10117)
+    |   factorvae --> 1.662
+    |   |
+    |   |
+    |   |---mpi3dtoy_v151.sh (10118)
+    |   |   lr=0.003 --> 1.282
+    |   |   |
+    |   |   |--- v153: longer 120k (10176)
+    |   |
+    |   |--- v154: batch_size=128, 100k, lr=0.0015 (10195)
+    |
+    |--- v152: longer 100000 (10131) --> 1.699
+
+
+v155: simple vae (10197) 

@@ -25,10 +25,14 @@ python3 main.py \
 --lr_scheduler_args mode=min factor=0.95 patience=1 min_lr=0.000001 \
 --max_iter=30000 \
 --iterations_c=2000 \
---ckpt_load=./checkpoints/mpi3dtoy_betatc-vae/last \
---ckpt_load_iter=false \
---ckpt_load=./saved_models/mpi3dtoy_betatc/saved \
---ckpt_load_optim=false \
+--ckpt_load=/home/amirabdi/disentanglement-pytorch/checkpoints/mpi3dtoy_betatc-vae-1.9/last \
+--evaluate_metric mig sap_score irs \
+--wandb_resume_id=v9relbqu \
+
+#--ckpt_load_iter=false \
+#--ckpt_load=./saved_models/mpi3dtoy_betatc/saved \
+#--ckpt_load_optim=false \
+
 
 #--ckpt_load=./saved_models/mpi3dtoy_betatc/saved \
 
