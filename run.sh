@@ -41,13 +41,5 @@ export PYTHONPATH=${PYTHONPATH}:${NDC_ROOT}
 #bash ${NDC_ROOT}/scripts/mpi3dtoy_betatc-vae-1.9-try2.sh
 #bash ${NDC_ROOT}/scripts/mpi3dtoy_betatc-vae-1.9-try3.sh
 #bash ${NDC_ROOT}/scripts/mpi3dtoy_betatc-vae-1.9-try11.sh
-bash ${NDC_ROOT}/scripts/mpi3dtoy_v154.sh
+bash ${NDC_ROOT}/scripts/mpi3dtoy_v155.sh
 
-#--ckpt_load=/home/amirabdi/disentanglement-pytorch/checkpoints/last \
-
-
-# Execute the local evaluation
-#echo "----- LOCAL EVALUATION -----"
-#if [ ! -n "${AICROWD_IS_GRADING+set}" ]; then
-#    python ${NDC_ROOT}/local_evaluation.py
-#fi
