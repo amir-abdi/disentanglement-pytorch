@@ -23,10 +23,9 @@ python3 main.py \
 --lr_G=0.003 \
 --lr_scheduler=ReduceLROnPlateau \
 --lr_scheduler_args mode=min factor=0.95 patience=1 min_lr=0.00005 \
---max_iter=70000 \
+--max_iter=120000 \
 --iterations_c=2000 \
 --evaluate_metric mig sap_score irs \
---wandb_resume_id=v9relbqu \
 --ckpt_load_iter=false \
 --ckpt_load=./saved_models/mpi3dtoy_betatc/saved \
 --ckpt_load_optim=false \
