@@ -29,7 +29,7 @@ mpi3dtoy_betatc-vae-1.9 --> 1.902
 |   |---mpi3dtoy_factor-betatc-vae-1.9-try9 (9985)
 |       added FactorVAE --> 1.810
 |       |
-|       |---v156: w_tcs=10, w_kld=2, lr=0.002, 100k
+|       |---v156: w_tcs=10, w_kld=2, lr=0.002, 60k (10265)
 |
 |---mpi3dtoy_betatc-vae-1.9-try11 (9983)
     70000 and min_lr=0.00005 --> 1.798
@@ -45,11 +45,11 @@ mpi3dtoy_betatc-vae-1.9 --> 1.902
     |   |---mpi3dtoy_v151.sh (10118)
     |   |   lr=0.003 --> 1.282
     |   |   |
-    |   |   |--- v153: longer 120k (10176)
+    |   |   |--- v153: lr=0.002, longer 90k (10267)
     |   |
-    |   |--- v154: batch_size=128, 100k, lr=0.0015 (10195)
+    |   |--- v154: batch_size=128, 40k, lr=0.0015 , factor=0.91(10195)
     |
     |--- v152: longer 100000 (10131) --> 1.699
 
 
-v155: simple vae (10197) 
+v155: simple vae (10197) --> 1.21 

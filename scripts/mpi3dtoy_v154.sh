@@ -22,8 +22,8 @@ python3 main.py \
 --w_tc_analytical=1.0 \
 --lr_G=0.0015 \
 --lr_scheduler=ReduceLROnPlateau \
---lr_scheduler_args mode=min factor=0.95 patience=1 min_lr=0.00005 \
---max_iter=100000 \
+--lr_scheduler_args mode=min factor=0.91 patience=1 min_lr=0.0001 \
+--max_iter=40000 \
 --iterations_c=2000 \
 --evaluate_metric mig sap_score irs \
 --ckpt_load_iter=false \
