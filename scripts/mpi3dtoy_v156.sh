@@ -24,7 +24,7 @@ python3 main.py \
 --lr_G=0.002 \
 --lr_scheduler=ReduceLROnPlateau \
 --lr_scheduler_args mode=min factor=0.95 patience=1 min_lr=0.00005 \
---max_iter=100000 \
+--max_iter=60000 \
 --iterations_c=2000 \
 --ckpt_load_iter=false \
 --ckpt_load=./saved_models/mpi3dtoy_betatc/saved \
