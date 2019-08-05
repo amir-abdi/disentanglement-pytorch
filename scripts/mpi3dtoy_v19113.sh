@@ -31,6 +31,7 @@ python3 main.py \
 --ckpt_load_optim=false \
 
 
+
 #--ckpt_load=./saved_models/mpi3dtoy_betatc/saved \
 
 #--ckpt_load=./checkpoints/mpi3dtoy_betatc-vae/last \
