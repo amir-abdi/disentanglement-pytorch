@@ -41,4 +41,4 @@ export PYTHONPATH=${PYTHONPATH}:${NDC_ROOT}
 #bash ${NDC_ROOT}/scripts/mpi3dtoy_betatc-vae-1.9-try2.sh
 #bash ${NDC_ROOT}/scripts/mpi3dtoy_betatc-vae-1.9-try3.sh
 #bash ${NDC_ROOT}/scripts/mpi3dtoy_betatc-vae-1.9-try11.sh
-bash ${NDC_ROOT}/scripts/mpi3dtoy_v176.sh
+bash ${NDC_ROOT}/scripts/mpi3dtoy_v19120.sh
