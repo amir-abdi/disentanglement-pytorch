@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
 
+#mpi3d_toy
+#color_dsprites
+#cars3d
+DATASET_NAME=$1
+
+conda activate disentanglement_challenge
+
 # Set up training environment.
 # Feel free to change these as required:
-export AICROWD_DATASET_NAME=mpi3d_toy
+export AICROWD_DATASET_NAME=$DATASET_NAME
 export AICROWD_EVALUATION_NAME="PytorchVAE"$AICROWD_DATASET_NAME
-#mpi3d_toy
-#cars3d
 
 # Change these only if you know what you're doing:
 # Check if the root is set; if not use the location of this script as root
