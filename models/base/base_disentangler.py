@@ -76,6 +76,7 @@ class BaseDisentangler(object):
 
         logging.info('Number of samples: {}'.format(len(self.data_loader.dataset)))
         logging.info('Number of batches per epoch: {}'.format(self.num_batches))
+        logging.info('Number of channels: {}'.format(self.num_channels))
 
         # Progress bar
         if not args.test:
