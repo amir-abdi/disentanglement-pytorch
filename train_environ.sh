@@ -3,8 +3,10 @@
 #mpi3d_toy
 #color_dsprites
 #cars3d
+#mpi3d_realistic
 DATASET_NAME=$1
 
+source ~/miniconda3/etc/profile.d/conda.sh
 conda activate disentanglement_challenge
 
 # Set up training environment.
@@ -25,3 +27,8 @@ fi
 export PYTHONPATH=${PYTHONPATH}:${NDC_ROOT}
 export AICROWD_OUTPUT_PATH=${NDC_ROOT}/scratch/shared
 export DISENTANGLEMENT_LIB_DATA=$DATASETS
+
+
+echo '$DATASET_NAME'=$DATASET_NAME
+echo '$AICROWD_OUTPUT_PATH'=$AICROWD_OUTPUT_PATH
+echo '$DISENTANGLEMENT_LIB_DATA'=$DISENTANGLEMENT_LIB_DATA
