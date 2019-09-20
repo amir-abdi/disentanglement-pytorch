@@ -231,7 +231,6 @@ class IFCVAE(VAE):
                               acc=accuracies_dict
                               )
             # end of epoch
-            self.schedulers_step(iteration=self.iter)
         self.pbar.close()
 
     def test(self):
