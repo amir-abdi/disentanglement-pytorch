@@ -233,7 +233,8 @@ class IFCVAE(VAE):
                               loss=losses,
                               acc=accuracies_dict
                               )
-
+            # end of epoch
+            self.schedulers_step(validation_loss=vae_loss_epoch / self.num_batches)
         self.pbar.close()
 
     def test(self):

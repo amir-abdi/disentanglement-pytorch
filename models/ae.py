@@ -81,7 +81,7 @@ class AE(BaseDisentangler):
                               input_image=x_true1,
                               recon_image=x_recon,
                               )
-
+            # end of epoch
         self.pbar.close()
 
     def test(self):
