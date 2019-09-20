@@ -1,3 +1,6 @@
+"""
+Borrowed from https://github.com/AIcrowd/neurips2019_disentanglement_challenge_starter_kit/blob/master/local_evaluation.py
+"""
 # coding=utf-8
 # Copyright 2018 The DisentanglementLib Authors.  All rights reserved.
 #

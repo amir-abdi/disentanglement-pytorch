@@ -1,3 +1,7 @@
+"""
+Borrowed from https://github.com/AIcrowd/neurips2019_disentanglement_challenge_starter_kit/blob/master/utils_pytorch.py
+"""
+
 from copy import deepcopy
 import os
 from collections import namedtuple

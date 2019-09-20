@@ -4,14 +4,13 @@
 Pytorch Implementation of Disentanglement Algorithms for Variational Autoencoders 
 
 
-### Dataset Setup
-To smoothly run the demo scripts, set the `DATASETS` environment variable 
-to the directory holding all the datasets. 
-Please don't change the original structure of the datasets as the
-`common.dataset.get_dataloader()` method checks for the original 
-names.
+### Installation
 
-### Running
+Install the requirements: `pip install -r requirements.txt`
+Or build conda environment: `conda env create -f environment.yml`
+
+
+### Training
 
 To run the models:
 
@@ -21,3 +20,22 @@ There are some ready-to-run scripts in the `scripts` folder. Try them with:
 
     bash scripts/SCRIPT_NAME
     
+
+### Data Setup
+To run the scripts:
+- set the `$DATASETS` environment variable 
+to the directory holding all the datasets, and
+- set the  `$AICROWD_DATASET_NAME` environment variable to
+the name of the dataset 
+(borrowed from [here](https://github.com/AIcrowd/neurips2019_disentanglement_challenge_starter_kit/blob/master/utils_pytorch.py)
+which leverages the implementations of [disentanglement_lib](https://github.com/google-research/disentanglement_lib)).
+
+The loader for the following datasets are implemented:
+'dsprites_full', 'dsprites_noshape', 'color_dsprites', 
+'noisy_dsprites', 'scream_dsprites', 'smallnorb', 
+'cars3d', 'mpi3d_toy', 'mpi3d_realistic', 
+'mpi3d_real', 'shapes3d'.  
+
+The alternative is to set the `--dset_dir` and `--dset_name` flags to 
+where the dataset is stored. Only the 'CelebA' and
+'dsprites' datasets are included in this approach. 
