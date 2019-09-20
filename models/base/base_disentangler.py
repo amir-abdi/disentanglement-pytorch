@@ -139,7 +139,8 @@ class BaseDisentangler(object):
         if self.use_wandb:
             import wandb
             resume_wandb = True if args.wandb_resume_id else False
-            wandb.init(config=args, resume=resume_wandb, id=args.wandb_resume_id, project=c.WANDB_NAME)
+            wandb.init(config=args, resume=resume_wandb, id=args.wandb_resume_id, project=c.WANDB_NAME,
+                       name=args.name)
 
         # Checkpoint
         self.ckpt_dir = os.path.join(args.ckpt_dir, args.name)
