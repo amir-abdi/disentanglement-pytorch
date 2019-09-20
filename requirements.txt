@@ -35,7 +35,7 @@ tensorflow-gpu==1.13.1
 tensorflow-hub==0.4.0
 tensorflow-probability==0.6.0
 termcolor==1.1.0
-Werkzeug==0.15.2
+Werkzeug==0.16.0
 torch
 torchvision
 argparse
