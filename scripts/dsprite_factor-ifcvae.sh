@@ -11,7 +11,7 @@ python3 main.py \
 --alg=IFCVAE \
 --vae_loss=AnnealedCapacity \
 --vae_type=FactorVAE \
---dset_dir=/home/amirabdi/data/Datasets/ \
+--dset_dir=$DATASETS \
 --dset_name=dsprites \
 --traverse_z=true \
 --traverse_c=true \
@@ -25,10 +25,7 @@ python3 main.py \
 --w_aux=20 \
 --w_tc=1 \
 --include_labels 1 \
---use_wandb=true \
---ckpt_load=/home/amirabdi/disentanglement-pytorch/checkpoints/dsprite_factor-ifcvae/last \
-
-#--wandb_resume_id=nvm6p06s \
+--use_wandb=false \
 
 
 

@@ -10,11 +10,11 @@ python3 main.py \
 --name=$NAME \
 --alg=IFCVAE \
 --vae_loss=AnnealedCapacity \
---dset_dir=/home/amirabdi/data/Datasets/ \
+--dset_dir=$DATASETS \
 --dset_name=dsprites \
 --traverse_z=true \
 --traverse_c=true \
---encoder SimpleGaussianConv64 SimpleEncoder64 \
+--encoder SimpleGaussianConv64 SimpleConv64 \
 --decoder=SimpleConv64 \
 --discriminator=SimpleDiscriminator \
 --label_tiler=MultiTo2DChannel \
@@ -22,19 +22,6 @@ python3 main.py \
 --w_kld=5 \
 --w_le=1 \
 --w_aux=20 \
---w_tc=1 \
+--w_tc_empirical=1 \
 --include_labels 1 \
---use_wandb=true \
---ckpt_load=/home/amirabdi/disentanglement-pytorch/checkpoints/dsprite_ifcvae/before_softmax \
-
-#--wandb_resume_id=s2hc9d6i \
-
-#--verbose=10 \
-#--all_iter=1 \
-
-
-
-
-
-
-
+--use_wandb=false \

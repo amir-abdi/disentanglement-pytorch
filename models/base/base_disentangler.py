@@ -9,6 +9,7 @@ from common.utils import grid2gif, get_data_for_visualization, prepare_data_for_
 from common.dataset import get_dataloader
 import common.constants as c
 from aicrowd.aicrowd_utils import is_on_aicrowd_server, evaluate_disentanglement_metric
+from common.utils import get_scheduler
 
 DEBUG = False
 
@@ -28,6 +29,8 @@ class BaseDisentangler(object):
         self.on_aicrowd_server = is_on_aicrowd_server()
         self.evaluate_metric = args.evaluate_metric
         self.lr_scheduler = None
+        self.w_recon_scheduler = None
+        self.optim_G = None
 
         # Output directory
         self.train_output_dir = os.path.join(args.train_output_dir, self.name)
@@ -477,8 +480,17 @@ class BaseDisentangler(object):
         else:
             self.lr_scheduler.step()
 
+    def w_recon_scheduler_step(self):
+        if self.w_recon_scheduler is None:
+            return
+        self.w_recon = self.w_recon_scheduler.step()
+
     def training_complete(self):
         if self.epoch > self.max_epoch or self.iter > self.max_iter:
             logging.info("-------Training Finished----------")
             return True
         return False
+
+    def setup_schedulers(self, lr_scheduler, lr_scheduler_args, w_recon_scheduler, w_recon_scheduler_args):
+        self.lr_scheduler = get_scheduler(self.optim_G, lr_scheduler, lr_scheduler_args)
+        self.w_recon_scheduler = get_scheduler(self.w_recon, w_recon_scheduler, w_recon_scheduler_args)

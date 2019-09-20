@@ -6,6 +6,7 @@ from models.vae import VAE
 from architectures import encoders, decoders, others
 from common.ops import reparametrize
 from common.utils import one_hot_embedding
+from common.utils import get_scheduler
 
 
 class CVAEModel(nn.Module):
@@ -83,6 +84,9 @@ class CVAE(VAE):
         # update nets
         self.net_dict['G'] = self.model
         self.optim_dict['optim_G'] = self.optim_G
+
+        self.setup_schedulers(args.lr_scheduler, args.lr_scheduler_args,
+                              args.w_recon_scheduler, args.w_recon_scheduler_args)
 
     def encode_deterministic(self, **kwargs):
         images = kwargs['images']

@@ -7,6 +7,7 @@ import torch.nn.functional as F
 
 from models.base.base_disentangler import BaseDisentangler
 from architectures import encoders, decoders
+from common.utils import get_scheduler
 
 
 class AEModel(nn.Module):
@@ -50,6 +51,9 @@ class AE(BaseDisentangler):
         self.optim_dict = {
             'optim_G': self.optim_G,
         }
+
+        self.setup_schedulers(args.lr_scheduler, args.lr_scheduler_args,
+                              args.w_recon_scheduler, args.w_recon_scheduler_args)
 
     def loss_fn(self, **kwargs):
         x_recon = kwargs['x_recon']
