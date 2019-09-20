@@ -1,6 +1,3 @@
-"""
-Borrowed from https://github.com/AIcrowd/neurips2019_disentanglement_challenge_starter_kit/blob/master/evaluate.py
-"""
 # coding=utf-8
 # Copyright 2018 The DisentanglementLib Authors.  All rights reserved.
 #
@@ -15,8 +12,10 @@ Borrowed from https://github.com/AIcrowd/neurips2019_disentanglement_challenge_s
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Evaluation protocol to compute metrics."""
+"""
+Borrowed from https://github.com/AIcrowd/neurips2019_disentanglement_challenge_starter_kit/blob/master/evaluate.py
+Evaluation protocol to compute metrics.
+"""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
