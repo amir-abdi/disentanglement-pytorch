@@ -108,15 +108,14 @@ def frechet_distance(mu1, sigma1, mu2, sigma2, eps=1e-6):
 
 
 class LinearScheduler:
-    def __init__(self, start_value, target_value=None, iters=None):
+    def __init__(self, start_value, target_value=None, epochs=None):
         self.start_value = start_value
         self.target_value = target_value
-        self.total_iters = iters
         assert start_value != target_value, 'start_value and target_value should be different'
-        self.mode = max if target_value > start_value else min
-        self.per_iter = (target_value - start_value) / iters
+        self.mode = min if target_value > start_value else max
+        self.per_iter = (target_value - start_value) / epochs
 
-    def get(self, iter):
+    def step(self, iter):
         return self.mode(self.start_value + iter * self.per_iter, self.target_value)
 
 

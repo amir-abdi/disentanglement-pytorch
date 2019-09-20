@@ -153,30 +153,23 @@ class VAE(BaseDisentangler):
             vae_loss_epoch = 0
             for x_true1, label1 in self.data_loader:
                 losses = dict()
-
                 x_true1 = x_true1.to(self.device)
                 label1 = label1.to(self.device)
                 x_true2, label2 = next(iter(self.data_loader))
                 x_true2 = x_true2.to(self.device)
                 label2 = label2.to(self.device)
 
-                # if the last batch did not have enough samples, skip it
-                if x_true1.shape != x_true2.shape:
-                    continue
-
                 losses, params = self.vae_base(losses, x_true1, x_true2, label1, label2)
 
                 self.optim_G.zero_grad()
                 losses[c.TOTAL_VAE].backward(retain_graph=False)
-                self.optim_G.step()
-
-                self.log_save(input_image=x_true1,
-                              recon_image=params['x_recon'],
-                              loss=losses)
                 vae_loss_epoch += losses[c.TOTAL_VAE]
 
+                self.optim_G.step()
+                self.log_save(input_image=x_true1, recon_image=params['x_recon'], loss=losses)
+
             # end of epoch
-            self.lr_scheduler_step(validation_loss=vae_loss_epoch / self.num_batches)
+            self.schedulers_step(vae_loss_epoch / self.num_batches, self.iter)
         self.pbar.close()
 
     def factorvae_init(self, args):

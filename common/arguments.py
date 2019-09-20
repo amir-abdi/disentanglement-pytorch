@@ -121,20 +121,14 @@ def get_args(sys_args):
     parser.add_argument('--ckpt_load_optim', default=True, type=str2bool, help='load the optimizer state')
 
     # Iterations [default for all is equal to 1 epoch]
-    parser.add_argument('--ckpt_save_iter', default=None, type=int, help='iters to save checkpoint '
-                                                                         '[default: 1 epoch]')
-    parser.add_argument('--evaluate_iter', default=None, type=int, help='iters to evaluate the disentanglement '
-                                                                        '[default: 1 epoch]')
-    parser.add_argument('--float_iter', default=None, type=int, help='iters to aggregate float logs '
-                                                                     '[default: 1 epoch]')
-    parser.add_argument('--recon_iter', default=None, type=int, help='iters to reconstruct input image '
-                                                                     '[default: 1 epoch]')
-    parser.add_argument('--traverse_iter', default=None, type=int, help='iters to traverse and visualize latent spaces '
-                                                                        '[default: 1 epoch]')
-    parser.add_argument('--print_iter', default=None, type=int, help='iters to print float values '
-                                                                     '[default: 1 epoch]')
-    parser.add_argument('--all_iter', default=None, type=int, help='use same iteration for all '
-                                                                   '[default: 1 epoch]')
+    parser.add_argument('--treat_iter_as_epoch', default=False, type=bool, help='treat all iter arguments as epochs')
+    parser.add_argument('--ckpt_save_iter', default=None, type=int, help='iters to save checkpoint [default: 1 epoch]')
+    parser.add_argument('--evaluate_iter', default=None, type=int, help='iters to evaluate [default: 1 epoch]')
+    parser.add_argument('--float_iter', default=None, type=int, help='iters to aggregate float logs [default: 1 epoch]')
+    parser.add_argument('--print_iter', default=None, type=int, help='iters to print float values [default: 1 epoch]')
+    parser.add_argument('--all_iter', default=None, type=int, help='use same iteration for all [default: 1 epoch]')
+    parser.add_argument('--recon_iter', default=None, type=int, help='iters to reconstruct image [default: 1 epoch]')
+    parser.add_argument('--traverse_iter', default=None, type=int, help='iters to visualize latents [default: 1 epoch]')
 
     # Schedulers
     parser.add_argument('--lr_scheduler', default=None, type=str, choices=c.LR_SCHEDULERS,

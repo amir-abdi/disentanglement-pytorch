@@ -246,8 +246,7 @@ def get_dataset(name=None, seed=0, iterator_len=50000):
     return DLIBDataset(name, seed=seed, iterator_len=iterator_len)
 
 
-def get_loader(name=None, batch_size=32, seed=0, iterator_len=50000, num_workers=0,
-               **dataloader_kwargs):
+def get_loader(name=None, batch_size=32, seed=0, num_workers=0, **dataloader_kwargs):
     """
     Makes a dataset and a data-loader.
 
@@ -259,8 +258,6 @@ def get_loader(name=None, batch_size=32, seed=0, iterator_len=50000, num_workers
         Batch size.
     seed : int
         Random seed.
-    iterator_len : int
-        Length of the dataset. This defines the length of one training epoch.
     num_workers : int
         Number of processes to use for multiprocessed data-loading.
     dataloader_kwargs : dict
@@ -271,8 +268,8 @@ def get_loader(name=None, batch_size=32, seed=0, iterator_len=50000, num_workers
     DataLoader
     """
     name = get_dataset_name() if name is None else name
-    dataset = DLIBDataset(name, seed=seed, iterator_len=iterator_len)
-    loader = DataLoader(dataset, batch_size=batch_size, shuffle=True,
+    dataset = DLIBDataset(name, seed=seed)
+    loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, drop_last=True, pin_memory=True,
                         num_workers=num_workers, **dataloader_kwargs)
     return loader
 

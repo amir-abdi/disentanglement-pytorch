@@ -62,9 +62,14 @@ class BaseDisentangler(object):
         self.batch_size = args.batch_size
         self.image_size = args.image_size
         self.aicrowd_challenge = args.aicrowd_challenge
+
+        # todo: merge the two data loaders
         if self.aicrowd_challenge:
             from aicrowd import utils_pytorch as aicrowd
-            kwargs = {'num_workers': args.num_workers, 'pin_memory': True} if self.device == 'cuda' else {}
+            kwargs = {'seed': args.seed}
+            if self.device == 'cuda':
+                kwargs.update({'num_workers': args.num_workers})
+            # the following are hard coded: shuffle=True, drop_last=True, pin_memory=True
             self.data_loader = aicrowd.get_loader(batch_size=args.batch_size, **kwargs)
         else:
             self.data_loader = get_dataloader(args)
@@ -97,21 +102,29 @@ class BaseDisentangler(object):
         self.evaluate_results = dict()
 
         # logging iterations
-        self.print_iter = args.print_iter if args.print_iter is not None else self.num_batches
-        self.float_iter = args.float_iter if args.float_iter is not None else self.num_batches
-        self.recon_iter = args.recon_iter if args.recon_iter is not None else self.num_batches
-        self.traverse_iter = args.traverse_iter if args.traverse_iter is not None else self.num_batches
-        self.evaluate_iter = args.evaluate_iter if args.evaluate_iter is not None else self.num_batches
-        self.ckpt_save_iter = args.ckpt_save_iter if args.ckpt_save_iter is not None else self.num_batches
+        self.print_iter = args.print_iter if args.print_iter else self.num_batches
+        self.float_iter = args.float_iter if args.float_iter else self.num_batches
+        self.recon_iter = args.recon_iter if args.recon_iter else self.num_batches
+        self.traverse_iter = args.traverse_iter if args.traverse_iter else self.num_batches
+        self.evaluate_iter = args.evaluate_iter if args.evaluate_iter else self.num_batches
+        self.ckpt_save_iter = args.ckpt_save_iter if args.ckpt_save_iter else self.num_batches
 
         # override logging iterations if all_iter is set
-        if args.all_iter is not None:
+        if args.all_iter:
             self.float_iter = args.all_iter
             self.recon_iter = args.all_iter
             self.traverse_iter = args.all_iter
             self.print_iter = args.all_iter
             self.evaluate_iter = args.all_iter
             self.ckpt_save_iter = args.all_iter
+
+        if args.treat_iter_as_epoch:
+            self.float_iter = self.float_iter * self.num_batches
+            self.recon_iter = self.recon_iter * self.num_batches
+            self.traverse_iter = self.traverse_iter * self.num_batches
+            self.print_iter = self.print_iter * self.num_batches
+            self.evaluate_iter = self.evaluate_iter * self.num_batches
+            self.ckpt_save_iter = self.ckpt_save_iter * self.num_batches
 
         # traversing the latent space
         self.traverse_min = args.traverse_min
@@ -125,7 +138,7 @@ class BaseDisentangler(object):
         self.use_wandb = args.use_wandb
         if self.use_wandb:
             import wandb
-            resume_wandb = True if args.wandb_resume_id is not None else False
+            resume_wandb = True if args.wandb_resume_id else False
             wandb.init(config=args, resume=resume_wandb, id=args.wandb_resume_id, project=c.WANDB_NAME)
 
         # Checkpoint
@@ -186,7 +199,7 @@ class BaseDisentangler(object):
             self.info_cumulative[c.LEARNING_RATE] = get_lr(self.optim_dict['optim_G'])  # assuming we want optim_G
 
             # todo: not happy with this architecture for logging... should make it easier to add new variables to log
-            if self.evaluate_metric is not None:
+            if self.evaluate_metric:
                 for key, value in self.evaluate_results.items():
                     self.info_cumulative[key] = value
 
@@ -213,7 +226,7 @@ class BaseDisentangler(object):
         if is_time_for(self.iter, self.traverse_iter):
             self.visualize_traverse(limit=(self.traverse_min, self.traverse_max), spacing=self.traverse_spacing)
 
-        if self.evaluate_metric is not None and is_time_for(self.iter, self.evaluate_iter):
+        if self.evaluate_metric and is_time_for(self.iter, self.evaluate_iter):
             self.evaluate_results = evaluate_disentanglement_metric(self, metric_names=self.evaluate_metric)
 
     def visualize_recon(self, input_image, recon_image, test=False):
@@ -472,6 +485,16 @@ class BaseDisentangler(object):
             from aicrowd import aicrowd_helpers
             aicrowd_helpers.register_progress(self.iter / self.max_iter)
 
+    def training_complete(self):
+        if self.epoch > self.max_epoch or self.iter > self.max_iter:
+            logging.info("-------Training Finished----------")
+            return True
+        return False
+
+    def schedulers_step(self, validation_loss, iteration):
+        self.lr_scheduler_step(validation_loss)
+        self.w_recon_scheduler_step(iteration)
+
     def lr_scheduler_step(self, validation_loss):
         if self.lr_scheduler is None:
             return
@@ -480,16 +503,10 @@ class BaseDisentangler(object):
         else:
             self.lr_scheduler.step()
 
-    def w_recon_scheduler_step(self):
+    def w_recon_scheduler_step(self, iteration):
         if self.w_recon_scheduler is None:
             return
-        self.w_recon = self.w_recon_scheduler.step()
-
-    def training_complete(self):
-        if self.epoch > self.max_epoch or self.iter > self.max_iter:
-            logging.info("-------Training Finished----------")
-            return True
-        return False
+        self.w_recon = self.w_recon_scheduler.step(iteration)
 
     def setup_schedulers(self, lr_scheduler, lr_scheduler_args, w_recon_scheduler, w_recon_scheduler_args):
         self.lr_scheduler = get_scheduler(self.optim_G, lr_scheduler, lr_scheduler_args)
