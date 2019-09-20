@@ -20,6 +20,7 @@ DIPVAE = 'DIPVAE'
 BetaTCVAE = 'BetaTCVAE'
 INFOVAE = 'InfoVAE'
 TOTAL_VAE = 'total_vae'
+TOTAL_VAE_EPOCH = 'total_vae_epoch'
 LR_SCHEDULERS = ('ReduceLROnPlateau', 'StepLR', 'MultiStepLR', 'ExponentialLR',
                  'CosineAnnealingLR', 'CyclicLR', 'LambdaLR')
 SCHEDULERS = ('LinearScheduler', )

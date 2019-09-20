@@ -108,8 +108,9 @@ class BaseDisentangler(object):
         self.traverse_iter = args.traverse_iter if args.traverse_iter else self.num_batches
         self.evaluate_iter = args.evaluate_iter if args.evaluate_iter else self.num_batches
         self.ckpt_save_iter = args.ckpt_save_iter if args.ckpt_save_iter else self.num_batches
+        self.schedulers_iter = args.schedulers_iter if args.schedulers_iter else self.num_batches
 
-        # override logging iterations if all_iter is set
+        # override logging iterations if all_iter is set (except for the schedulers_iter)
         if args.all_iter:
             self.float_iter = args.all_iter
             self.recon_iter = args.all_iter
@@ -117,6 +118,7 @@ class BaseDisentangler(object):
             self.print_iter = args.all_iter
             self.evaluate_iter = args.all_iter
             self.ckpt_save_iter = args.all_iter
+            self.schedulers_iter = args.all_iter
 
         if args.treat_iter_as_epoch:
             self.float_iter = self.float_iter * self.num_batches
@@ -125,6 +127,7 @@ class BaseDisentangler(object):
             self.print_iter = self.print_iter * self.num_batches
             self.evaluate_iter = self.evaluate_iter * self.num_batches
             self.ckpt_save_iter = self.ckpt_save_iter * self.num_batches
+            self.schedulers_iter = self.schedulers_iter * self.num_batches
 
         # traversing the latent space
         self.traverse_min = args.traverse_min
@@ -229,6 +232,9 @@ class BaseDisentangler(object):
 
         if self.evaluate_metric and is_time_for(self.iter, self.evaluate_iter):
             self.evaluate_results = evaluate_disentanglement_metric(self, metric_names=self.evaluate_metric)
+
+        if is_time_for(self.iter, self.schedulers_iter):
+            self.schedulers_step(kwargs.get(c.LOSS, dict()).get(c.TOTAL_VAE_EPOCH, 0), self.iter // self.schedulers_iter)
 
     def visualize_recon(self, input_image, recon_image, test=False):
         input_image = torchvision.utils.make_grid(input_image)
@@ -492,9 +498,9 @@ class BaseDisentangler(object):
             return True
         return False
 
-    def schedulers_step(self, validation_loss=None, iteration=None):
+    def schedulers_step(self, validation_loss=None, step_num=None):
         self.lr_scheduler_step(validation_loss)
-        self.w_recon_scheduler_step(iteration)
+        self.w_recon_scheduler_step(step_num)
 
     def lr_scheduler_step(self, validation_loss):
         if self.lr_scheduler is None:
@@ -504,10 +510,10 @@ class BaseDisentangler(object):
         else:
             self.lr_scheduler.step()
 
-    def w_recon_scheduler_step(self, iteration):
+    def w_recon_scheduler_step(self, step_num):
         if self.w_recon_scheduler is None:
             return
-        self.w_recon = self.w_recon_scheduler.step(iteration)
+        self.w_recon = self.w_recon_scheduler.step(step_num)
 
     def setup_schedulers(self, lr_scheduler, lr_scheduler_args, w_recon_scheduler, w_recon_scheduler_args):
         self.lr_scheduler = get_scheduler(self.optim_G, lr_scheduler, lr_scheduler_args)

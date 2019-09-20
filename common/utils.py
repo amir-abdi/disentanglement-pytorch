@@ -113,10 +113,10 @@ class LinearScheduler:
         self.target_value = target_value
         assert start_value != target_value, 'start_value and target_value should be different'
         self.mode = min if target_value > start_value else max
-        self.per_iter = (target_value - start_value) / epochs
+        self.per_step = (target_value - start_value) / epochs
 
-    def step(self, iter):
-        return self.mode(self.start_value + iter * self.per_iter, self.target_value)
+    def step(self, step_num):
+        return self.mode(self.start_value + step_num * self.per_step, self.target_value)
 
 
 def get_data_for_visualization(dataset, device):

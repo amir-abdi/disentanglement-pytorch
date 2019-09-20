@@ -106,9 +106,9 @@ def get_args(sys_args):
     parser.add_argument('--gif_save', default=True, type=str2bool, help='whether to save generated GIFs to file')
     parser.add_argument('--use_wandb', default=False, type=str2bool, help='use wandb for logging')
     parser.add_argument('--wandb_resume_id', default=None, type=str, help='resume previous wandb run with id')
-    parser.add_argument('--traverse_spacing', default=0.5, type=float, help='spacing to traverse latents')
-    parser.add_argument('--traverse_min', default=-4, type=float, help='min limit to traverse latents')
-    parser.add_argument('--traverse_max', default=+4, type=float, help='max limit to traverse latents')
+    parser.add_argument('--traverse_spacing', default=0.2, type=float, help='spacing to traverse latents')
+    parser.add_argument('--traverse_min', default=-2, type=float, help='min limit to traverse latents')
+    parser.add_argument('--traverse_max', default=+2, type=float, help='max limit to traverse latents')
     parser.add_argument('--traverse_z', default=False, type=str2bool, help='whether to traverse the z space')
     parser.add_argument('--traverse_l', default=False, type=str2bool, help='whether to traverse the l space')
     parser.add_argument('--traverse_c', default=False, type=str2bool, help='whether to traverse the condition')
@@ -129,6 +129,7 @@ def get_args(sys_args):
     parser.add_argument('--all_iter', default=None, type=int, help='use same iteration for all [default: 1 epoch]')
     parser.add_argument('--recon_iter', default=None, type=int, help='iters to reconstruct image [default: 1 epoch]')
     parser.add_argument('--traverse_iter', default=None, type=int, help='iters to visualize latents [default: 1 epoch]')
+    parser.add_argument('--schedulers_iter', default=None, type=int, help='iters to apply scheduler [default: 1 epoch]')
 
     # Schedulers
     parser.add_argument('--lr_scheduler', default=None, type=str, choices=c.LR_SCHEDULERS,

@@ -150,8 +150,8 @@ class VAE(BaseDisentangler):
     def train(self):
         while not self.training_complete():
             self.net_mode(train=True)
-            vae_loss_epoch = 0
-            for x_true1, label1 in self.data_loader:
+            vae_loss_sum = 0
+            for internal_iter, (x_true1, label1) in enumerate(self.data_loader):
                 losses = dict()
                 x_true1 = x_true1.to(self.device)
                 label1 = label1.to(self.device)
@@ -163,13 +163,12 @@ class VAE(BaseDisentangler):
 
                 self.optim_G.zero_grad()
                 losses[c.TOTAL_VAE].backward(retain_graph=False)
-                vae_loss_epoch += losses[c.TOTAL_VAE]
+                vae_loss_sum += losses[c.TOTAL_VAE]
+                losses[c.TOTAL_VAE_EPOCH] = vae_loss_sum / internal_iter
 
                 self.optim_G.step()
                 self.log_save(input_image=x_true1, recon_image=params['x_recon'], loss=losses)
-
             # end of epoch
-            self.schedulers_step(vae_loss_epoch / self.num_batches, self.iter)
         self.pbar.close()
 
     def factorvae_init(self, args):
