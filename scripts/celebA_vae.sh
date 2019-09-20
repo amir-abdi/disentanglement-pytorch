@@ -10,7 +10,7 @@ python3 main.py \
 --name=$NAME \
 --alg=VAE \
 --vae_loss=Basic \
---dset_dir=/home/amirabdi/data/Datasets/ \
+--dset_dir=$DATASETS \
 --dset_name=celebA \
 --traverse_z=true \
 --encoder=SimpleGaussianConv64 \

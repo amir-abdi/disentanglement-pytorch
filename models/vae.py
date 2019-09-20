@@ -1,5 +1,3 @@
-import logging
-
 import torch
 from torch import nn
 import torch.optim as optim
@@ -10,7 +8,6 @@ from architectures import encoders, decoders, discriminators
 import common
 from common.ops import kl_divergence_mu0_var1, reparametrize, permute_dims
 from common import constants as c
-from common.utils import get_scheduler
 
 
 class VAEModel(nn.Module):
@@ -76,7 +73,8 @@ class VAE(BaseDisentangler):
             self.net_dict.update({'PermD': self.PermD})
             self.optim_dict.update({'optim_PermD': self.optim_PermD})
 
-        self.lr_scheduler = get_scheduler(self.optim_G, args.lr_scheduler, args.lr_scheduler_args)
+        self.setup_schedulers(args.lr_scheduler, args.lr_scheduler_args,
+                              args.w_recon_scheduler, args.w_recon_scheduler_args)
 
     def encode_deterministic(self, **kwargs):
         images = kwargs['images']

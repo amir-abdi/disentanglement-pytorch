@@ -4,6 +4,7 @@ import subprocess
 import scipy.linalg as linalg
 import numpy as np
 import random
+from importlib import reload
 
 import torch.nn
 import torch.nn.init as init
@@ -107,15 +108,16 @@ def frechet_distance(mu1, sigma1, mu2, sigma2, eps=1e-6):
 
 
 class LinearScheduler:
-    def __init__(self, start_value, target_value, total_iters):
+    def __init__(self, start_value, target_value=None, iters=None):
         self.start_value = start_value
         self.target_value = target_value
-        self.total_iters = total_iters
-
-        self.inc_per_iter = (target_value - start_value) / total_iters
+        self.total_iters = iters
+        assert start_value != target_value, 'start_value and target_value should be different'
+        self.mode = max if target_value > start_value else min
+        self.per_iter = (target_value - start_value) / iters
 
     def get(self, iter):
-        return self.start_value + iter * self.inc_per_iter
+        return self.mode(self.start_value + iter * self.per_iter, self.target_value)
 
 
 def get_data_for_visualization(dataset, device):
@@ -268,12 +270,20 @@ class StoreDictKeyPair(argparse.Action):
         setattr(namespace, self.dest, my_dict)
 
 
-def get_scheduler(optimizer, scheduler_type, scheduler_args):
+def get_scheduler(value, scheduler_type, scheduler_args):
     if scheduler_type is None:
         return
-    scheduler_class = getattr(torch.optim.lr_scheduler, scheduler_type)
-    scheduler = scheduler_class(optimizer, **scheduler_args)
+    if isinstance(value, torch.optim.Optimizer):
+        scheduler_class = getattr(torch.optim.lr_scheduler, scheduler_type)
+        scheduler = scheduler_class(value, **scheduler_args)
+    else:
+        if scheduler_type == 'LinearScheduler':
+            scheduler = LinearScheduler(value, **scheduler_args)
+        else:
+            raise NotImplementedError
+
     return scheduler
+
 
 
 def get_lr(optimizer):
@@ -283,3 +293,20 @@ def get_lr(optimizer):
 
 def is_time_for(iteration, milestone):
     return iteration % milestone == milestone - 1
+
+
+def setup_logging(verbose):
+    # verbosity
+    reload(logging)  # to turn off any changes to logging done by other imported libraries
+    h = logging.StreamHandler()
+    h.setFormatter(StyleFormatter())
+    h.setLevel(0)
+    logging.root.addHandler(h)
+    logging.root.setLevel(verbose)
+
+
+def initialize_seeds(seed):
+    # set seeds
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    np.random.seed(seed)

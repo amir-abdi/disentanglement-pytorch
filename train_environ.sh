@@ -1,12 +1,8 @@
 #!/usr/bin/env bash
 
-#mpi3d_toy
-#color_dsprites
-#cars3d
-#mpi3d_realistic
+#possible values of DATASET_NAME: mpi3d_toy, color_dsprites, cars3d, mpi3d_realistic
 DATASET_NAME=$1
 
-source ~/miniconda3/etc/profile.d/conda.sh
 conda activate disentanglement_challenge
 
 # Set up training environment.

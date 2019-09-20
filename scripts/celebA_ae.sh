@@ -14,8 +14,7 @@ python3 main.py \
 --encoder=SimpleConv64 \
 --decoder=SimpleConv64 \
 --z_dim=32 \
---use_wandb=true \
---ckpt_load=./saved_models/dsprite_ae/last
+--use_wandb=false \
 
 
 

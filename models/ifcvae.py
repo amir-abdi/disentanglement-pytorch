@@ -11,6 +11,7 @@ from architectures import encoders, decoders, others, discriminators
 from common.ops import reparametrize, cross_entropy_multi_label, class_acc_multi_label
 from common.utils import one_hot_embedding
 from common import constants as c
+from common.utils import get_scheduler
 
 
 class IFCVAEModel(nn.Module):
@@ -148,6 +149,9 @@ class IFCVAE(VAE):
             'optim_G': self.optim_G,
             'optim_aux_D': self.optim_aux_D
         })
+
+        self.setup_schedulers(args.lr_scheduler, args.lr_scheduler_args,
+                              args.w_recon_scheduler, args.w_recon_scheduler_args)
 
     def encode_deterministic(self, **kwargs):
         images = kwargs['images']
