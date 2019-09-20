@@ -492,7 +492,7 @@ class BaseDisentangler(object):
             return True
         return False
 
-    def schedulers_step(self, validation_loss, iteration):
+    def schedulers_step(self, validation_loss=None, iteration=None):
         self.lr_scheduler_step(validation_loss)
         self.w_recon_scheduler_step(iteration)
 

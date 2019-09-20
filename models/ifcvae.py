@@ -1,7 +1,5 @@
 # TODO: comment on why the paper might be flawed in terms of the twice feed forward pattern
 
-import logging
-
 import torch
 from torch import nn
 import torch.optim as optim
@@ -11,7 +9,6 @@ from architectures import encoders, decoders, others, discriminators
 from common.ops import reparametrize, cross_entropy_multi_label, class_acc_multi_label
 from common.utils import one_hot_embedding
 from common import constants as c
-from common.utils import get_scheduler
 
 
 class IFCVAEModel(nn.Module):
@@ -234,7 +231,7 @@ class IFCVAE(VAE):
                               acc=accuracies_dict
                               )
             # end of epoch
-            self.schedulers_step(validation_loss=vae_loss_epoch / self.num_batches)
+            self.schedulers_step(iteration=self.iter)
         self.pbar.close()
 
     def test(self):
