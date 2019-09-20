@@ -1,3 +1,6 @@
+"""
+Borrowed from https://github.com/AIcrowd/neurips2019_disentanglement_challenge_starter_kit/blob/master/aicrowd_helpers.py
+"""
 #!/usr/bin/env python
 import crowdai_api
 import os
