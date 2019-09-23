@@ -18,7 +18,7 @@ Markdown==3.1
 matplotlib==3.0.3
 mock==3.0.4
 numba==0.41.0
-numpy==1.16.3
+numpy==1.17.2
 pandas==0.24.2
 Pillow==6.0.0
 protobuf==3.7.1
