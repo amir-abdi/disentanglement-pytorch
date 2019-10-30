@@ -11,12 +11,15 @@ The following algorithms are implemented:
 - Factor-VAE ([Disentangling by Factorising](https://arxiv.org/pdf/1802.05983.pdf))
 - IFCVAE ([Adversarial Information Factorization](https://arxiv.org/pdf/1711.05175.pdf))
 
+We are open to suggestions and contributions.
 
-### Installation
+
+### Requirements and Installation
 
 Install the requirements: `pip install -r requirements.txt` \
 Or build conda environment: `conda env create -f environment.yml`
 
+The library visualizes the ***reconstructed images*** and the ***traversed latent spaces*** and saves them as static frames as well as animated GIFs. It also extensively uses the [Weights & Biases](https://www.wandb.com/) toolkit to log the training (loss, metrics, misc, etc.) and the visualizations.
 
 ### Training
 
