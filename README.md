@@ -1,12 +1,20 @@
 [![CircleCI](https://circleci.com/gh/amir-abdi/disentanglement-pytorch.svg?style=svg&circle-token=40d47183b78c6f1959ff584259c89ac7d49e36b0)](https://circleci.com/gh/amir-abdi/disentanglement-pytorch)
 
 # disentanglement-pytorch
-Pytorch Implementation of Disentanglement Algorithms for Variational Autoencoders 
+Pytorch Implementation of **Disentanglement** algorithms for Variational Autoencoders.
+The following algorithms are implemented:
+- VAE
+- β-VAE ([Understanding disentangling in β-VAE](https://arxiv.org/pdf/1804.03599.pdf))
+- Info-VAE ([InfoVAE: Information Maximizing Variational Autoencoders](https://arxiv.org/abs/1706.02262))
+- Beta-TCVAE ([Isolating Sources of Disentanglement in Variational Autoencoders](https://arxiv.org/abs/1802.04942))
+- DIP-VAE I & II ([Variational Inference of Disentangled Latent Concepts from Unlabeled Observations ](https://openreview.net/forum?id=H1kG7GZAW))
+- Factor-VAE ([Disentangling by Factorising](https://arxiv.org/pdf/1802.05983.pdf))
+- IFCVAE ([Adversarial Information Factorization](https://arxiv.org/pdf/1711.05175.pdf))
 
 
 ### Installation
 
-Install the requirements: `pip install -r requirements.txt`
+Install the requirements: `pip install -r requirements.txt` \
 Or build conda environment: `conda env create -f environment.yml`
 
 
