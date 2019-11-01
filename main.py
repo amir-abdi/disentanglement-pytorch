@@ -1,6 +1,7 @@
 import sys
 import torch
 import logging
+import os
 
 from common.utils import setup_logging, initialize_seeds, set_environment_variables
 from aicrowd.aicrowd_utils import is_on_aicrowd_server
@@ -61,5 +62,10 @@ if __name__ == "__main__":
     args = get_args(sys.argv[1:])
     setup_logging(args.verbose)
     initialize_seeds(args.seed)
+
+    # set the environment variables for dataset directory and name, and check if the root dataset directory exists.
     set_environment_variables(args.dset_dir, args.dset_name)
+    assert os.path.exists(os.environ.get('DISENTANGLEMENT_LIB_DATA', '')), \
+        'Root dataset directory does not exist at: \"{}\"'.format(args.dset_dir)
+
     main(args)

@@ -68,7 +68,7 @@ class VAE(BaseDisentangler):
         }
 
         # FactorVAE
-        if c.FACTORVAE in self.vae_type:
+        if c.FACTORVAE in self.loss_terms:
             self.PermD, self.optim_PermD = self.factorvae_init(args)
             self.net_dict.update({'PermD': self.PermD})
             self.optim_dict.update({'optim_PermD': self.optim_PermD})
@@ -91,15 +91,11 @@ class VAE(BaseDisentangler):
         return reparametrize(mu, logvar)
 
     def _kld_loss_fn(self, mu, logvar):
-        if self.vae_loss == 'Basic':
+        if not self.annealed_capacity:
             kld_loss = kl_divergence_mu0_var1(mu, logvar) * self.w_kld
-        elif self.vae_loss == 'AnnealedCapacity':
-            c = torch.min(self.max_c,
-                          self.max_c * torch.tensor(self.iter) / self.iterations_c)
-            kld_loss = (kl_divergence_mu0_var1(mu, logvar) - c).abs() * self.w_kld
         else:
-            raise NotImplementedError
-
+            c = torch.min(self.max_c, self.max_c * torch.tensor(self.iter) / self.iterations_c)
+            kld_loss = (kl_divergence_mu0_var1(mu, logvar) - c).abs() * self.w_kld
         return kld_loss
 
     def loss_fn(self, input_losses, **kwargs):
@@ -118,20 +114,23 @@ class VAE(BaseDisentangler):
         output_losses['kld'] = self._kld_loss_fn(mu, logvar)
         output_losses[c.TOTAL_VAE] += output_losses['kld']
 
-        if c.FACTORVAE in self.vae_type:
-            # todo: rename tc values to more descriptive accronyms rather than anal vs empirical
-            output_losses['vae_tc'], output_losses['discriminator_tc'] = self._factorvae_loss_fn(**kwargs)
-            output_losses[c.TOTAL_VAE] += output_losses['vae_tc']
+        if c.FACTORVAE in self.loss_terms:
+            output_losses['vae_tc_factor'], output_losses['discriminator_tc'] = self._factorvae_loss_fn(**kwargs)
+            output_losses[c.TOTAL_VAE] += output_losses['vae_tc_factor']
 
-        if c.DIPVAE in self.vae_type:
-            output_losses['vae_dip'] = self._dipvae_loss_fn(**kwargs)
-            output_losses[c.TOTAL_VAE] += output_losses['vae_dip']
+        if c.DIPVAEI in self.loss_terms:
+            output_losses['vae_dipi'] = self._dipvaei_loss_fn(**kwargs)
+            output_losses[c.TOTAL_VAE] += output_losses['vae_dipi']
 
-        if c.BetaTCVAE in self.vae_type:
-            output_losses['vae_tc_analytical'] = self._betatcvae_loss_fn(**kwargs)
-            output_losses[c.TOTAL_VAE] += output_losses['vae_tc_analytical']
+        if c.DIPVAEII in self.loss_terms:
+            output_losses['vae_dipii'] = self._dipvaeii_loss_fn(**kwargs)
+            output_losses[c.TOTAL_VAE] += output_losses['vae_dipii']
 
-        if c.INFOVAE in self.vae_type:
+        if c.BetaTCVAE in self.loss_terms:
+            output_losses['vae_betatc'] = self._betatcvae_loss_fn(**kwargs)
+            output_losses[c.TOTAL_VAE] += output_losses['vae_betatc']
+
+        if c.INFOVAE in self.loss_terms:
             output_losses['vae_mmd'] = self._infovae_loss_fn(**kwargs)
             output_losses[c.TOTAL_VAE] += output_losses['vae_mmd']
 
@@ -193,7 +192,7 @@ class VAE(BaseDisentangler):
         z = kwargs['z']
 
         factorvae_dz_true = self.PermD(z)
-        vae_tc_loss = (factorvae_dz_true[:, 0] - factorvae_dz_true[:, 1]).mean() * self.w_tc_empirical
+        vae_tc_loss = (factorvae_dz_true[:, 0] - factorvae_dz_true[:, 1]).mean() * self.w_tc
 
         # Train discriminator of FactorVAE
         mu2, logvar2 = self.model.encode(x=x_true2, c=label2)
@@ -208,7 +207,17 @@ class VAE(BaseDisentangler):
 
         return vae_tc_loss, discriminator_tc_loss
 
-    def _dipvae_loss_fn(self, **kwargs):
+    def _dipvaei_loss_fn(self, **kwargs):
+        # todo: add documentation and paper
+        mu = kwargs['mu']
+        logvar = kwargs['logvar']
+
+        from common.ops import covariance_z_mean, regularize_diag_off_diag_dip
+        cov_z_mean = covariance_z_mean(mu)
+        cov_dip_regularizer = regularize_diag_off_diag_dip(cov_z_mean, self.lambda_od, self.lambda_d)
+        return cov_dip_regularizer * self.w_dipvae
+
+    def _dipvaeii_loss_fn(self, **kwargs):
         # todo: add documentation and paper
         mu = kwargs['mu']
         logvar = kwargs['logvar']
@@ -216,16 +225,10 @@ class VAE(BaseDisentangler):
         from common.ops import covariance_z_mean, regularize_diag_off_diag_dip
         cov_z_mean = covariance_z_mean(mu)
 
-        # todo: get rid of dip_type argument
-        if self.dip_type == "i":
-            cov_dip_regularizer = regularize_diag_off_diag_dip(cov_z_mean, self.lambda_od, self.lambda_d)
-        elif self.dip_type == "ii":
-            cov_enc = torch.diag(torch.exp(logvar))
-            expectation_cov_enc = torch.mean(cov_enc, dim=0)
-            cov_z = expectation_cov_enc + cov_z_mean
-            cov_dip_regularizer = regularize_diag_off_diag_dip(cov_z, self.lambda_od, self.lambda_d)
-        else:
-            raise NotImplementedError("DIP variant not supported.")
+        cov_enc = torch.diag(torch.exp(logvar))
+        expectation_cov_enc = torch.mean(cov_enc, dim=0)
+        cov_z = expectation_cov_enc + cov_z_mean
+        cov_dip_regularizer = regularize_diag_off_diag_dip(cov_z, self.lambda_od, self.lambda_d)
 
         return cov_dip_regularizer * self.w_dipvae
 
@@ -235,8 +238,8 @@ class VAE(BaseDisentangler):
         logvar = kwargs['logvar']
         z = kwargs['z']
 
-        # Instead of substracting w_tc_analytical by 1, we just used w_tc_analytical to keep things consistent
-        return common.ops.total_correlation(z, mu, logvar) * self.w_tc_analytical
+        # todo: double check the (w_tc - 1)
+        return common.ops.total_correlation(z, mu, logvar) * (self.w_tc - 1)
 
     def _infovae_loss_fn(self, **kwargs):
         # todo: add documentation and paper

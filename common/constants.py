@@ -16,7 +16,8 @@ TEMP = 'tmp'
 GIF = 'gif'
 JPG = 'jpg'
 FACTORVAE = 'FactorVAE'
-DIPVAE = 'DIPVAE'
+DIPVAEI = 'DIPVAEI'
+DIPVAEII = 'DIPVAEII'
 BetaTCVAE = 'BetaTCVAE'
 INFOVAE = 'InfoVAE'
 TOTAL_VAE = 'total_vae'
@@ -28,8 +29,7 @@ LEARNING_RATE = 'learning_rate'
 
 # Algorithms
 ALGS = ('AE', 'VAE', 'BetaVAE', 'CVAE', 'IFCVAE')
-VAE_LOSS = ('Basic', 'AnnealedCapacity')
-VAE_TYPE = ('Basic', FACTORVAE, DIPVAE, BetaTCVAE, INFOVAE)
+LOSS_TERMS = (FACTORVAE, DIPVAEI, DIPVAEII, BetaTCVAE, INFOVAE)
 DATASETS = ('celebA', 'dsprites_full', 'dsprites_noshape', 'color_dsprites', 'noisy_dsprites', 'scream_dsprites',
             'smallnorb', 'cars3d', 'shapes3d',
             'mpi3d_toy', 'mpi3d_realistic', 'mpi3d_real')

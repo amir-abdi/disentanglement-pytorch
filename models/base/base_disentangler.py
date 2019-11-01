@@ -24,8 +24,8 @@ class BaseDisentangler(object):
         # Misc
         self.name = args.name
         self.alg = args.alg
-        self.vae_loss = args.vae_loss
-        self.vae_type = args.vae_type
+        self.annealed_capacity = args.annealed_capacity
+        self.loss_terms = args.loss_terms
         self.on_aicrowd_server = is_on_aicrowd_server()
         self.evaluate_metric = args.evaluate_metric
         self.lr_scheduler = None
@@ -67,21 +67,6 @@ class BaseDisentangler(object):
         self.data_loader = get_dataloader(args.dset_name, args.dset_dir, args.batch_size, args.seed, args.num_workers,
                                           args.image_size, args.include_labels, args.pin_memory, not args.test,
                                           not args.test)
-
-        # # todo: merge the two data loaders
-        # from common.data_loader import get_dataset_name
-        # dataset_name = get_dataset_name(args.dset_name)
-        # if self.aicrowd_challenge:
-        #     from aicrowd import utils_pytorch as aicrowd
-        #     kwargs = {'seed': args.seed}
-        #     if self.device == 'cuda':
-        #         kwargs.update({'num_workers': args.num_workers})
-        #     # the following are hard coded: shuffle=True, drop_last=True, pin_memory=True
-        #     self.data_loader = aicrowd.get_loader(dataset_name, args.batch_size, args.seed, args.num_workers,
-        #                                           args.pin_memory)
-        # else:
-        #     self.data_loader = _get_dataloader(dataset_name, args.dset_dir, args.batch_size, args.num_workers,
-        #                                        args.image_size, args.include_labels, args.pin_memory, args.test)
 
         # only used if some supervision was imposed such as in Conditional VAE
         if self.data_loader.dataset.has_labels():
@@ -170,10 +155,9 @@ class BaseDisentangler(object):
         self.zeros = torch.zeros(self.batch_size, dtype=torch.long, device=self.device, requires_grad=False)
         self.num_layer_disc = args.num_layer_disc
         self.size_layer_disc = args.size_layer_disc
-        self.w_tc_empirical = args.w_tc_empirical
 
-        # BetaTCVAE args
-        self.w_tc_analytical = args.w_tc_analytical
+        # FactorVAE & BetaTCVAE args
+        self.w_tc = args.w_tc
 
         # InfoVAE args
         self.w_infovae = args.w_infovae
@@ -185,7 +169,6 @@ class BaseDisentangler(object):
         self.lambda_od = args.lambda_od
         self.lambda_d_factor = args.lambda_d_factor
         self.lambda_d = self.lambda_d_factor * self.lambda_od
-        self.dip_type = args.dip_type
 
     def log_save(self, **kwargs):
         self.step()

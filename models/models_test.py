@@ -7,10 +7,10 @@ import logging
 import models
 from main import get_args
 from common import constants as c
-from common.utils import update_args
+from common.arguments import update_args
 
 ALGS = c.ALGS
-VAE_LOSS = c.VAE_LOSS
+VAE_LOSSES = c.LOSS_TERMS
 DATASETS = c.TEST_DATASETS  # 'celebA', 'dsprites_full'
 BATCH_SIZE = 4
 MAX_ITER = 6
@@ -21,6 +21,15 @@ NUM_SAMPLES = 12  # test datasets (dsprites and CelebA) each contain 12 samples
 
 
 class TestModels(object):
+    """
+    Tests all the implemented algoritms defined in common.constants.ALGS
+    with all the loss terms defined in common.constants.LOSS_TERMS.
+    The mock data in the data/test_dsets folder is used for all tests.
+
+    The tests are limited to end-to-end training of the models and logging/visualization plus
+    saving and loading the models.
+    The logic of VAE and their level of disentanglement are not tested.
+    """
     @pytest.fixture(scope="module", params=itertools.product(DATASETS, ALGS))
     def args(self, request):
         dset_name = request.param[0]
@@ -35,8 +44,10 @@ class TestModels(object):
                          '--evaluate_iter={}'.format(MAX_ITER*2),
                          '--ckpt_save_iter={}'.format(CKPT_SAVE_ITER),
                          '--max_iter={}'.format(MAX_ITER),
-                         '--vae_loss={}'.format('AnnealedCapacity'),
+                         '--annealed_capacity={}'.format('true'),
+                         '--loss_terms'
                          ])
+        sys_args.extend(VAE_LOSSES)
 
         encoder = (c.ENCODERS[1],)
         if alg == 'AE':
@@ -75,13 +86,13 @@ class TestModels(object):
         yield args
 
         # clean up: delete output and ckpt files
-        # train_dir = os.path.join(args.train_output_dir, args.name)
-        # test_dir = os.path.join(args.test_output_dir, args.name)
-        # ckpt_dir = os.path.join(args.ckpt_dir, args.name)
-        #
-        # shutil.rmtree(train_dir, ignore_errors=True)
-        # shutil.rmtree(test_dir, ignore_errors=True)
-        # shutil.rmtree(ckpt_dir, ignore_errors=True)
+        train_dir = os.path.join(args.train_output_dir, args.name)
+        test_dir = os.path.join(args.test_output_dir, args.name)
+        ckpt_dir = os.path.join(args.ckpt_dir, args.name)
+
+        shutil.rmtree(train_dir, ignore_errors=True)
+        shutil.rmtree(test_dir, ignore_errors=True)
+        shutil.rmtree(ckpt_dir, ignore_errors=True)
 
     def load_model(self, args):
         model_cl = getattr(models, args.alg)

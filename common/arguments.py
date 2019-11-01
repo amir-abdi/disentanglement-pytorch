@@ -3,7 +3,15 @@ import os
 import logging
 
 from common import constants as c
-from common.utils import str2bool, update_args, StoreDictKeyPair
+from common.utils import str2bool, StoreDictKeyPair
+
+
+def update_args(args):
+    args.ckpt_load_iternum = False
+    args.use_wandb = False
+    args.file_save = True
+    args.gif_save = True
+    return args
 
 
 def get_args(sys_args):
@@ -16,8 +24,9 @@ def get_args(sys_args):
 
     # name
     parser.add_argument('--alg', type=str, help='the disentanglement algorithm', choices=c.ALGS)
-    parser.add_argument('--vae_loss', help='type of VAE loss', default=c.VAE_LOSS[0], choices=c.VAE_LOSS)
-    parser.add_argument('--vae_type', help='type of VAE', nargs='*', default=c.VAE_TYPE[0], choices=c.VAE_TYPE)
+    parser.add_argument('--annealed_capacity', help='to use capacity annealing', default=False)
+    parser.add_argument('--loss_terms', help='loss terms to be incldued in the objective', nargs='*',
+                        default=list(), choices=c.LOSS_TERMS)
     parser.add_argument('--name', default='unknown_experiment', type=str, help='name of the experiment')
 
     # Neural architectures
@@ -64,19 +73,15 @@ def get_args(sys_args):
     parser.add_argument('--max_c', default=25.0, type=float, help='maximum value of control parameter in CapacityVAE')
     parser.add_argument('--iterations_c', default=100000, type=int, help='how many iterations to reach max_c')
 
-    # Loss weights and parameters for [FactorVAE]
-    parser.add_argument('--w_tc_empirical', default=1.0, type=float,
-                        help='total correlation loss weight (e.g. in FactorVAE)')
-
-    # Loss weights and parameters for [BetaTCVAE]
-    parser.add_argument('--w_tc_analytical', default=1.0, type=float,
-                        help='total correlation loss weight (e.g. in BetaTCVAE)')
+    # Loss weights and parameters for [FactorVAE & BetaTCVAE]
+    parser.add_argument('--w_tc', default=1.0, type=float,
+                        help='total correlation loss weight (e.g. in FactorVAE and BetaTCVAE)')
 
     # Loss weights and parameters for [InfoVAE]
     parser.add_argument('--w_infovae', default=1.0, type=float,
                         help='mmd loss weight (e.g. in InfoVAE)')
 
-    # Loss weights and parameters for [DIPVAE]
+    # Loss weights and parameters for [DIPVAE I & II]
     parser.add_argument('--w_dipvae', default=1.0, type=float,
                         help='covariance regularizer loss weight (e.g. in DIPVAE I and II)')
 
@@ -89,8 +94,6 @@ def get_args(sys_args):
                         help='Hyperparameter for diagonal values of covariance matrix')
     parser.add_argument('--lambda_od', default=1.0, type=float,
                         help='Hyperparameter for off diagonal values of covariance matrix.')
-    parser.add_argument('--dip_type', default='i', type=str, choices=['i', 'ii'],
-                        help='Type of DIP-VAE.')
 
     # Dataset
     parser.add_argument('--dset_dir', default=os.getenv('DISENTANGLEMENT_LIB_DATA', './data'),
@@ -155,20 +158,7 @@ def get_args(sys_args):
     if args.include_labels is not None:
         args.num_labels = len(args.include_labels)
 
-    # makedirs
-    os.makedirs(args.ckpt_dir, exist_ok=True)
-    os.makedirs(args.train_output_dir, exist_ok=True)
-    os.makedirs(args.test_output_dir, exist_ok=True)
-    assert os.path.exists(args.dset_dir), 'Main dataset directory does not exist at {}'.format(args.dset_dir)
-
     # test
     args = update_args(args) if args.test else args
-
-    if args.use_wandb:
-        try:
-            import wandb
-        except ModuleNotFoundError:
-            args.use_wandb = False
-            logging.warning("wandb library not installed; flag turned off.")
 
     return args

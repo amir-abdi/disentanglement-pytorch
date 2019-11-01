@@ -246,14 +246,6 @@ def one_hot_embedding(labels, num_classes):
     return torch.cat(one_hots, dim=1)
 
 
-def update_args(args):
-    args.ckpt_load_iternum = False
-    args.use_wandb = False
-    args.file_save = True
-    args.gif_save = True
-    return args
-
-
 class StoreDictKeyPair(argparse.Action):
     def __init__(self, option_strings, dest, nargs=None, **kwargs):
         self._nargs = nargs
@@ -346,3 +338,10 @@ def set_environment_variables(dset_dir, dset_name):
     logging.info(f"$AICROWD_DATASET_NAME={os.environ.get('AICROWD_DATASET_NAME')}")
     logging.info(f"$DATASET_NAME={os.environ.get('DATASET_NAME')}")
     logging.info(f"$DISENTANGLEMENT_LIB_DATA={os.environ.get('DISENTANGLEMENT_LIB_DATA')}")
+
+
+def make_dirs(args):
+    # makedirs
+    os.makedirs(args.ckpt_dir, exist_ok=True)
+    os.makedirs(args.train_output_dir, exist_ok=True)
+    os.makedirs(args.test_output_dir, exist_ok=True)
