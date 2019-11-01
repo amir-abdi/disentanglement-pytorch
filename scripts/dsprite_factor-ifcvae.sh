@@ -12,7 +12,7 @@ python3 main.py \
 --vae_loss=AnnealedCapacity \
 --vae_type=FactorVAE \
 --dset_dir=$DATASETS \
---dset_name=dsprites \
+--dset_name=dsprites_full \
 --traverse_z=true \
 --traverse_c=true \
 --encoder SimpleGaussianConv64 SimpleEncoder64 \

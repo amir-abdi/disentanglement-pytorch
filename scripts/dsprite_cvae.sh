@@ -11,7 +11,7 @@ python3 main.py \
 --alg=CVAE \
 --vae_loss=AnnealedCapacity \
 --dset_dir=$DATASETS \
---dset_name=dsprites \
+--dset_name=dsprites_full \
 --traverse_z=true \
 --traverse_c=true \
 --encoder=SimpleGaussianConv64 \

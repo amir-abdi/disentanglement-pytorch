@@ -2,17 +2,16 @@
 
 # Root is where this file is.
 export NDC_ROOT="$( cd "$(dirname "$0")" ; pwd -P )"
+echo NDC_ROOT=$NDC_ROOT
 
 # Source the training environment (see the env variables defined therein) if we are not evaluating
 if [ ! -n "${AICROWD_IS_GRADING+set}" ]; then
-  # AICROWD_IS_GRADING is not set, so we're not running on the evaluator
-  # run "source train_environ.sh"
-  source ${NDC_ROOT}/train_environ.sh
+  echo "AICROWD_IS_GRADING is not set and you're running locally... so, exit and run your favourite script "\
+  "from the scripts/ directory!"
+  exit 1
 else
-  # We're on the evaluator.
-  # Add root to python path, since this would usually be done in train_environ.sh
+  # We're on the AICrowd evaluator. Add root to python path
   export PYTHONPATH=${PYTHONPATH}:${NDC_ROOT}
 fi
 
-export PYTHONPATH=${PYTHONPATH}:${NDC_ROOT}
-bash ${NDC_ROOT}/scripts/v137.sh
+bash ${NDC_ROOT}/scripts/aicrowd_script.sh

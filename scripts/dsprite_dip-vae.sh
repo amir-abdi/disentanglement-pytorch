@@ -13,7 +13,7 @@ python3 main.py \
 --vae_type=DIPVAE \
 --dip_type=i \
 --dset_dir=$DATASETS \
---dset_name=dsprites \
+--dset_name=dsprites_full \
 --traverse_z=true \
 --encoder=SimpleGaussianConv64 \
 --decoder=SimpleConv64 \
