@@ -30,7 +30,9 @@ LEARNING_RATE = 'learning_rate'
 ALGS = ('AE', 'VAE', 'BetaVAE', 'CVAE', 'IFCVAE')
 VAE_LOSS = ('Basic', 'AnnealedCapacity')
 VAE_TYPE = ('Basic', FACTORVAE, DIPVAE, BetaTCVAE, INFOVAE)
-DATASETS = ('celebA', 'dsprites')
+DATASETS = ('celebA', 'dsprites_full', 'dsprites_noshape', 'color_dsprites', 'noisy_dsprites', 'scream_dsprites',
+            'smallnorb', 'cars3d', 'shapes3d',
+            'mpi3d_toy', 'mpi3d_realistic', 'mpi3d_real')
 
 # Architectures
 DISCRIMINATORS = ('SimpleDiscriminator', 'SimpleDiscriminatorConv64')

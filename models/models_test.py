@@ -11,7 +11,7 @@ from common.utils import update_args
 
 ALGS = c.ALGS
 VAE_LOSS = c.VAE_LOSS
-DATASETS = c.DATASETS
+DATASETS = c.DATASETS[0:2]  # 'celebA', 'dsprites_full'
 BATCH_SIZE = 4
 MAX_ITER = 6
 CKPT_SAVE_ITER = 3
@@ -59,7 +59,7 @@ class TestModels(object):
         sys_args.extend(label_tiler)
 
         if 'CVAE' in alg:
-            if dset_name == 'dsprites':
+            if dset_name == c.DATASETS[1]:
                 include_labels = '1', '2', '3'
             elif dset_name == 'celebA':
                 include_labels = 'Wearing_Hat', 'Arched_Eyebrows'
@@ -75,13 +75,13 @@ class TestModels(object):
         yield args
 
         # clean up: delete output and ckpt files
-        train_dir = os.path.join(args.train_output_dir, args.name)
-        test_dir = os.path.join(args.test_output_dir, args.name)
-        ckpt_dir = os.path.join(args.ckpt_dir, args.name)
-
-        shutil.rmtree(train_dir, ignore_errors=True)
-        shutil.rmtree(test_dir, ignore_errors=True)
-        shutil.rmtree(ckpt_dir, ignore_errors=True)
+        # train_dir = os.path.join(args.train_output_dir, args.name)
+        # test_dir = os.path.join(args.test_output_dir, args.name)
+        # ckpt_dir = os.path.join(args.ckpt_dir, args.name)
+        #
+        # shutil.rmtree(train_dir, ignore_errors=True)
+        # shutil.rmtree(test_dir, ignore_errors=True)
+        # shutil.rmtree(ckpt_dir, ignore_errors=True)
 
     def load_model(self, args):
         model_cl = getattr(models, args.alg)
@@ -122,12 +122,15 @@ class TestModels(object):
     @staticmethod
     def check_visualization_files_train(output_dir, dset_name):
         assert os.path.exists(os.path.join(output_dir, '{}.{}'.format(c.RECON, c.JPG)))
-        if dset_name != 'dsprites':
+        print('******', os.path.join(output_dir, '{}.{}'.format(c.RECON, c.JPG)))
+        print('**********', os.path.join(output_dir, '{}_{}_0.{}'.format(c.TRAVERSE, c.FIXED, c.JPG)))
+
+        if dset_name == c.DATASETS[0]:
             assert os.path.exists(os.path.join(output_dir, '{}_{}_0.{}'.format(c.TRAVERSE, c.FIXED, c.JPG)))
             assert os.path.exists(os.path.join(output_dir, '{}_{}_1.{}'.format(c.TRAVERSE, c.FIXED, c.JPG)))
             assert os.path.exists(os.path.join(output_dir, '{}_{}_2.{}'.format(c.TRAVERSE, c.FIXED, c.JPG)))
             assert os.path.exists(os.path.join(output_dir, '{}_{}_3.{}'.format(c.TRAVERSE, c.FIXED, c.JPG)))
-        else:
+        elif dset_name == c.DATASETS[1]:
             assert os.path.exists(os.path.join(output_dir, '{}_{}_{}.{}'.format(c.TRAVERSE, c.FIXED, c.SQUARE, c.JPG)))
             assert os.path.exists(os.path.join(output_dir, '{}_{}_{}.{}'.format(c.TRAVERSE, c.FIXED, c.ELLIPSE, c.JPG)))
             assert os.path.exists(os.path.join(output_dir, '{}_{}_{}.{}'.format(c.TRAVERSE, c.FIXED, c.HEART, c.JPG)))

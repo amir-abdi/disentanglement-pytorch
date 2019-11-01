@@ -6,7 +6,7 @@ import torch
 import torchvision.utils
 
 from common.utils import grid2gif, get_data_for_visualization, prepare_data_for_visualization, get_lr, is_time_for
-from common.dataset import get_dataloader
+from common.data_loader import _get_dataloader_with_labels
 import common.constants as c
 from aicrowd.aicrowd_utils import is_on_aicrowd_server, evaluate_disentanglement_metric
 from common.utils import get_scheduler
@@ -63,18 +63,28 @@ class BaseDisentangler(object):
         self.image_size = args.image_size
         self.aicrowd_challenge = args.aicrowd_challenge
 
-        # todo: merge the two data loaders
-        if self.aicrowd_challenge:
-            from aicrowd import utils_pytorch as aicrowd
-            kwargs = {'seed': args.seed}
-            if self.device == 'cuda':
-                kwargs.update({'num_workers': args.num_workers})
-            # the following are hard coded: shuffle=True, drop_last=True, pin_memory=True
-            self.data_loader = aicrowd.get_loader(batch_size=args.batch_size, **kwargs)
-        else:
-            self.data_loader = get_dataloader(args)
+        from common.data_loader import get_dataloader
+        self.data_loader = get_dataloader(args.dset_name, args.dset_dir, args.batch_size, args.seed, args.num_workers,
+                                          args.image_size, args.include_labels, args.pin_memory, not args.test,
+                                          not args.test)
 
-            # only used if some supervision was imposed such as in Conditional VAE
+        # # todo: merge the two data loaders
+        # from common.data_loader import get_dataset_name
+        # dataset_name = get_dataset_name(args.dset_name)
+        # if self.aicrowd_challenge:
+        #     from aicrowd import utils_pytorch as aicrowd
+        #     kwargs = {'seed': args.seed}
+        #     if self.device == 'cuda':
+        #         kwargs.update({'num_workers': args.num_workers})
+        #     # the following are hard coded: shuffle=True, drop_last=True, pin_memory=True
+        #     self.data_loader = aicrowd.get_loader(dataset_name, args.batch_size, args.seed, args.num_workers,
+        #                                           args.pin_memory)
+        # else:
+        #     self.data_loader = _get_dataloader(dataset_name, args.dset_dir, args.batch_size, args.num_workers,
+        #                                        args.image_size, args.include_labels, args.pin_memory, args.test)
+
+        # only used if some supervision was imposed such as in Conditional VAE
+        if self.data_loader.dataset.has_labels():
             self.num_classes = self.data_loader.dataset.num_classes()
             self.total_num_classes = sum(self.data_loader.dataset.num_classes(False))
             self.class_values = self.data_loader.dataset.class_values()
@@ -234,7 +244,8 @@ class BaseDisentangler(object):
             self.evaluate_results = evaluate_disentanglement_metric(self, metric_names=self.evaluate_metric)
 
         if is_time_for(self.iter, self.schedulers_iter):
-            self.schedulers_step(kwargs.get(c.LOSS, dict()).get(c.TOTAL_VAE_EPOCH, 0), self.iter // self.schedulers_iter)
+            self.schedulers_step(kwargs.get(c.LOSS, dict()).get(c.TOTAL_VAE_EPOCH, 0),
+                                 self.iter // self.schedulers_iter)
 
     def visualize_recon(self, input_image, recon_image, test=False):
         input_image = torchvision.utils.make_grid(input_image)
@@ -269,8 +280,7 @@ class BaseDisentangler(object):
 
         encodings = dict()
         for key in sample_images_dict.keys():
-            encodings[key] = self.encode_deterministic(images=sample_images_dict[key],
-                                                       labels=sample_labels_dict[key])
+            encodings[key] = self.encode_deterministic(images=sample_images_dict[key], labels=sample_labels_dict[key])
 
         gifs = []
         for key in encodings:
@@ -371,18 +381,21 @@ class BaseDisentangler(object):
                         os.path.join(self.train_output_dir, '{}_{}_{}.{}'.format(c.TEMP, key, str(j).zfill(2), c.JPG)))
 
     def save_checkpoint(self, ckptname='last'):
+        filepath = os.path.join(self.ckpt_dir, str(ckptname))
         model_states = dict()
         optim_states = dict()
+
+        # neural models
         for key, value in self.net_dict.items():
             if isinstance(value, dict):
                 list_state_dicts = {}
                 for sub_key, net in value.items():
-                    # list_state_dicts.append(net.state_dict())
                     list_state_dicts.update({sub_key: net.state_dict()})
                 model_states.update({key: list_state_dicts})
             else:
                 model_states.update({key: value.state_dict()})
 
+        # optimizers' states
         for key, value in self.optim_dict.items():
             if isinstance(value, dict):
                 list_state_dicts = {}
@@ -392,11 +405,12 @@ class BaseDisentangler(object):
             else:
                 optim_states.update({key: value.state_dict()})
 
+        # wrap up everything in a dict
         states = {'iter': self.iter + 1,  # to avoid saving right after loading
                   'model_states': model_states,
                   'optim_states': optim_states}
 
-        filepath = os.path.join(self.ckpt_dir, str(ckptname))
+        # make sure KeyboardInterrupt exceptions don't mess up the model saving process
         while True:
             try:
                 with open(filepath, 'wb+') as f:

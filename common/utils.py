@@ -5,10 +5,12 @@ import scipy.linalg as linalg
 import numpy as np
 import random
 from importlib import reload
+import os
 
 import torch.nn
 import torch.nn.init as init
 from torch.autograd import Variable
+
 from common import constants as c
 
 
@@ -125,14 +127,14 @@ def get_data_for_visualization(dataset, device):
 
     sample_idx = {}
     dset_name = dataset.name
-    if dset_name.lower() == 'dsprites':
+    if dset_name == c.DATASETS[1]:  # dsprites_full
         fixed_idx = [87040, 332800, 578560]  # square ellipse heart
         sample_idx = {'{}_{}'.format(c.FIXED, c.SQUARE): fixed_idx[0],
                       '{}_{}'.format(c.FIXED, c.ELLIPSE): fixed_idx[1],
                       '{}_{}'.format(c.FIXED, c.HEART): fixed_idx[2]
                       }
 
-    elif dset_name.lower() == 'celeba':
+    elif dset_name == c.DATASETS[0]:  # celebA
         fixed_idx = [11281, 114307, 10535, 59434]
         sample_idx = {}
         for i in range(len(fixed_idx)):
@@ -238,7 +240,6 @@ def one_hot_embedding(labels, num_classes):
         if num_class not in one_hot_embedding.Ys:
             one_hot_embedding.Ys[num_class] = cuda(torch.eye(num_class))
 
-
         y = one_hot_embedding.Ys[num_class]
         one_hots.append(y[labels[:, i]])
 
@@ -284,7 +285,6 @@ def get_scheduler(value, scheduler_type, scheduler_args):
     return scheduler
 
 
-
 def get_lr(optimizer):
     for param_group in optimizer.param_groups:
         return param_group['lr']
@@ -309,3 +309,24 @@ def initialize_seeds(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     np.random.seed(seed)
+
+
+def set_environment_variables(dset_dir):
+    """
+    If the argument dset_dir is set, overwrite $DATASETS and $DISENTANGLEMENT_LIB_DATA.
+    else if only $DATASETS is set, use the same for $DISENTANGLEMENT_LIB_DATA
+    else if only $DISENTANGLEMENT_LIB_DATA is set, use the same for $DATASETS
+    else print warning that the environment variables are not set or inconsistent.
+    :param dset_dir:
+    :return:
+    """
+    os.environ['DATASETS'] = dset_dir or os.environ.get('DATASETS')
+    # if $DATASTES was set, but $DISENTANGLEMENT_LIB_DATA was not, set the latter to former
+    if os.environ.get('DATASETS') and not os.environ.get('DISENTANGLEMENT_LIB_DATA'):
+        os.environ['DISENTANGLEMENT_LIB_DATA'] = os.getenv('DATASETS')
+    elif os.environ.get('DISENTANGLEMENT_LIB_DATA') and not os.environ.get('DATASETS'):
+        os.environ['DATASETS'] = os.getenv('DISENTANGLEMENT_LIB_DATA')
+    elif os.environ.get('DISENTANGLEMENT_LIB_DATA') != os.environ.get('DATASETS'):
+        logging.warning(f"Environment variables are not correctly set:\n"
+                        f"$DISENTANGLEMENT_LIB_DATA={os.environ.get('DISENTANGLEMENT_LIB_DATA')}\n"
+                        f"$DATASETS={os.environ.get('DATASETS')}")

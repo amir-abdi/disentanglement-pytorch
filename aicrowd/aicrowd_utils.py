@@ -17,17 +17,6 @@ def get_gin_config(config_files, metric_name):
     return None
 
 
-# @gin.configurable("evaluation")
-# def _evaluate(representation_function, dataset, evaluation_fn, random_seed, name):
-#     del name
-#     results = evaluation_fn(
-#         dataset,
-#         representation_function,
-#         random_state=np.random.RandomState(123),
-#     )
-#     return results
-
-
 def evaluate_disentanglement_metric(model, metric_names=['mig'], dataset_name='mpi3d_toy'):
     # These imports are included only inside this function for code base to run on systems without
     # proper installation of tensorflow and libcublas

@@ -10,6 +10,7 @@ from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torchvision.datasets import ImageFolder
 from torchvision import transforms
+from disentanglement_lib.data.ground_truth.named_data import get_named_ground_truth_data
 
 
 class LabelHandler(object):
@@ -43,17 +44,16 @@ class LabelHandler(object):
         return None
 
     def has_labels(self):
-        if self.labels is not None:
-            return True
-        return False
+        return self.labels is not None
 
 
 class CustomImageFolder(ImageFolder):
-    def __init__(self, root, transform, labels, label_weights, name, class_values, num_channels):
+    def __init__(self, root, transform, labels, label_weights, name, class_values, num_channels, seed):
         super(CustomImageFolder, self).__init__(root, transform)
         self.indices = range(len(self))
         self._num_channels = num_channels
         self._name = name
+        self.seed = seed
 
         self.label_handler = LabelHandler(labels, label_weights, class_values)
 
@@ -89,8 +89,8 @@ class CustomImageFolder(ImageFolder):
 
 
 class CustomNpzDataset(Dataset):
-    def __init__(self, data_images, transform, labels, label_weights, name, class_values, num_channels):
-
+    def __init__(self, data_images, transform, labels, label_weights, name, class_values, num_channels, seed):
+        self.seed = seed
         self.data_npz = data_images
         self._name = name
         self._num_channels = num_channels
@@ -133,26 +133,65 @@ class CustomNpzDataset(Dataset):
         return self.data_npz.shape[0]
 
 
-def get_dataloader(name, dset_dir, batch_size, num_workers, image_size, include_labels):
-    name = args.dset_name
-    dset_dir = args.dset_dir
-    batch_size = args.batch_size
-    num_workers = args.num_workers
-    image_size = args.image_size
-    shuffle = not args.test
-    droplast = not args.test
-    include_labels = args.include_labels
+class DisentanglementLibDataset(Dataset):
+    """
+    Data-loading from Disentanglement Library
 
+    Note:
+        Unlike a traditional Pytorch dataset, indexing with _any_ index fetches a random batch.
+        What this means is dataset[0] != dataset[0]. Also, you'll need to specify the size
+        of the dataset, which defines the length of one training epoch.
+
+        This is done to ensure compatibility with disentanglement_lib.
+    """
+
+    def __init__(self, name, seed=0):
+        """
+        Parameters
+        ----------
+        name : str
+            Name of the dataset use. You may use `get_dataset_name`.
+        seed : int
+            Random seed.
+        iterator_len : int
+            Length of the dataset. This defines the length of one training epoch.
+        """
+        self.name = name
+        self.seed = seed
+        self.random_state = np.random.RandomState(seed)
+        self.dataset = get_named_ground_truth_data(self.name)
+        self.iterator_len = self.dataset.images.shape[0]
+
+    @staticmethod
+    def has_labels():
+        return False
+
+
+    def num_channels(self):
+        return self.dataset.observation_shape[2]
+
+    def __len__(self):
+        return self.iterator_len
+
+    def __getitem__(self, item):
+        assert item < self.iterator_len
+        output = self.dataset.sample_observations(1, random_state=self.random_state)[0]
+        # Convert output to CHW from HWC
+        return torch.from_numpy(np.moveaxis(output, 2, 0), ).type(torch.FloatTensor), 0
+
+
+def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, image_size, include_labels, pin_memory,
+                                shuffle, droplast):
     transform = transforms.Compose([
         transforms.Resize((image_size, image_size)),
         transforms.ToTensor(), ])
     labels = None
     label_weights = None
-
-    # check if labels are provided as indices or names
     label_idx = None
     label_names = None
     class_values = None
+
+    # check if labels are provided as indices or names
     if include_labels is not None:
         try:
             int(include_labels[0])
@@ -199,13 +238,11 @@ def get_dataloader(name, dset_dir, batch_size, num_workers, image_size, include_
 
         data_kwargs = {'root': root,
                        'labels': labels,
-                       'transform': transform,
                        'label_weights': label_weights,
                        'class_values': class_values,
-                       'name': name,
                        'num_channels': 3}
         dset = CustomImageFolder
-    elif name.lower() == 'dsprites':
+    elif name.lower() == 'dsprites_full':
         root = os.path.join(dset_dir, 'dsprites/dsprites_ndarray_co1sh3sc6or40x32y32_64x64.npz')
         npz = np.load(root)
 
@@ -235,21 +272,21 @@ def get_dataloader(name, dset_dir, batch_size, num_workers, image_size, include_
 
         data_kwargs = {'data_images': npz['imgs'],
                        'labels': labels,
-                       'transform': transform,
                        'label_weights': label_weights,
                        'class_values': class_values,
-                       'name': name,
                        'num_channels': 1}
         dset = CustomNpzDataset
     else:
         raise NotImplementedError
-
+    data_kwargs.update({'seed': seed,
+                        'name': name,
+                        'transform': transform})
     dataset = dset(**data_kwargs)
     data_loader = DataLoader(dataset,
                              batch_size=batch_size,
                              shuffle=shuffle,
                              num_workers=num_workers,
-                             pin_memory=True,
+                             pin_memory=pin_memory,
                              drop_last=droplast)
 
     if include_labels is not None:
@@ -257,3 +294,46 @@ def get_dataloader(name, dset_dir, batch_size, num_workers, image_size, include_
         logging.info('class_values: {}'.format(class_values))
 
     return data_loader
+
+
+def get_dataset_name(name):
+    """Returns the name of the dataset from its input argument (name) or the
+    environment variable `AICROWD_DATASET_NAME`, in that order."""
+    return name or os.getenv('AICROWD_DATASET_NAME', 'mpi3d_realistic')
+
+
+def get_datasets_dir(dset_dir):
+    if dset_dir:
+        os.environ['DISENTANGLEMENT_LIB_DATA'] = dset_dir
+    return dset_dir or os.getenv('DISENTANGLEMENT_LIB_DATA')
+
+
+def _get_dataloader(name, batch_size, seed, num_workers, pin_memory, shuffle, droplast):
+    """
+    Makes a dataset using the disentanglement_lib.data.ground_truth functions, and returns a PyTorch dataloader.
+    Image sizes are fixed to 64x64 in the disentanglement_lib.
+    :param name: Name of the dataset use. Should match those of disentanglement_lib
+    :return: DataLoader
+    """
+    dataset = DisentanglementLibDataset(name, seed=seed)
+    loader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, drop_last=droplast, pin_memory=pin_memory,
+                        num_workers=num_workers,)
+    return loader
+
+
+def get_dataloader(dset_name, dset_dir, batch_size, seed, num_workers, image_size, include_labels, pin_memory,
+                   shuffle, droplast):
+    from common import constants as c
+    locally_supported_datasets = c.DATASETS[0:2]
+    dset_name = get_dataset_name(dset_name)
+    dsets_dir = get_datasets_dir(dset_dir)
+
+    if dset_name in locally_supported_datasets:
+        print('*********used local')
+        return _get_dataloader_with_labels(dset_name, dsets_dir, batch_size, seed, num_workers, image_size,
+                                           include_labels, pin_memory, shuffle, droplast)
+    else:
+        print('*********used google')
+        # use the dataloader of Google's disentanglement_lib
+        return _get_dataloader(dset_name, batch_size, seed, num_workers, pin_memory, shuffle, droplast)
+

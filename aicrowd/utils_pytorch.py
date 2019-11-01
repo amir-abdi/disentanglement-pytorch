@@ -3,11 +3,9 @@ Borrowed from https://github.com/AIcrowd/neurips2019_disentanglement_challenge_s
 """
 
 from copy import deepcopy
-import os
 from collections import namedtuple
 
 import numpy as np
-import logging
 import torch
 from torch.jit import trace
 
@@ -22,7 +20,8 @@ if 'DISENTANGLEMENT_LIB_DATA' not in os.environ:
                                                                 'dataset')})
 # noinspection PyUnresolvedReferences
 from disentanglement_lib.data.ground_truth.named_data import get_named_ground_truth_data
-# --------------------------
+
+from common.data_loader import get_dataset_name
 
 
 ExperimentConfig = namedtuple('ExperimentConfig',
@@ -38,11 +37,6 @@ def get_config():
     return ExperimentConfig(base_path=os.getenv("AICROWD_OUTPUT_PATH", "./scratch/shared"),
                             experiment_name=os.getenv("AICROWD_EVALUATION_NAME", "experiment_name"),
                             dataset_name=os.getenv("AICROWD_DATASET_NAME", "cars3d"))
-
-
-def get_dataset_name():
-    """Reads the name of the dataset from the environment variable `AICROWD_DATASET_NAME`."""
-    return os.getenv("AICROWD_DATASET_NAME", "cars3d")
 
 
 def use_cuda():
@@ -178,114 +172,6 @@ def make_representor(model, cuda=None):
         return y
 
     return _represent
-
-
-class DLIBDataset(Dataset):
-    """
-    No-bullshit data-loading from Disentanglement Library, but with a few sharp edges.
-
-    Sharp edge:
-        Unlike a traditional Pytorch dataset, indexing with _any_ index fetches a random batch.
-        What this means is dataset[0] != dataset[0]. Also, you'll need to specify the size
-        of the dataset, which defines the length of one training epoch.
-
-        This is done to ensure compatibility with disentanglement_lib.
-    """
-
-    def __init__(self, name, seed=0, iterator_len=50000):
-        """
-        Parameters
-        ----------
-        name : str
-            Name of the dataset use. You may use `get_dataset_name`.
-        seed : int
-            Random seed.
-        iterator_len : int
-            Length of the dataset. This defines the length of one training epoch.
-        """
-        self.name = name
-        self.seed = seed
-        self.random_state = np.random.RandomState(seed)
-        self.iterator_len = iterator_len
-        self.dataset = self.load_dataset()
-
-    @staticmethod
-    def has_labels():
-        # todo: merge the two families of datasets (aicrowd and mine) into a unified approach
-        return False
-
-    def num_channels(self):
-        return self.dataset.observation_shape[2]
-
-    def load_dataset(self):
-        return get_named_ground_truth_data(self.name)
-
-    def __len__(self):
-        return self.iterator_len
-
-    def __getitem__(self, item):
-        assert item < self.iterator_len
-        output = self.dataset.sample_observations(1, random_state=self.random_state)[0]
-        # Convert output to CHW from HWC
-        return torch.from_numpy(np.moveaxis(output, 2, 0), ).type(torch.FloatTensor), 0
-
-
-def get_dataset(name=None, seed=0, iterator_len=50000):
-    """
-    Makes a dataset.
-
-    Parameters
-    ----------
-    name : str
-        Name of the dataset use. Defaults to the output of `get_dataset_name`.
-    seed : int
-        Random seed.
-    iterator_len : int
-        Length of the dataset. This defines the length of one training epoch.
-    Returns
-    -------
-    DLIBDataset
-    """
-    name = get_dataset_name() if name is None else name
-    return DLIBDataset(name, seed=seed, iterator_len=iterator_len)
-
-
-def get_loader(name=None, batch_size=32, seed=0, num_workers=0, **dataloader_kwargs):
-    """
-    Makes a dataset and a data-loader.
-
-    Parameters
-    ----------
-    name : str
-        Name of the dataset use. Defaults to the output of `get_dataset_name`.
-    batch_size : int
-        Batch size.
-    seed : int
-        Random seed.
-    num_workers : int
-        Number of processes to use for multiprocessed data-loading.
-    dataloader_kwargs : dict
-        Keyword arguments for the data-loader.
-
-    Returns
-    -------
-    DataLoader
-    """
-    name = get_dataset_name() if name is None else name
-    dataset = DLIBDataset(name, seed=seed)
-    loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, drop_last=True, pin_memory=True,
-                        num_workers=num_workers, **dataloader_kwargs)
-    return loader
-
-
-def test_loader():
-    loader = get_loader(num_workers=2)
-    for count, b in enumerate(loader):
-        print(b.shape)
-        # ^ prints `torch.Size([32, 3, 64, 64])` and means that multiprocessing works
-        if count > 5:
-            break
-    print("Success!")
 
 
 class RepresentationExtractor(torch.nn.Module):

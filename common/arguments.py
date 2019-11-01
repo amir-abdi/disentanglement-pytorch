@@ -98,6 +98,9 @@ def get_args(sys_args):
     parser.add_argument('--dset_name', default=None, type=str, help='dataset name')
     parser.add_argument('--image_size', default=64, type=int, help='width and height of image')
     parser.add_argument('--num_workers', default=1, type=int, help='number of workers for the data loader')
+    parser.add_argument('--pin_memory', default=True, type=str2bool,
+                        help='pin_memory flag of data loader. Check this blogpost for details:'
+                             'https://devblogs.nvidia.com/how-optimize-data-transfers-cuda-cc/')
 
     # Logging and visualization
     parser.add_argument('--train_output_dir', default='train_outputs', type=str, help='output directory')
