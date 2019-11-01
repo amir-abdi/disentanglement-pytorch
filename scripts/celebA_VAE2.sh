@@ -8,17 +8,15 @@ echo "name=$NAME"
 
 python3 main.py \
 --name=$NAME \
---alg=BetaVAE \
---vae_loss=Basic \
+--alg=VAE \
 --dset_dir=$DISENTANGLEMENT_LIB_DATA  \
---dset_name=dsprites_full \
+--dset_name=celebA \
 --traverse_z=true \
---encoder=SimpleGaussianConv64 \
+--encoder=PadlessGaussianConv64 \
 --decoder=SimpleConv64 \
---z_dim=8 \
---w_kld=1 \
---use_wandb=false
-
+--z_dim=20 \
+--use_wandb=false \
+--w_kld=1.0 \
 
 
 

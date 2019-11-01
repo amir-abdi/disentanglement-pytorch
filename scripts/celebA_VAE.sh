@@ -8,20 +8,16 @@ echo "name=$NAME"
 
 python3 main.py \
 --name=$NAME \
---alg=CVAE \
---vae_loss=AnnealedCapacity \
+--alg=VAE \
 --dset_dir=$DISENTANGLEMENT_LIB_DATA  \
---dset_name=dsprites_full \
+--dset_name=celebA \
 --traverse_z=true \
---traverse_c=true \
 --encoder=SimpleGaussianConv64 \
 --decoder=SimpleConv64 \
---label_tiler=MultiTo2DChannel \
 --z_dim=8 \
---w_kld=5 \
---lr_G=0.0004 \
---include_labels=1 \
 --use_wandb=false \
+--w_recon=10000 \
+--w_kld=1 \
 
 
 

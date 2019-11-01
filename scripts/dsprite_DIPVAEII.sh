@@ -9,17 +9,18 @@ echo "name=$NAME"
 python3 main.py \
 --name=$NAME \
 --alg=BetaVAE \
---vae_loss=AnnealedCapacity \
+--loss_terms=DIPVAEII \
 --dset_dir=$DISENTANGLEMENT_LIB_DATA  \
 --dset_name=dsprites_full \
 --traverse_z=true \
 --encoder=SimpleGaussianConv64 \
 --decoder=SimpleConv64 \
---z_dim=8 \
+--discriminator=SimpleDiscriminator \
+--z_dim=20 \
 --use_wandb=false \
---w_recon=10000 \
---w_kld=2 \
---max_c=25.0 \
---iterations_c=100000 \
---wandb_resume_id=inyofp8y \
+--w_kld=1 \
+--lr_G=0.0005 \
+
+
+
 

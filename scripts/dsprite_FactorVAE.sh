@@ -8,24 +8,25 @@ echo "name=$NAME"
 
 python3 main.py \
 --name=$NAME \
---alg=IFCVAE \
---vae_loss=AnnealedCapacity \
---vae_type=FactorVAE \
+--alg=BetaVAE \
+--annealed_capacity=true \
+--loss_terms=FactorVAE \
 --dset_dir=$DISENTANGLEMENT_LIB_DATA  \
 --dset_name=dsprites_full \
 --traverse_z=true \
---traverse_c=true \
---encoder SimpleGaussianConv64 SimpleEncoder64 \
+--encoder=SimpleGaussianConv64 \
 --decoder=SimpleConv64 \
 --discriminator=SimpleDiscriminator \
---label_tiler=MultiTo2DChannel \
 --z_dim=8 \
---w_kld=5 \
---w_le=1 \
---w_aux=20 \
---w_tc=1 \
---include_labels 1 \
 --use_wandb=false \
+--w_kld=1 \
+--w_tc=1 \
+--lr_G=0.002 \
+--lr_scheduler=ReduceLROnPlateau \
+--lr_scheduler_args mode=min factor=0.8 patience=0 min_lr=0.000001 \
+--num_workers=1 \
+
+
 
 
 

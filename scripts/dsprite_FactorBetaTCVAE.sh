@@ -9,8 +9,8 @@ echo "name=$NAME"
 python3 main.py \
 --name=$NAME \
 --alg=BetaVAE \
---vae_loss=AnnealedCapacity \
---vae_type=BetaTCVAE \
+--annealed_capacity=true \
+--loss_terms FactorVAE BetaTCVAE \
 --dset_dir=$DISENTANGLEMENT_LIB_DATA \
 --dset_name=dsprites_full \
 --traverse_z=true \
@@ -20,7 +20,7 @@ python3 main.py \
 --z_dim=20 \
 --use_wandb=false \
 --w_kld=1.0 \
---w_tc_empirical=1.0 \
+--w_tc=2.0 \
 --lr_G=0.0001 \
 --lr_scheduler=ReduceLROnPlateau \
 --lr_scheduler_args mode=min factor=0.8 patience=0 min_lr=0.000001 \

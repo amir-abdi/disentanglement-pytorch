@@ -8,21 +8,24 @@ echo "name=$NAME"
 
 python3 main.py \
 --name=$NAME \
---alg=BetaVAE \
---vae_loss=Basic \
---vae_type=DIPVAE \
---dip_type=i \
+--alg=IFCVAE \
+--annealed_capacity=true \
+--loss_terms=FactorVAE \
 --dset_dir=$DISENTANGLEMENT_LIB_DATA  \
 --dset_name=dsprites_full \
 --traverse_z=true \
---encoder=SimpleGaussianConv64 \
+--traverse_c=true \
+--encoder SimpleGaussianConv64 SimpleConv64 \
 --decoder=SimpleConv64 \
 --discriminator=SimpleDiscriminator \
---z_dim=20 \
+--label_tiler=MultiTo2DChannel \
+--z_dim=8 \
+--w_kld=5 \
+--w_le=1 \
+--w_aux=20 \
+--w_tc=1 \
+--include_labels 1 \
 --use_wandb=false \
---w_kld=1 \
---lr_G=0.0005 \
-
 
 
 
