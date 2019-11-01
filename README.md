@@ -27,9 +27,7 @@ The library visualizes the ***reconstructed images*** and the ***traversed laten
 
     python main.py [[--ARG ARG_VALUE] ...]
 
-or, try one of the bash files in the `scripts/` directory:
-
-    bash scripts/SCRIPT_NAME
+or, try an off-the-shelf bash file: `bash scripts/SCRIPT_NAME`
     
 #### Evaluate
 To evaluate the learned disentangled representation, set the `--evaluate_metric` 
@@ -62,6 +60,7 @@ and is based on the starter kit of the
 [Disentanglement Challenge of NeurIPS 2019](https://github.com/AIcrowd/neurips2019_disentanglement_challenge_starter_kit/blob/master/utils_pytorch.py),
 hosted by [AIcrowd](http://aicrowd.com).
 
-
-Check some of the bash scripts in the `scripts/` folder for possibilities.
-
+### Contributing
+Any contributions, especially around implementing more disentanglement algorithms, 
+are welcome. Feel free to submit bugs, feature requests, or questions as issues,
+or contact me directly via email at: [amirabdi@ece.ubc.ca](mailto:amirabdi@ece.ubc.ca)
