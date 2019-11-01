@@ -12,7 +12,7 @@ python3 main.py \
 --vae_loss=Basic \
 --vae_type=DIPVAE \
 --dip_type=i \
---dset_dir=$DATASETS \
+--dset_dir=$DISENTANGLEMENT_LIB_DATA  \
 --dset_name=dsprites_full \
 --traverse_z=true \
 --encoder=SimpleGaussianConv64 \

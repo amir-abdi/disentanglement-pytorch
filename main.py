@@ -61,5 +61,5 @@ if __name__ == "__main__":
     args = get_args(sys.argv[1:])
     setup_logging(args.verbose)
     initialize_seeds(args.seed)
-    set_environment_variables(args.dset_dir)
+    set_environment_variables(args.dset_dir, args.dset_name)
     main(args)

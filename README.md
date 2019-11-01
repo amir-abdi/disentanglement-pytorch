@@ -24,30 +24,38 @@ The library visualizes the ***reconstructed images*** and the ***traversed laten
 
 ### Training
 
-To run the models:
-
     python main.py [[--ARG ARG_VALUE] ...]
 
-There are some ready-to-run scripts in the `scripts` folder. Try them with:
+or, try one of the bash files in the `scripts/` directory:
 
     bash scripts/SCRIPT_NAME
     
 
 ### Data Setup
 To run the scripts:
-- set the `$DATASETS` environment variable 
-to the directory holding all the datasets.
-- set the  `$AICROWD_DATASET_NAME` environment variable to
-the name of the dataset 
-(borrowed from [here](https://github.com/AIcrowd/neurips2019_disentanglement_challenge_starter_kit/blob/master/utils_pytorch.py)
-which leverages Google's implementations of [disentanglement_lib](https://github.com/google-research/disentanglement_lib)).
-This loader supports the following datasets:
-*dsprites_full, dsprites_noshape, color_dsprites, 
-noisy_dsprites, scream_dsprites, smallnorb, 
-cars3d, mpi3d_toy, mpi3d_realistic, 
-mpi3d_real, shapes3d*.  
-- The alternative is to set the `--dset_dir` and `--dset_name` flags in your script to 
-where the dataset is stored (*e.g.* check `scripts/celebA_vae`). 
-This is the method of choice for conditional (class-aware) approaches such as the IFCVAE. 
-Only the *CelebA* and *dsprites* datasets are included in this approach. 
 
+1- Set the `-dset_dir` flag or the `$DISENTANGLEMENT_LIB_DATA` environment variable to the directory 
+holding all the datasets (the former is given priority). 
+
+2- Set the `dset_name` flag or the `$DATASET_NAME` environment variable to the name of the dataset (the former is given priority).
+The supported datasets are: 
+*[celebA](http://mmlab.ie.cuhk.edu.hk/projects/CelebA.html),
+[dsprites](https://github.com/deepmind/dsprites-dataset/raw/master/dsprites_ndarray_co1sh3sc6or40x32y32_64x64.npz)
+(and the Deppmind's variants: color, noisy, scream, introduced [here](https://github.com/google-research/disentanglement_lib/blob/master/disentanglement_lib/data/ground_truth/named_data.py)),
+[smallnorb](https://cs.nyu.edu/~ylclab/data/norb-v1.0-small/), 
+[cars3d](http://www.scottreed.info/files/nips2015-analogy-data.tar.gz), 
+[mpi3d_toy](https://storage.googleapis.com/disentanglement_dataset/data_npz/sim_toy_64x_ordered_without_heldout_factors.npz), and 
+[mpi3d_realistic](https://storage.googleapis.com/disentanglement_dataset/data_npz/sim_realistic_64x_ordered_without_heldout_factors.npz).  
+
+<!--- [shapes3d](https://storage.cloud.google.com/3d-shapes/3dshapes.h5)*.-->
+ 
+Currently, there are two dataloaders in place: 
+- One handles labels for semi-supervised and conditional (class-aware) training (*e.g.* IFCVAE) , 
+but only supports the `celebA` and `dsprites_full` datasets for now. 
+- The other leverages Google's implementations of [disentanglement_lib](https://github.com/google-research/disentanglement_lib),
+and is based on the starter kit of the 
+[Disentanglement Challenge of NeurIPS 2019](https://github.com/AIcrowd/neurips2019_disentanglement_challenge_starter_kit/blob/master/utils_pytorch.py),
+hosted by [AIcrowd](http://aicrowd.com).
+
+
+Check some of the bash scripts in the `scripts/` folder for possibilities.

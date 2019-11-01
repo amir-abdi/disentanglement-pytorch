@@ -1,7 +1,4 @@
-"""dataset.py"""
-
 import os
-import random
 import numpy as np
 import logging
 
@@ -10,7 +7,8 @@ from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torchvision.datasets import ImageFolder
 from torchvision import transforms
-from disentanglement_lib.data.ground_truth.named_data import get_named_ground_truth_data
+
+from common import constants as c
 
 
 class LabelHandler(object):
@@ -156,6 +154,7 @@ class DisentanglementLibDataset(Dataset):
         iterator_len : int
             Length of the dataset. This defines the length of one training epoch.
         """
+        from disentanglement_lib.data.ground_truth.named_data import get_named_ground_truth_data
         self.name = name
         self.seed = seed
         self.random_state = np.random.RandomState(seed)
@@ -299,7 +298,7 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
 def get_dataset_name(name):
     """Returns the name of the dataset from its input argument (name) or the
     environment variable `AICROWD_DATASET_NAME`, in that order."""
-    return name or os.getenv('AICROWD_DATASET_NAME', 'mpi3d_realistic')
+    return name or os.getenv('AICROWD_DATASET_NAME', c.DEFAULT_DATASET)
 
 
 def get_datasets_dir(dset_dir):
@@ -323,17 +322,17 @@ def _get_dataloader(name, batch_size, seed, num_workers, pin_memory, shuffle, dr
 
 def get_dataloader(dset_name, dset_dir, batch_size, seed, num_workers, image_size, include_labels, pin_memory,
                    shuffle, droplast):
-    from common import constants as c
     locally_supported_datasets = c.DATASETS[0:2]
     dset_name = get_dataset_name(dset_name)
     dsets_dir = get_datasets_dir(dset_dir)
 
+    logging.info(f'Datasets root: {dset_dir}')
+    logging.info(f'Dataset: {dset_name}')
+
     if dset_name in locally_supported_datasets:
-        print('*********used local')
         return _get_dataloader_with_labels(dset_name, dsets_dir, batch_size, seed, num_workers, image_size,
                                            include_labels, pin_memory, shuffle, droplast)
     else:
-        print('*********used google')
         # use the dataloader of Google's disentanglement_lib
         return _get_dataloader(dset_name, batch_size, seed, num_workers, pin_memory, shuffle, droplast)
 

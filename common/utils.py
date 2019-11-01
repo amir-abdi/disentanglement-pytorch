@@ -311,22 +311,38 @@ def initialize_seeds(seed):
     np.random.seed(seed)
 
 
-def set_environment_variables(dset_dir):
+def set_environment_variables(dset_dir, dset_name):
     """
-    If the argument dset_dir is set, overwrite $DATASETS and $DISENTANGLEMENT_LIB_DATA.
+    If the argument dset_dir is set, overwrite DISENTANGLEMENT_LIB_DATA.
     else if only $DATASETS is set, use the same for $DISENTANGLEMENT_LIB_DATA
     else if only $DISENTANGLEMENT_LIB_DATA is set, use the same for $DATASETS
     else print warning that the environment variables are not set or inconsistent.
-    :param dset_dir:
-    :return:
+
+    If the argument dset_name is set, overwrite $DATASET_NAME.
+    else if only $DATASET_NAME is set, use the same for $AICROWD_DATASET_NAME
+    else if only $AICROWD_DATASET_NAME is set, use the same for $DATASET_NAME
+    else print warning that the environment variables are not set or inconsistent.
+
+    :param dset_dir: directory where all the datasets are saved
+    :param dset_name: name of the dataset to be loaded by the dataloader
     """
-    os.environ['DATASETS'] = dset_dir or os.environ.get('DATASETS')
-    # if $DATASTES was set, but $DISENTANGLEMENT_LIB_DATA was not, set the latter to former
-    if os.environ.get('DATASETS') and not os.environ.get('DISENTANGLEMENT_LIB_DATA'):
-        os.environ['DISENTANGLEMENT_LIB_DATA'] = os.getenv('DATASETS')
-    elif os.environ.get('DISENTANGLEMENT_LIB_DATA') and not os.environ.get('DATASETS'):
-        os.environ['DATASETS'] = os.getenv('DISENTANGLEMENT_LIB_DATA')
-    elif os.environ.get('DISENTANGLEMENT_LIB_DATA') != os.environ.get('DATASETS'):
+    if dset_dir:
+        os.environ['DISENTANGLEMENT_LIB_DATA'] = dset_dir
+    if not os.environ.get('DISENTANGLEMENT_LIB_DATA'):
         logging.warning(f"Environment variables are not correctly set:\n"
-                        f"$DISENTANGLEMENT_LIB_DATA={os.environ.get('DISENTANGLEMENT_LIB_DATA')}\n"
-                        f"$DATASETS={os.environ.get('DATASETS')}")
+                        f"$DISENTANGLEMENT_LIB_DATA={os.environ.get('DISENTANGLEMENT_LIB_DATA')}\n")
+
+    if dset_name:
+        os.environ['DATASET_NAME'] = dset_name
+    if os.environ.get('DATASET_NAME') and not os.environ.get('AICROWD_DATASET_NAME'):
+        os.environ['AICROWD_DATASET_NAME'] = os.getenv('DATASET_NAME')
+    elif os.environ.get('AICROWD_DATASET_NAME') and not os.environ.get('DATASET_NAME'):
+        os.environ['DATASET_NAME'] = os.getenv('AICROWD_DATASET_NAME')
+    elif os.environ.get('AICROWD_DATASET_NAME') != os.environ.get('DATASET_NAME'):
+        logging.warning(f"Environment variables are not correctly set:\n"
+                        f"$AICROWD_DATASET_NAME={os.environ.get('AICROWD_DATASET_NAME')}\n"
+                        f"$DATASET_NAME={os.environ.get('DATASET_NAME')}")
+
+    logging.info(f"$AICROWD_DATASET_NAME={os.environ.get('AICROWD_DATASET_NAME')}")
+    logging.info(f"$DATASET_NAME={os.environ.get('DATASET_NAME')}")
+    logging.info(f"$DISENTANGLEMENT_LIB_DATA={os.environ.get('DISENTANGLEMENT_LIB_DATA')}")

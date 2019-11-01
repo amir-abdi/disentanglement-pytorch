@@ -10,7 +10,7 @@ python3 main.py \
 --name=$NAME \
 --alg=CVAE \
 --vae_loss=AnnealedCapacity \
---dset_dir=$DATASETS \
+--dset_dir=$DISENTANGLEMENT_LIB_DATA  \
 --dset_name=dsprites_full \
 --traverse_z=true \
 --traverse_c=true \

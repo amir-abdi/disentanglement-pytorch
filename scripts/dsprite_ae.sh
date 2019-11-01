@@ -9,7 +9,7 @@ echo "name=$NAME"
 python3 main.py \
 --name=$NAME \
 --alg=AE \
---dset_dir=$DATASETS \
+--dset_dir=$DISENTANGLEMENT_LIB_DATA  \
 --dset_name=dsprites_full \
 --encoder=SimpleConv64 \
 --decoder=SimpleConv64 \

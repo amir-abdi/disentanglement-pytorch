@@ -11,7 +11,7 @@ python3 main.py \
 --alg=VAE \
 --vae_loss=Basic \
 --vae_type=Basic \
---dset_dir=$DATASETS \
+--dset_dir=$DISENTANGLEMENT_LIB_DATA  \
 --dset_name=celebA \
 --traverse_z=true \
 --encoder=PadlessGaussianConv64 \

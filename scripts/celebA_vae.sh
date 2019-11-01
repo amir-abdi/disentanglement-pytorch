@@ -10,7 +10,7 @@ python3 main.py \
 --name=$NAME \
 --alg=VAE \
 --vae_loss=Basic \
---dset_dir=$DATASETS \
+--dset_dir=$DISENTANGLEMENT_LIB_DATA  \
 --dset_name=celebA \
 --traverse_z=true \
 --encoder=SimpleGaussianConv64 \

@@ -11,7 +11,7 @@ from common.utils import update_args
 
 ALGS = c.ALGS
 VAE_LOSS = c.VAE_LOSS
-DATASETS = c.DATASETS[0:2]  # 'celebA', 'dsprites_full'
+DATASETS = c.TEST_DATASETS  # 'celebA', 'dsprites_full'
 BATCH_SIZE = 4
 MAX_ITER = 6
 CKPT_SAVE_ITER = 3

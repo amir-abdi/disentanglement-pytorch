@@ -33,6 +33,8 @@ VAE_TYPE = ('Basic', FACTORVAE, DIPVAE, BetaTCVAE, INFOVAE)
 DATASETS = ('celebA', 'dsprites_full', 'dsprites_noshape', 'color_dsprites', 'noisy_dsprites', 'scream_dsprites',
             'smallnorb', 'cars3d', 'shapes3d',
             'mpi3d_toy', 'mpi3d_realistic', 'mpi3d_real')
+DEFAULT_DATASET = DATASETS[-2]  # mpi3d_realistic
+TEST_DATASETS = DATASETS[0:2]  # celebA, dsprites_full
 
 # Architectures
 DISCRIMINATORS = ('SimpleDiscriminator', 'SimpleDiscriminatorConv64')
