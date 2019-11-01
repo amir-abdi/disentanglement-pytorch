@@ -62,7 +62,17 @@ and is based on the starter kit of the
 [Disentanglement Challenge of NeurIPS 2019](https://github.com/AIcrowd/neurips2019_disentanglement_challenge_starter_kit/blob/master/utils_pytorch.py),
 hosted by [AIcrowd](http://aicrowd.com).
 
-### Contributing
+### NeurIPS 2019 Disentanglement Challenge
+- To use this code in the 
+[NeurIPS 2019 Disentanglement Challenge](https://www.aicrowd.com/challenges/neurips-2019-disentanglement-challenge)
+set the last line of `run.sh` to your highest performing configuration.
+- Follow the instructions on this [starter kit](https://github.com/AIcrowd/neurips2019_disentanglement_challenge_starter_kit)
+to setup your AIcrowd and gitlab credentials and keys. 
+
+
+
+### Contributions
 Any contributions, especially around implementing more disentanglement algorithms, 
 are welcome. Feel free to submit bugs, feature requests, or questions as issues,
 or contact me directly via email at: [amirabdi@ece.ubc.ca](mailto:amirabdi@ece.ubc.ca)
+
