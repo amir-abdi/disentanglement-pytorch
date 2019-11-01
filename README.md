@@ -13,7 +13,9 @@ The following algorithms are implemented:
 - CVAE ([Learning Structured Output Representation using Deep Conditional Generative Models](https://papers.nips.cc/paper/5775-learning-structured-output-representation-using-deep-conditional-generative-models.pdf))
 - IFCVAE ([Adversarial Information Factorization](https://arxiv.org/pdf/1711.05175.pdf))
 
-We are open to suggestions and contributions.
+***Note:*** *Everything* is modular, you can mix and match neural architectures and algorithms.
+Also, multiple loss terms can be included in the `--loss_terms` argument, each with their respective 
+weights. This enables us to combine a set of disentanglement algorithms for representation learning. 
 
 
 ### Requirements and Installation
