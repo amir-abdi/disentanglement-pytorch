@@ -10,6 +10,7 @@ The following algorithms are implemented:
 - Beta-TCVAE ([Isolating Sources of Disentanglement in Variational Autoencoders](https://arxiv.org/abs/1802.04942))
 - DIP-VAE I & II ([Variational Inference of Disentangled Latent Concepts from Unlabeled Observations ](https://openreview.net/forum?id=H1kG7GZAW))
 - Factor-VAE ([Disentangling by Factorising](https://arxiv.org/pdf/1802.05983.pdf))
+- CVAE ([Learning Structured Output Representation using Deep Conditional Generative Models](https://papers.nips.cc/paper/5775-learning-structured-output-representation-using-deep-conditional-generative-models.pdf))
 - IFCVAE ([Adversarial Information Factorization](https://arxiv.org/pdf/1711.05175.pdf))
 
 We are open to suggestions and contributions.
@@ -30,6 +31,10 @@ or, try one of the bash files in the `scripts/` directory:
 
     bash scripts/SCRIPT_NAME
     
+#### Evaluate
+To evaluate the learned disentangled representation, set the `--evaluate_metric` 
+flag to a subset of the following available metrics: 
+*mig, sap_score, irs, factor_vae_metric, dci* (see `scripts/aicrowd_challenge`).
 
 ### Data Setup
 To run the scripts:
@@ -50,7 +55,7 @@ The supported datasets are:
 <!--- [shapes3d](https://storage.cloud.google.com/3d-shapes/3dshapes.h5)*.-->
  
 Currently, there are two dataloaders in place: 
-- One handles labels for semi-supervised and conditional (class-aware) training (*e.g.* IFCVAE) , 
+- One handles labels for semi-supervised and conditional (class-aware) training (*e.g.* CVAE, IFCVAE) , 
 but only supports the `celebA` and `dsprites_full` datasets for now. 
 - The other leverages Google's implementations of [disentanglement_lib](https://github.com/google-research/disentanglement_lib),
 and is based on the starter kit of the 
@@ -59,3 +64,4 @@ hosted by [AIcrowd](http://aicrowd.com).
 
 
 Check some of the bash scripts in the `scripts/` folder for possibilities.
+
