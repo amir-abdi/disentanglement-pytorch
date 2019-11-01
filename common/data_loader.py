@@ -133,7 +133,7 @@ class CustomNpzDataset(Dataset):
         return self.data_npz.shape[0]
 
 
-def get_dataloader(args):
+def get_dataloader(name, dset_dir, batch_size, num_workers, image_size, include_labels):
     name = args.dset_name
     dset_dir = args.dset_dir
     batch_size = args.batch_size

@@ -36,18 +36,18 @@ There are some ready-to-run scripts in the `scripts` folder. Try them with:
 ### Data Setup
 To run the scripts:
 - set the `$DATASETS` environment variable 
-to the directory holding all the datasets, and
+to the directory holding all the datasets.
 - set the  `$AICROWD_DATASET_NAME` environment variable to
 the name of the dataset 
 (borrowed from [here](https://github.com/AIcrowd/neurips2019_disentanglement_challenge_starter_kit/blob/master/utils_pytorch.py)
-which leverages the implementations of [disentanglement_lib](https://github.com/google-research/disentanglement_lib)).
+which leverages Google's implementations of [disentanglement_lib](https://github.com/google-research/disentanglement_lib)).
+This loader supports the following datasets:
+*dsprites_full, dsprites_noshape, color_dsprites, 
+noisy_dsprites, scream_dsprites, smallnorb, 
+cars3d, mpi3d_toy, mpi3d_realistic, 
+mpi3d_real, shapes3d*.  
+- The alternative is to set the `--dset_dir` and `--dset_name` flags in your script to 
+where the dataset is stored (*e.g.* check `scripts/celebA_vae`). 
+This is the method of choice for conditional (class-aware) approaches such as the IFCVAE. 
+Only the *CelebA* and *dsprites* datasets are included in this approach. 
 
-The loader for the following datasets are implemented:
-'dsprites_full', 'dsprites_noshape', 'color_dsprites', 
-'noisy_dsprites', 'scream_dsprites', 'smallnorb', 
-'cars3d', 'mpi3d_toy', 'mpi3d_realistic', 
-'mpi3d_real', 'shapes3d'.  
-
-The alternative is to set the `--dset_dir` and `--dset_name` flags to 
-where the dataset is stored. Only the 'CelebA' and
-'dsprites' datasets are included in this approach. 
