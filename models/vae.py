@@ -4,9 +4,8 @@ import torch.optim as optim
 import torch.nn.functional as F
 
 from models.base.base_disentangler import BaseDisentangler
-from architectures import encoders, decoders, discriminators
-import common
-from common.ops import kl_divergence_mu0_var1, reparametrize, permute_dims
+from architectures import encoders, decoders
+from common.ops import kl_divergence_mu0_var1, reparametrize
 from common import constants as c
 
 
@@ -44,7 +43,7 @@ class VAE(BaseDisentangler):
         self.max_c = torch.tensor(args.max_c, dtype=torch.float)
         self.iterations_c = torch.tensor(args.iterations_c, dtype=torch.float)
 
-        # As a joke and sanity check!
+        # As a little joke
         assert self.w_kld == 1.0 or self.alg != 'VAE', 'in vanilla VAE, w_kld should be 1.0. ' \
                                                        'Please use BetaVAE if intended otherwise.'
 
@@ -69,7 +68,10 @@ class VAE(BaseDisentangler):
 
         # FactorVAE
         if c.FACTORVAE in self.loss_terms:
-            self.PermD, self.optim_PermD = self.factorvae_init(args)
+            from models.factorvae import factorvae_init
+            self.PermD, self.optim_PermD = factorvae_init(args.discriminator[0], self.z_dim, self.num_layer_disc,
+                                                          self.size_layer_disc, self.lr_D, self.beta1, self.beta2)
+            self.PermD.to(self.device)
             self.net_dict.update({'PermD': self.PermD})
             self.optim_dict.update({'optim_PermD': self.optim_PermD})
 
@@ -94,8 +96,8 @@ class VAE(BaseDisentangler):
         if not self.annealed_capacity:
             kld_loss = kl_divergence_mu0_var1(mu, logvar) * self.w_kld
         else:
-            c = torch.min(self.max_c, self.max_c * torch.tensor(self.iter) / self.iterations_c)
-            kld_loss = (kl_divergence_mu0_var1(mu, logvar) - c).abs() * self.w_kld
+            capacity = torch.min(self.max_c, self.max_c * torch.tensor(self.iter) / self.iterations_c)
+            kld_loss = (kl_divergence_mu0_var1(mu, logvar) - capacity).abs() * self.w_kld
         return kld_loss
 
     def loss_fn(self, input_losses, **kwargs):
@@ -115,23 +117,29 @@ class VAE(BaseDisentangler):
         output_losses[c.TOTAL_VAE] += output_losses['kld']
 
         if c.FACTORVAE in self.loss_terms:
-            output_losses['vae_tc_factor'], output_losses['discriminator_tc'] = self._factorvae_loss_fn(**kwargs)
+            from models.factorvae import factorvae_loss_fn
+            output_losses['vae_tc_factor'], output_losses['discriminator_tc'] = factorvae_loss_fn(
+                self.w_tc, self.model, self.PermD, self.optim_PermD, self.ones, self.zeros, **kwargs)
             output_losses[c.TOTAL_VAE] += output_losses['vae_tc_factor']
 
         if c.DIPVAEI in self.loss_terms:
-            output_losses['vae_dipi'] = self._dipvaei_loss_fn(**kwargs)
+            from models.dipvae import dipvaei_loss_fn
+            output_losses['vae_dipi'] = dipvaei_loss_fn(self.w_dipvae, self.lambda_od, self.lambda_d, **kwargs)
             output_losses[c.TOTAL_VAE] += output_losses['vae_dipi']
 
         if c.DIPVAEII in self.loss_terms:
-            output_losses['vae_dipii'] = self._dipvaeii_loss_fn(**kwargs)
+            from models.dipvae import dipvaeii_loss_fn
+            output_losses['vae_dipii'] = dipvaeii_loss_fn(self.w_dipvae, self.lambda_od, self.lambda_d, **kwargs)
             output_losses[c.TOTAL_VAE] += output_losses['vae_dipii']
 
         if c.BetaTCVAE in self.loss_terms:
-            output_losses['vae_betatc'] = self._betatcvae_loss_fn(**kwargs)
+            from models.betatcvae import betatcvae_loss_fn
+            output_losses['vae_betatc'] = betatcvae_loss_fn(self.w_tc, **kwargs)
             output_losses[c.TOTAL_VAE] += output_losses['vae_betatc']
 
         if c.INFOVAE in self.loss_terms:
-            output_losses['vae_mmd'] = self._infovae_loss_fn(**kwargs)
+            from models.infovae import infovae_loss_fn
+            output_losses['vae_mmd'] = infovae_loss_fn(self.w_infovae, self.z_dim, self.device, **kwargs)
             output_losses[c.TOTAL_VAE] += output_losses['vae_mmd']
 
         return output_losses
@@ -170,84 +178,6 @@ class VAE(BaseDisentangler):
             # end of epoch
         self.pbar.close()
 
-    def factorvae_init(self, args):
-        """
-          Disentangling by Factorising
-          by Kim and Mnih
-          https://arxiv.org/pdf/1802.05983.pdf
-          """
-        assert args.discriminator is not None, 'FactorVAE needs a discriminator to detect permuted Zs'
-        discriminator_name = args.discriminator[0]
-        discriminator = getattr(discriminators, discriminator_name)
-
-        PermD = discriminator(self.z_dim, num_classes=2, num_layers=self.num_layer_disc,
-                              layer_size=self.size_layer_disc).to(self.device)
-        optim_PermD = optim.Adam(PermD.parameters(), lr=self.lr_D, betas=(self.beta1, self.beta2))
-        return PermD, optim_PermD
-
-    def _factorvae_loss_fn(self, **kwargs):
-        # todo: add documentation and paper
-        x_true2 = kwargs['x_true2']
-        label2 = kwargs['label2']
-        z = kwargs['z']
-
-        factorvae_dz_true = self.PermD(z)
-        vae_tc_loss = (factorvae_dz_true[:, 0] - factorvae_dz_true[:, 1]).mean() * self.w_tc
-
-        # Train discriminator of FactorVAE
-        mu2, logvar2 = self.model.encode(x=x_true2, c=label2)
-        z2 = reparametrize(mu2, logvar2)
-        z2_perm = permute_dims(z2).detach()
-        dz2_perm = self.PermD(z2_perm)
-        discriminator_tc_loss = (F.cross_entropy(factorvae_dz_true, self.zeros) +
-                                 F.cross_entropy(dz2_perm, self.ones)) * 0.5
-        self.optim_PermD.zero_grad()
-        discriminator_tc_loss.backward(retain_graph=True)
-        self.optim_PermD.step()
-
-        return vae_tc_loss, discriminator_tc_loss
-
-    def _dipvaei_loss_fn(self, **kwargs):
-        # todo: add documentation and paper
-        mu = kwargs['mu']
-        logvar = kwargs['logvar']
-
-        from common.ops import covariance_z_mean, regularize_diag_off_diag_dip
-        cov_z_mean = covariance_z_mean(mu)
-        cov_dip_regularizer = regularize_diag_off_diag_dip(cov_z_mean, self.lambda_od, self.lambda_d)
-        return cov_dip_regularizer * self.w_dipvae
-
-    def _dipvaeii_loss_fn(self, **kwargs):
-        # todo: add documentation and paper
-        mu = kwargs['mu']
-        logvar = kwargs['logvar']
-
-        from common.ops import covariance_z_mean, regularize_diag_off_diag_dip
-        cov_z_mean = covariance_z_mean(mu)
-
-        cov_enc = torch.diag(torch.exp(logvar))
-        expectation_cov_enc = torch.mean(cov_enc, dim=0)
-        cov_z = expectation_cov_enc + cov_z_mean
-        cov_dip_regularizer = regularize_diag_off_diag_dip(cov_z, self.lambda_od, self.lambda_d)
-
-        return cov_dip_regularizer * self.w_dipvae
-
-    def _betatcvae_loss_fn(self, **kwargs):
-        # todo: add documentation and paper
-        mu = kwargs['mu']
-        logvar = kwargs['logvar']
-        z = kwargs['z']
-
-        # todo: double check the (w_tc - 1)
-        return common.ops.total_correlation(z, mu, logvar) * (self.w_tc - 1)
-
-    def _infovae_loss_fn(self, **kwargs):
-        # todo: add documentation and paper
-        from common.ops import compute_mmd
-        z = kwargs['z']
-        z_true = torch.randn(1000, self.z_dim).to(self.device)
-        return compute_mmd(z_true, z) * self.w_infovae
-
     def test(self):
         self.net_mode(train=False)
         for x_true, label in self.data_loader:
@@ -262,18 +192,3 @@ class VAE(BaseDisentangler):
 
             self.iter += 1
             self.pbar.update(1)
-
-
-class BetaVAE(VAE):
-    """
-    β-VAE: LEARNING BASIC VISUAL CONCEPTS WITH A CONSTRAINED VARIATIONAL FRAMEWORK
-    by Higgins et al.
-    https://openreview.net/pdf?id=Sy2fzU9gl
-
-    Understanding disentangling in β-VAE
-    by Burgess et al.
-    https://arxiv.org/pdf/1804.03599.pdf
-    """
-
-    def __init__(self, args):
-        super().__init__(args)

@@ -1,5 +1,3 @@
-# TODO: comment on why the paper might be flawed in terms of the twice feed forward pattern
-
 import torch
 from torch import nn
 import torch.optim as optim
@@ -12,6 +10,12 @@ from common import constants as c
 
 
 class IFCVAEModel(nn.Module):
+    """
+    Adversarial Information Factorization
+    by Creswell et al.
+    https://arxiv.org/pdf/1711.05175.pdf
+    TODO: comment on why the paper might be flawed due to doubly feed forward mechanism
+    """
     def __init__(self, z_encoder, label_encoder, decoder, tiler, num_classes):
         super().__init__()
 

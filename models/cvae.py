@@ -6,7 +6,6 @@ from models.vae import VAE
 from architectures import encoders, decoders, others
 from common.ops import reparametrize
 from common.utils import one_hot_embedding
-from common.utils import get_scheduler
 
 
 class CVAEModel(nn.Module):

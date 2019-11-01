@@ -1,13 +1,11 @@
 from .ae import AE
 from .vae import VAE
-from .vae import BetaVAE
-from models.legacy.factorvae import FactorVAE
+from .betavae import BetaVAE
 from .cvae import CVAE
 from .ifcvae import IFCVAE
 
 
 # TODO: add author and license info to all files.
-# TODO: infoVAE
 # TODO: 3 different divergences in the InfoVAE paper https://arxiv.org/pdf/1706.02262.pdf
 # TODO: evaluation metrics
 # TODO: Add Adversarial Autoencoders https://arxiv.org/pdf/1511.05644.pdf
