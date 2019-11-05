@@ -56,7 +56,7 @@ The supported datasets are:
  
 Currently, there are two dataloaders in place: 
 - One handles labels for semi-supervised and conditional (class-aware) training (*e.g.* CVAE, IFCVAE) , 
-but only supports the `celebA` and `dsprites_full` datasets for now. 
+but only supports the *celebA* and *dsprites_full* datasets for now. 
 - The other leverages Google's implementations of [disentanglement_lib](https://github.com/google-research/disentanglement_lib),
 and is based on the starter kit of the 
 [Disentanglement Challenge of NeurIPS 2019](https://github.com/AIcrowd/neurips2019_disentanglement_challenge_starter_kit/blob/master/utils_pytorch.py),
