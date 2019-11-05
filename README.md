@@ -44,7 +44,7 @@ holding all the datasets (the former is given priority).
 
 2- Set the `dset_name` flag or the `$DATASET_NAME` environment variable to the name of the dataset (the former is given priority).
 The supported datasets are: 
-*[celebA](http://mmlab.ie.cuhk.edu.hk/projects/CelebA.html),
+[celebA](http://mmlab.ie.cuhk.edu.hk/projects/CelebA.html),
 [dsprites](https://github.com/deepmind/dsprites-dataset/raw/master/dsprites_ndarray_co1sh3sc6or40x32y32_64x64.npz)
 (and the Deppmind's variants: color, noisy, scream, introduced [here](https://github.com/google-research/disentanglement_lib/blob/master/disentanglement_lib/data/ground_truth/named_data.py)),
 [smallnorb](https://cs.nyu.edu/~ylclab/data/norb-v1.0-small/), 
