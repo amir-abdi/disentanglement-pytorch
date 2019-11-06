@@ -6,7 +6,7 @@ dill==0.3.0
 git+git://github.com/google-research/disentanglement_lib
 enum34==1.1.6
 future==0.17.1
-gast==0.2.2
+gast==0.3.2
 gin-config==0.1.4
 grpcio==1.20.1
 h5py==2.9.0
