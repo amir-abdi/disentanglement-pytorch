@@ -70,6 +70,16 @@ set the last line of `run.sh` to your highest performing configuration.
 to setup your AIcrowd and gitlab credentials and keys. 
 
 
+### Sample Results
+
+| Method    | Latent traversal visualization  | 
+| ----- | -----|
+| VAE | ![](sample_results/dsprite_VAE/gif_fixed_ellipse.gif) |
+| CVAE | ![](sample_results/dsprite_CVAE/gif_fixed_ellipse.gif) Last factor is shape |
+| FactorVAE | ![](sample_results/dsprite_FactorVAE/gif_fixed_ellipse.gif) |
+| IFCVAE | ![](sample_results/dsprite_IFCVAE/gif_fixed_ellipse.gif) Last factor is shape|
+| BetaTCVAE | ![](sample_results/mpi3d_realistic_BetaTCVAE/gif_rand1.gif) |
+
 
 ### Contributions
 Any contributions, especially around implementing more disentanglement algorithms, 
