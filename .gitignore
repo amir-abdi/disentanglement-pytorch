@@ -7,6 +7,8 @@ train_outputs
 test_outputs
 .idea
 scripts
+*.sh
+**/saved
 
 ### default python ignores
 
