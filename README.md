@@ -63,11 +63,17 @@ and is based on the starter kit of the
 hosted by [AIcrowd](http://aicrowd.com).
 
 ### NeurIPS 2019 Disentanglement Challenge
-- To use this code in the 
+To use this code in the 
 [NeurIPS 2019 Disentanglement Challenge](https://www.aicrowd.com/challenges/neurips-2019-disentanglement-challenge)
-set the last line of `run.sh` to your highest performing configuration.
+
+- Run `source train_environ.sh NAME_OF_DATASET_TO_TEST`
+- Set `--aicrowd_challenge=true` in your bash file
+- Use `--evaluate_metric mig sap_score irs factor_vae_metric dci` 
+to assess the progression of disentanglement metrics during training. 
+- Set the last line of `run.sh` to your highest performing configuration.
 - Follow the instructions on this [starter kit](https://github.com/AIcrowd/neurips2019_disentanglement_challenge_starter_kit)
-to setup your AIcrowd and gitlab credentials and keys. 
+to setup your AIcrowd and gitlab credentials and keys, and push the source code 
+to your repository on GitLab.
 
 
 ### Sample Results
