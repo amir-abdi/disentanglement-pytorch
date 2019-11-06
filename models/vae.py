@@ -96,6 +96,10 @@ class VAE(BaseDisentangler):
         if not self.annealed_capacity:
             kld_loss = kl_divergence_mu0_var1(mu, logvar) * self.w_kld
         else:
+            """
+            Based on: Understanding disentangling in β-VAE
+            https://arxiv.org/pdf/1804.03599.pdf
+            """
             capacity = torch.min(self.max_c, self.max_c * torch.tensor(self.iter) / self.iterations_c)
             kld_loss = (kl_divergence_mu0_var1(mu, logvar) - capacity).abs() * self.w_kld
         return kld_loss
