@@ -1,6 +1,6 @@
 [![CircleCI](https://circleci.com/gh/amir-abdi/disentanglement-pytorch.svg?style=svg&circle-token=40d47183b78c6f1959ff584259c89ac7d49e36b0)](https://circleci.com/gh/amir-abdi/disentanglement-pytorch)
 
-# disentanglement-pytorch
+# Disentanglement-PyTorch
 Pytorch Implementation of **Disentanglement** algorithms for Variational Autoencoders. This library was developed as our little  contribution to the ***[Disentanglement Challenge of NeurIPS 2019](https://aicrowd.com/challenges/neurips-2019-disentanglement-challenge)***.
 
 The following algorithms are implemented:
@@ -30,6 +30,28 @@ The library visualizes the ***reconstructed images*** and the ***traversed laten
     python main.py [[--ARG ARG_VALUE] ...]
 
 or, try an off-the-shelf bash file: `bash scripts/SCRIPT_NAME`
+    
+#### Flags and Configs
+
+- `--alg`: The main formulation for training. \
+  ***Values**: 
+AE (AutoEncoder), 
+VAE (Variational AutoEncoder), 
+BetaVAE, 
+CVAE (Conditional VAE), 
+IFCVAE (Information Factorization VAE)*
+
+- `--loss_terms`: Extensions to the VAE algorithm 
+are implemented as plug-ins to the original forumation. 
+As a result, if the loss terms of two learning algorithms (*e.g.*, A and B) 
+were found to be compatible, they can simultaneously be included in the objective 
+function with the flag set as `--loss_terms A B`. 
+The `loss_terms` flag can be used with VAE, BetaVAE, CVAE, and 
+IFCVAE algorithms. \
+   ***Values**: FACTORVAE, DIPVAEI, DIPVAEII, BetaTCVAE, INFOVAE*
+
+For the complete list of arguments, please check the [source](./common/arguments.py).
+ 
     
 #### Evaluate
 To evaluate the learned disentangled representation, set the `--evaluate_metric` 
@@ -81,9 +103,9 @@ to your repository on GitLab.
 | Method    | Latent traversal visualization  | 
 | ----- | -----|
 | VAE | ![](sample_results/dsprite_VAE/gif_fixed_ellipse.gif) |
-| CVAE | ![](sample_results/dsprite_CVAE/gif_fixed_ellipse.gif) Last factor is shape |
+| CVAE (conditioned on shape)| ![](sample_results/dsprite_CVAE/gif_fixed_ellipse.gif) Right-most item is traversing the condition |
 | FactorVAE | ![](sample_results/dsprite_FactorVAE/gif_fixed_ellipse.gif) |
-| IFCVAE | ![](sample_results/dsprite_IFCVAE/gif_fixed_ellipse.gif) Last factor is shape|
+| IFCVAE (factorized on shape)| ![](sample_results/dsprite_IFCVAE/gif_fixed_ellipse.gif) Right-most factor is enforced to encode the shape |
 | BetaTCVAE | ![](sample_results/mpi3d_realistic_BetaTCVAE/gif_rand1.gif) |
 
 
