@@ -172,9 +172,12 @@ class BaseDisentangler(object):
 
     def log_save(self, **kwargs):
         self.step()
+
+        # don't log anything if running on the aicrowd_server
         if self.on_aicrowd_server:
             return
 
+        # save a checkpoint every ckpt_save_iter
         if is_time_for(self.iter, self.ckpt_save_iter):
             self.save_checkpoint()
 
@@ -186,6 +189,19 @@ class BaseDisentangler(object):
                 msg += '{}_{}={:.3f}  '.format(c.ACCURACY, key, value)
             self.pbar.write(msg)
 
+        # visualize the reconstruction of the current batch every recon_iter
+        if is_time_for(self.iter, self.recon_iter):
+            self.visualize_recon(kwargs[c.INPUT_IMAGE], kwargs[c.RECON_IMAGE])
+
+        # traverse the latent factors every traverse_iter
+        if is_time_for(self.iter, self.traverse_iter):
+            self.visualize_traverse(limit=(self.traverse_min, self.traverse_max), spacing=self.traverse_spacing)
+
+        # if any evaluation is included in args.evaluate_metric, evaluate every evaluate_iter
+        if self.evaluate_metric and is_time_for(self.iter, self.evaluate_iter):
+            self.evaluate_results = evaluate_disentanglement_metric(self, metric_names=self.evaluate_metric)
+
+        # log scalar values using wandb
         if is_time_for(self.iter, self.float_iter):
             # average results
             for key, value in self.info_cumulative.items():
@@ -217,15 +233,7 @@ class BaseDisentangler(object):
                         complex_key = key + '_' + subkey
                         self.info_cumulative[complex_key] = float(subvalue) + self.info_cumulative.get(complex_key, 0)
 
-        if is_time_for(self.iter, self.recon_iter):
-            self.visualize_recon(kwargs[c.INPUT_IMAGE], kwargs[c.RECON_IMAGE])
-
-        if is_time_for(self.iter, self.traverse_iter):
-            self.visualize_traverse(limit=(self.traverse_min, self.traverse_max), spacing=self.traverse_spacing)
-
-        if self.evaluate_metric and is_time_for(self.iter, self.evaluate_iter):
-            self.evaluate_results = evaluate_disentanglement_metric(self, metric_names=self.evaluate_metric)
-
+        # update schedulers
         if is_time_for(self.iter, self.schedulers_iter):
             self.schedulers_step(kwargs.get(c.LOSS, dict()).get(c.TOTAL_VAE_EPOCH, 0),
                                  self.iter // self.schedulers_iter)
