@@ -44,7 +44,7 @@ class TestModels(object):
                          '--evaluate_iter={}'.format(MAX_ITER*2),
                          '--ckpt_save_iter={}'.format(CKPT_SAVE_ITER),
                          '--max_iter={}'.format(MAX_ITER),
-                         '--annealed_capacity={}'.format('true'),
+                         '--controlled_capacity_increase={}'.format('true'),
                          '--loss_terms'
                          ])
         sys_args.extend(VAE_LOSSES)

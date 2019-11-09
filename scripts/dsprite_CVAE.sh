@@ -9,7 +9,7 @@ echo "name=$NAME"
 python3 main.py \
 --name=$NAME \
 --alg=CVAE \
---annealed_capacity=true \
+--controlled_capacity_increase=true \
 --dset_dir=$DISENTANGLEMENT_LIB_DATA  \
 --dset_name=dsprites_full \
 --traverse_z=true \
@@ -20,8 +20,9 @@ python3 main.py \
 --z_dim=8 \
 --w_kld=5 \
 --lr_G=0.0004 \
---include_labels=1 \
---use_wandb=false \
+--include_labels 1 \
+--use_wandb=false
+
 
 
 

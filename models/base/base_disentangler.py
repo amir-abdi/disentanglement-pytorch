@@ -24,10 +24,10 @@ class BaseDisentangler(object):
         # Misc
         self.name = args.name
         self.alg = args.alg
-        self.annealed_capacity = args.annealed_capacity
+        self.controlled_capacity_increase = args.controlled_capacity_increase
         self.loss_terms = args.loss_terms
         self.on_aicrowd_server = is_on_aicrowd_server()
-        self.evaluate_metric = args.evaluate_metric
+        self.evaluation_metric = args.evaluation_metric
         self.lr_scheduler = None
         self.w_recon_scheduler = None
         self.optim_G = None
@@ -198,8 +198,8 @@ class BaseDisentangler(object):
             self.visualize_traverse(limit=(self.traverse_min, self.traverse_max), spacing=self.traverse_spacing)
 
         # if any evaluation is included in args.evaluate_metric, evaluate every evaluate_iter
-        if self.evaluate_metric and is_time_for(self.iter, self.evaluate_iter):
-            self.evaluate_results = evaluate_disentanglement_metric(self, metric_names=self.evaluate_metric)
+        if self.evaluation_metric and is_time_for(self.iter, self.evaluate_iter):
+            self.evaluate_results = evaluate_disentanglement_metric(self, metric_names=self.evaluation_metric)
 
         # log scalar values using wandb
         if is_time_for(self.iter, self.float_iter):
@@ -212,7 +212,7 @@ class BaseDisentangler(object):
             self.info_cumulative[c.LEARNING_RATE] = get_lr(self.optim_dict['optim_G'])  # assuming we want optim_G
 
             # todo: not happy with this architecture for logging... should make it easier to add new variables to log
-            if self.evaluate_metric:
+            if self.evaluation_metric:
                 for key, value in self.evaluate_results.items():
                     self.info_cumulative[key] = value
 
@@ -230,7 +230,7 @@ class BaseDisentangler(object):
                     self.info_cumulative[key] = value + self.info_cumulative.get(key, 0)
                 elif isinstance(value, dict):
                     for subkey, subvalue in value.items():
-                        complex_key = key + '_' + subkey
+                        complex_key = key + '/' + subkey
                         self.info_cumulative[complex_key] = float(subvalue) + self.info_cumulative.get(complex_key, 0)
 
         # update schedulers

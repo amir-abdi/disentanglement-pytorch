@@ -9,7 +9,7 @@ echo "name=$NAME"
 python3 main.py \
 --name=$NAME \
 --alg=BetaVAE \
---annealed_capacity=true \
+--controlled_capacity_increase=true \
 --loss_terms=FactorVAE \
 --dset_dir=$DISENTANGLEMENT_LIB_DATA  \
 --dset_name=dsprites_full \

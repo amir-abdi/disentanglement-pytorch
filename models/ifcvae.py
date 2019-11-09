@@ -88,7 +88,7 @@ class IFCVAEModel(nn.Module):
 
 class IFCVAE(VAE):
     """
-    ADVERSARIAL INFORMATION FACTORIZATION
+    Inspired by the rejected ICLR paper "ADVERSARIAL INFORMATION FACTORIZATION"
     by Creswell et al.
     https://arxiv.org/pdf/1711.05175.pdf
 

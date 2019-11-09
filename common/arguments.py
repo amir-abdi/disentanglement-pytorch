@@ -19,12 +19,12 @@ def get_args(sys_args):
 
     # NeurIPS2019 AICrowd Challenge
     parser.add_argument('--aicrowd_challenge', default=False, type=str2bool, help='Run is an AICrowd submission')
-    parser.add_argument('--evaluate_metric', default=None, type=str, choices=c.EVALUATION_METRICS, nargs='+',
+    parser.add_argument('--evaluation_metric', default=None, type=str, choices=c.EVALUATION_METRICS, nargs='+',
                         help='Metric to evaluate the model during training')
 
     # name
     parser.add_argument('--alg', type=str, help='the disentanglement algorithm', choices=c.ALGS)
-    parser.add_argument('--annealed_capacity', help='to use capacity annealing', default=False)
+    parser.add_argument('--controlled_capacity_increase', help='to use controlled capacity increase', default=False)
     parser.add_argument('--loss_terms', help='loss terms to be incldued in the objective', nargs='*',
                         default=list(), choices=c.LOSS_TERMS)
     parser.add_argument('--name', default='unknown_experiment', type=str, help='name of the experiment')
@@ -160,5 +160,11 @@ def get_args(sys_args):
 
     # test
     args = update_args(args) if args.test else args
+
+    # make sure arguments for supplementary neural architectures are included
+    if c.FACTORVAE in args.loss_terms:
+        assert args.discriminator is not None, 'The FactorVAE algorithm needs a discriminator to test the ' \
+                                               'permuted latent factors ' \
+                                               '(try the flag: --discriminator=SimpleDiscriminator)'
 
     return args

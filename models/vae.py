@@ -93,7 +93,7 @@ class VAE(BaseDisentangler):
         return reparametrize(mu, logvar)
 
     def _kld_loss_fn(self, mu, logvar):
-        if not self.annealed_capacity:
+        if not self.controlled_capacity_increase:
             kld_loss = kl_divergence_mu0_var1(mu, logvar) * self.w_kld
         else:
             """

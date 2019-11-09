@@ -10,7 +10,7 @@ python3 main.py \
 --aicrowd_challenge=true \
 --name=$NAME \
 --alg=BetaVAE \
---annealed_capacity=true \
+--controlled_capacity_increase=true \
 --loss_terms=BetaTCVAE \
 --traverse_z=true \
 --dset_dir=$DISENTANGLEMENT_LIB_DATA  \
@@ -26,4 +26,4 @@ python3 main.py \
 --lr_scheduler_args mode=min factor=0.95 patience=1 min_lr=0.00005 \
 --max_iter=90000 \
 --iterations_c=2000 \
---evaluate_metric mig sap_score irs factor_vae_metric dci \
+--evaluation_metric mig sap_score irs factor_vae_metric dci \
