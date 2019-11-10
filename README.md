@@ -23,7 +23,7 @@ weights. This enables us to combine a set of disentanglement algorithms for repr
 Install the requirements: `pip install -r requirements.txt` \
 Or build conda environment: `conda env create -f environment.yml`
 
-The library visualizes the ***reconstructed images*** and the ***traversed latent spaces*** and saves them as static frames as well as animated GIFs. It also extensively uses the [Weights & Biases](https://www.wandb.com/) toolkit to log the training (loss, metrics, misc, etc.) and the visualizations.
+The library visualizes the ***reconstructed images*** and the ***traversed latent spaces*** and saves them as static frames as well as animated GIFs. It also extensively uses the web-based Weights & Biases toolkit for logging and visualization purposes.
 
 ### Training
 
@@ -49,14 +49,13 @@ function with the flag set as `--loss_terms A B`.
 The `loss_terms` flag can be used with VAE, BetaVAE, CVAE, and 
 IFCVAE algorithms. \
    ***Values**: FACTORVAE, DIPVAEI, DIPVAEII, BetaTCVAE, INFOVAE*
+    
+- `--evaluation_metric`: Metric(s) to use for disentanglement evaluation (see `scripts/aicrowd_challenge`). \
+***Values**: mig, sap_score, irs, factor_vae_metric, dci, beta_vae_sklearn*
 
 For the complete list of arguments, please check the [source](./common/arguments.py).
  
-    
-#### Evaluate
-To evaluate the learned disentangled representation, set the `--evaluate_metric` 
-flag to a subset of the following available metrics: 
-*mig, sap_score, irs, factor_vae_metric, dci* (see `scripts/aicrowd_challenge`).
+
 
 ### Data Setup
 To run the scripts:
@@ -103,9 +102,9 @@ to your repository on GitLab.
 | Method    | Latent traversal visualization  | 
 | ----- | -----|
 | VAE | ![](sample_results/dsprite_VAE/gif_fixed_ellipse.gif) |
-| CVAE (conditioned on shape)| ![](sample_results/dsprite_CVAE/gif_fixed_ellipse.gif) Right-most item is traversing the condition |
+| CVAE (conditioned on shape)| ![](sample_results/dsprite_CVAE/gif_fixed_ellipse.gif) <br>Right-most item is traversing the condition |
 | FactorVAE | ![](sample_results/dsprite_FactorVAE/gif_fixed_ellipse.gif) |
-| IFCVAE (factorized on shape)| ![](sample_results/dsprite_IFCVAE/gif_fixed_ellipse.gif) Right-most factor is enforced to encode the shape |
+| IFCVAE (factorized on shape)| ![](sample_results/dsprite_IFCVAE/gif_fixed_ellipse.gif) <br>Right-most factor is enforced to encode the shape |
 | BetaTCVAE | ![](sample_results/mpi3d_realistic_BetaTCVAE/gif_rand1.gif) |
 
 
