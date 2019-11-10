@@ -29,7 +29,9 @@ The library visualizes the ***reconstructed images*** and the ***traversed laten
 
     python main.py [[--ARG ARG_VALUE] ...]
 
-or, try an off-the-shelf bash file: `bash scripts/SCRIPT_NAME`
+or
+
+    bash scripts/SCRIPT_NAME
     
 #### Flags and Configs
 
