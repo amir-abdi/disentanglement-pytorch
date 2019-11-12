@@ -41,7 +41,7 @@ AE (AutoEncoder),
 VAE (Variational AutoEncoder), 
 BetaVAE, 
 CVAE (Conditional VAE), 
-IFCVAE (Information Factorization VAE)*
+IFCVAE (Information Factorization CVAE)*
 
 - `--loss_terms`: Extensions to the VAE algorithm 
 are implemented as plug-ins to the original forumation. 
@@ -85,6 +85,23 @@ and is based on the starter kit of the
 [Disentanglement Challenge of NeurIPS 2019](https://github.com/AIcrowd/neurips2019_disentanglement_challenge_starter_kit/blob/master/utils_pytorch.py),
 hosted by [AIcrowd](http://aicrowd.com).
 
+### Weights and Biases
+
+The library uses the valuable logging and visualization toolset offered by 
+the [Weights and Biases (W&B)](https://www.wandb.com/) 
+to record and visualize the training process, 
+including loss terms, evaluation metrics, and results. 
+The tool is free for non-enterprise use.
+The tool also helps compare experiments 
+to see trends across individual and multiple runs.
+
+Please see a sample training log of the library, logged with 
+[W&B](https://www.wandb.com/) here:
+[mpi3d_realistic_VAE](https://app.wandb.ai/amirabdi/disentanglement-pytorch/runs/8k9dsisu?workspace=user-amirabdi). 
+
+
+
+
 ### NeurIPS 2019 Disentanglement Challenge
 To use this code in the 
 [NeurIPS 2019 Disentanglement Challenge](https://www.aicrowd.com/challenges/neurips-2019-disentanglement-challenge)
@@ -104,10 +121,11 @@ to your repository on GitLab.
 | Method    | Latent traversal visualization  | 
 | ----- | -----|
 | VAE | ![](sample_results/dsprite_VAE/gif_fixed_ellipse.gif) |
-| CVAE (conditioned on shape)| ![](sample_results/dsprite_CVAE/gif_fixed_ellipse.gif) <br>Right-most item is traversing the condition |
 | FactorVAE | ![](sample_results/dsprite_FactorVAE/gif_fixed_ellipse.gif) |
+| CVAE (conditioned on shape)| ![](sample_results/dsprite_CVAE/gif_fixed_ellipse.gif) <br>Right-most item is traversing the condition |
 | IFCVAE (factorized on shape)| ![](sample_results/dsprite_IFCVAE/gif_fixed_ellipse.gif) <br>Right-most factor is enforced to encode the shape |
 | BetaTCVAE | ![](sample_results/mpi3d_realistic_BetaTCVAE/gif_rand1.gif) |
+| VAE | ![](sample_results/mpi3d_realistic_VAE/gif_rand0.gif) |
 
 
 ### Contributions
