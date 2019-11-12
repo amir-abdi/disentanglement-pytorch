@@ -86,6 +86,7 @@ and is based on the starter kit of the
 hosted by [AIcrowd](http://aicrowd.com).
 
 ### Weights and Biases
+<img src="https://odsc.com/wp-content/uploads/2019/03/wandb.png" width=200 align="middle">
 
 The library uses the valuable logging and visualization toolset offered by 
 the [Weights and Biases (W&B)](https://www.wandb.com/) 
