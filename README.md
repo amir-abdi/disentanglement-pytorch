@@ -73,7 +73,12 @@ The supported datasets are:
 [smallnorb](https://cs.nyu.edu/~ylclab/data/norb-v1.0-small/), 
 [cars3d](http://www.scottreed.info/files/nips2015-analogy-data.tar.gz), 
 [mpi3d_toy](https://storage.googleapis.com/disentanglement_dataset/data_npz/sim_toy_64x_ordered_without_heldout_factors.npz), and 
-[mpi3d_realistic](https://storage.googleapis.com/disentanglement_dataset/data_npz/sim_realistic_64x_ordered_without_heldout_factors.npz).  
+[mpi3d_realistic](https://storage.googleapis.com/disentanglement_dataset/data_npz/sim_realistic_64x_ordered_without_heldout_factors.npz), and
+[mpi3d_real](https://storage.googleapis.com/disentanglement_dataset/Final_Dataset/mpi3d_real.npz).
+
+Please check the [repository](https://github.com/rr-learning/disentanglement_dataset)
+ for the mpi3d datasets for license agreements
+and consider citing their work.
 
 <!--- [shapes3d](https://storage.cloud.google.com/3d-shapes/3dshapes.h5)*.-->
  
@@ -84,23 +89,6 @@ but only supports the *celebA* and *dsprites_full* datasets for now.
 and is based on the starter kit of the 
 [Disentanglement Challenge of NeurIPS 2019](https://github.com/AIcrowd/neurips2019_disentanglement_challenge_starter_kit/blob/master/utils_pytorch.py),
 hosted by [AIcrowd](http://aicrowd.com).
-
-### Weights and Biases
-<img src="https://odsc.com/wp-content/uploads/2019/03/wandb.png" width=200 align="middle">
-
-The library uses the valuable logging and visualization toolset offered by 
-the [Weights and Biases (W&B)](https://www.wandb.com/) 
-to record and visualize the training process, 
-including loss terms, evaluation metrics, and results. 
-The tool is free for non-enterprise use.
-The tool also helps compare experiments 
-to see trends across individual and multiple runs.
-
-Please see a sample training log of the library, logged with 
-[W&B](https://www.wandb.com/) here:
-[mpi3d_realistic_VAE](https://app.wandb.ai/amirabdi/disentanglement-pytorch/runs/8k9dsisu?workspace=user-amirabdi). 
-
-
 
 
 ### NeurIPS 2019 Disentanglement Challenge
