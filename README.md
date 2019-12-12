@@ -1,7 +1,16 @@
 [![CircleCI](https://circleci.com/gh/amir-abdi/disentanglement-pytorch.svg?style=svg&circle-token=40d47183b78c6f1959ff584259c89ac7d49e36b0)](https://circleci.com/gh/amir-abdi/disentanglement-pytorch)
 
 # Disentanglement-PyTorch
-Pytorch Implementation of **Disentanglement** algorithms for Variational Autoencoders. This library was developed as our little  contribution to the ***[Disentanglement Challenge of NeurIPS 2019](https://aicrowd.com/challenges/neurips-2019-disentanglement-challenge)***.
+Pytorch Implementation of **Disentanglement** algorithms for Variational Autoencoders. This library was developed as a contribution to the ***[Disentanglement Challenge of NeurIPS 2019](https://aicrowd.com/challenges/neurips-2019-disentanglement-challenge)***.
+
+If the library helped your research, consider citing the corresponding submission of the NeurIPS 2019 Disentanglement Challenge:
+
+    @article{abdiDisentanglementPytorch,
+        Author = {Amir H. Abdi and Purang Abolmaesumi and Sidney Fels},
+        Title = {Variational Learning with Disentanglement-PyTorch},
+        Year = {2019},
+        journal={arXiv preprint arXiv:1912.05184},    
+    }
 
 The following algorithms are implemented:
 - VAE
