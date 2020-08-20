@@ -1,4 +1,4 @@
-absl-py==0.7.1
+absl-py==0.10.0
 astor==0.7.1
 crowdai_api
 cycler==0.10.0
