@@ -36,10 +36,11 @@ tensorflow-hub==0.4.0
 tensorflow-probability==0.6.0
 termcolor==1.1.0
 Werkzeug==0.16.0
-torch
-torchvision
+torch==1.1.0
+torchvision==0.3.0
 argparse
-wandb
+wandb==0.8.5
 pytest
-tqdm
-pytest-dependency
+tqdm==4.32.2
+pytest-dependency==0.4.0
+
