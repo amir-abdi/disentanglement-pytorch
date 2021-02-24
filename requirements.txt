@@ -14,7 +14,7 @@ imageio==2.5.0
 Keras-Applications==1.0.7
 Keras-Preprocessing==1.0.9
 kiwisolver==1.1.0
-Markdown==3.1
+Markdown==3.3.3
 matplotlib==3.0.3
 mock==3.0.4
 numpy==1.16.3
