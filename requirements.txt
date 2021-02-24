@@ -10,7 +10,7 @@ gast==0.2.2
 gin-config==0.1.4
 grpcio==1.20.1
 h5py==2.9.0
-imageio==2.5.0
+imageio==2.9.0
 Keras-Applications==1.0.7
 Keras-Preprocessing==1.0.9
 kiwisolver==1.1.0
