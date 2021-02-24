@@ -39,7 +39,7 @@ Werkzeug==0.16.0
 torch==1.1.0
 torchvision==0.3.0
 argparse
-wandb==0.8.5
+wandb==0.10.20
 pytest
 tqdm==4.32.2
 pytest-dependency==0.4.0
