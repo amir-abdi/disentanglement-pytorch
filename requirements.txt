@@ -17,7 +17,6 @@ kiwisolver==1.1.0
 Markdown==3.1
 matplotlib==3.0.3
 mock==3.0.4
-numba==0.41.0
 numpy==1.16.3
 pandas==0.24.2
 Pillow==6.2.0
