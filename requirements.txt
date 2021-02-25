@@ -4,7 +4,7 @@ crowdai_api
 cycler==0.10.0
 dill==0.3.0
 git+git://github.com/google-research/disentanglement_lib
-enum34==1.1.6
+enum34==1.1.10
 future==0.17.1
 gast==0.2.2
 gin-config==0.1.4
