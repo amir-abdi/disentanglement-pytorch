@@ -1,0 +1,52 @@
+version: 2
+updates:
+- package-ecosystem: pip
+  directory: "/"
+  schedule:
+    interval: daily
+    time: "13:00"
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: tqdm
+    versions:
+    - 4.57.0
+    - 4.58.0
+    - 4.59.0
+  - dependency-name: grpcio
+    versions:
+    - 1.35.0
+    - 1.36.0
+    - 1.36.1
+  - dependency-name: markdown
+    versions:
+    - 3.3.3
+  - dependency-name: tensorflow-probability
+    versions:
+    - 0.12.1
+  - dependency-name: scikit-learn
+    versions:
+    - 0.24.1
+  - dependency-name: tensorflow-hub
+    versions:
+    - 0.11.0
+  - dependency-name: tensorflow-estimator
+    versions:
+    - 2.4.0
+  - dependency-name: tensorflow-gpu
+    versions:
+    - 2.4.0
+  - dependency-name: absl-py
+    versions:
+    - 0.11.0
+  - dependency-name: gast
+    versions:
+    - 0.4.0
+  - dependency-name: six
+    versions:
+    - 1.15.0
+  - dependency-name: pyparsing
+    versions:
+    - 2.4.7
+  - dependency-name: future
+    versions:
+    - 0.18.2
