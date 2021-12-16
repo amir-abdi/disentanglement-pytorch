@@ -24,7 +24,7 @@ python3 main.py \
 --lr_G=0.0001 \
 --lr_scheduler=ReduceLROnPlateau \
 --lr_scheduler_args mode=min factor=0.8 patience=0 min_lr=0.000001 \
---max_iter=20000 \
+--max_iter=2000 \
 --iterations_c=2000 \
 
 

@@ -9,7 +9,7 @@ test_outputs
 scripts
 *.sh
 **/saved
-
+requirements.txt
 ### default python ignores
 
 # Byte-compiled / optimized / DLL files
