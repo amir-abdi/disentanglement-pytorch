@@ -71,7 +71,7 @@ def get_args(sys_args):
 
     # Loss weights and parameters for [CapacityVAE]
     parser.add_argument('--max_c', default=25.0, type=float, help='maximum value of control parameter in CapacityVAE')
-    parser.add_argument('--iterations_c', default=100000, type=int, help='how many iterations to reach max_c')
+    parser.add_argument('--iterations_c', default=10000, type=int, help='how many iterations to reach max_c')
 
     # Loss weights and parameters for [FactorVAE & BetaTCVAE]
     parser.add_argument('--w_tc', default=1.0, type=float,

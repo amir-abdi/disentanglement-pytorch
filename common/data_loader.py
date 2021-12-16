@@ -250,6 +250,8 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
             if 1 in label_idx:
                 index_shape = label_idx.index(1)
                 labels[:, index_shape] -= 1
+            if 2 in label_idx:
+                print("label10: Accepted for training")
 
             # dsprite has uniformly distributed labels
             num_labels = labels.shape[1]
