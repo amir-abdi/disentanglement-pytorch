@@ -20,9 +20,6 @@ python3 main.py \
 --z_dim=8 \
 --w_kld=5 \
 --lr_G=0.0004 \
---include_labels 1 2  \
---use_wandb=false
-
-
-
-
+--include_labels 1 2 3 4 5 \
+--use_wandb=false \
+--max_iter=2500

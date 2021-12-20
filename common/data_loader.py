@@ -10,6 +10,40 @@ from torchvision import transforms
 
 from common import constants as c
 
+def target_cast(inputs, r_plane):
+    targets = []
+    #print(inputs[0])
+    print("mean:",r_plane[1])
+    #print(len(r_plane))
+
+    for i in range(len(inputs)):
+        #print("difference:",inputs[i] - r_plane[1])
+        #print("input data:",inputs[i])
+
+        target =  (np.dot(inputs[i] - r_plane[1], r_plane[0]))
+        #print("target:", target)
+        if target < 0: target = 0
+        else: target = 1
+        targets.append(int(target))
+        #if i == 30: quit()
+    return targets
+
+def random_plane(labels, space):
+    l = len(labels)
+
+    random_versor = np.random.uniform(size=l)
+    random_versor /= np.linalg.norm(random_versor)
+
+    mean_vect = np.zeros(l)
+
+    for i in range(l):
+        mean_vect[i] = np.mean(space[i])
+        #print("Max", np.max(space[i]), "min", np.min(space[i]))
+
+    #print("Random", random_versor)
+    #print("Mean", mean_vect)
+    return [random_versor, mean_vect]
+
 
 class LabelHandler(object):
     def __init__(self, labels, label_weights, class_values):
@@ -199,7 +233,10 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
             label_names = include_labels
     logging.info('include_labels: {}'.format(include_labels))
 
+    make_yset = False
+
     if name.lower() == 'celeba':
+        print("Entered this routine")
         root = os.path.join(dset_dir, 'CelebA')
         labels_file = os.path.join(root, 'list_attr_celeba.csv')
 
@@ -242,16 +279,43 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
                        'num_channels': 3}
         dset = CustomImageFolder
     elif name.lower() == 'dsprites_full':
-        root = os.path.join(dset_dir, 'dsprites/dsprites_ndarray_co1sh3sc6or40x32y32_64x64.npz')
+        root = os.path.join(dset_dir, 'dsprites/dsprites_ndarray_co1sh3sc6or40x32y32_64x64_smaller.npz')
         npz = np.load(root)
+        print("Passed npz:", np.shape(npz), "and",type(npz))
+        print(npz.files)
+        print("Information on how they're stored")
+        print(" ")
+        print(np.shape(npz["latents_values"]))
+        print("latents_values contains \n", npz["latents_values"][:10] )
+        print(" ")
+        print("Here the min/max is for every column:")
+        ranges = []
+#        for i in range(len(npz["latents_values"][0])  ):
+ #           new_list = []
+  #          for any_number in npz["latents_values"][:,i]:
+   #             if  not any_number in new_list:
+    #                new_list.append(any_number)
+     #       ranges.append(new_list)
+
+        #del new_list
+        #print("The ranges are")
+        #print(ranges)
+
+        print("label_idx", label_idx)
+        #for i in range(len(ranges)):
+         #   print(i)
+          #  print("For class ", i, "min", np.min(ranges[i]),"max",np.max(ranges[i]))
+ #        print([np.min(npz["latents_values"][:, i] for i in range(len(npz["latents_values"][0] )))])
+#        print([np.max(npz["latents_values"][:, i] for i in range(len(npz["latents_values"][0] )))])
+
 
         if label_idx is not None:
+            print("Passed label_idx:",label_idx)
             labels = npz['latents_values'][:, label_idx]
             if 1 in label_idx:
                 index_shape = label_idx.index(1)
                 labels[:, index_shape] -= 1
-            if 2 in label_idx:
-                print("label10: Accepted for training")
+
 
             # dsprite has uniformly distributed labels
             num_labels = labels.shape[1]
@@ -270,31 +334,51 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
                 unique_values_mock = np.arange(len(unique_values))
                 class_values.append(unique_values_mock)
             label_weights = np.array(label_weights)
+        print("Labels is size: ", np.shape(labels))
 
-        data_kwargs = {'data_images': npz['imgs'],
-                       'labels': labels,
+        #max_capacity = 10000
+
+        data_kwargs = {'data_images': npz['imgs']}
+        data_kwargs.update({'labels': labels,
                        'label_weights': label_weights,
                        'class_values': class_values,
-                       'num_channels': 1}
+                       'num_channels': 1})
         dset = CustomNpzDataset
+        #print("The r plane:",[random_plane(label_idx, ranges)])
+
+        target_set = np.asarray(
+                    target_cast(labels, r_plane=random_plane(label_idx, labels))
+                    )
+
+        make_yset = True
     else:
         raise NotImplementedError
     data_kwargs.update({'seed': seed,
                         'name': name,
                         'transform': transform})
     dataset = dset(**data_kwargs)
+
     data_loader = DataLoader(dataset,
                              batch_size=batch_size,
                              shuffle=shuffle,
                              num_workers=num_workers,
                              pin_memory=pin_memory,
                              drop_last=droplast)
-
+    if make_yset:
+        target_loader = DataLoader(target_set,
+                                   batch_size=batch_size,
+                                   shuffle=shuffle,
+                                   num_workers=num_workers,
+                                   pin_memory=pin_memory,
+                                   drop_last=droplast
+                                    )
+        print("made target_loader")
+        print("Population", len(target_set[target_set == 0]), "over", len(target_set))
     if include_labels is not None:
         logging.info('num_classes: {}'.format(dataset.num_classes(False)))
         logging.info('class_values: {}'.format(class_values))
 
-    return data_loader
+    return data_loader, target_loader
 
 
 def get_dataset_name(name):

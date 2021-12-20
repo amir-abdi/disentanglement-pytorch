@@ -64,9 +64,9 @@ class BaseDisentangler(object):
         self.aicrowd_challenge = args.aicrowd_challenge
 
         from common.data_loader import get_dataloader
-        self.data_loader = get_dataloader(args.dset_name, args.dset_dir, args.batch_size, args.seed, args.num_workers,
-                                          args.image_size, args.include_labels, args.pin_memory, not args.test,
-                                          not args.test)
+        self.data_loader, self.target_loader  = get_dataloader(args.dset_name, args.dset_dir, args.batch_size, args.seed, args.num_workers,
+                                                args.image_size, args.include_labels, args.pin_memory, not args.test,
+                                                not args.test)
 
         # only used if some supervision was imposed such as in Conditional VAE
         if self.data_loader.dataset.has_labels():
