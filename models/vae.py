@@ -109,7 +109,8 @@ class VAE(BaseDisentangler):
         x_true = kwargs['x_true']
         mu = kwargs['mu']
         logvar = kwargs['logvar']
-
+#        prediction z= kwargs["prediction"]
+        
         bs = self.batch_size
         output_losses = dict()
         output_losses[c.TOTAL_VAE] = input_losses.get(c.TOTAL_VAE, 0)
