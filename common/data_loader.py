@@ -24,6 +24,7 @@ def target_cast(inputs, r_plane):
         #print("target:", target)
         if target < 0: target = 0
         else: target = 1
+        if np.random.uniform() > 0.95: target = (target+1)%2
         targets.append(int(target))
         #if i == 30: quit()
     return targets
@@ -213,7 +214,7 @@ class DisentanglementLibDataset(Dataset):
         return torch.from_numpy(np.moveaxis(output, 2, 0), ).type(torch.FloatTensor), 0
 
 
-def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, image_size, include_labels, pin_memory,
+def   (name, dset_dir, batch_size, seed, num_workers, image_size, include_labels, pin_memory,
                                 shuffle, droplast):
     transform = transforms.Compose([
         transforms.Resize((image_size, image_size)),
