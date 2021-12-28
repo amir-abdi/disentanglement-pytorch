@@ -90,6 +90,9 @@ class CustomImageFolder(ImageFolder):
 
         self.label_handler = LabelHandler(labels, label_weights, class_values)
 
+        ## ADDED GRAYBOX VARIANT
+        self.isGRAY = False
+
     @property
     def name(self):
         return self._name
@@ -118,6 +121,7 @@ class CustomImageFolder(ImageFolder):
         label1 = 0
         if self.label_handler.has_labels():
             label1 = self.label_handler.get_label(index1)
+        if self.isGRAY: label1 = self.label_weights(index1)
         return img1, label1
 
 
@@ -132,6 +136,9 @@ class CustomNpzDataset(Dataset):
 
         self.transform = transform
         self.indices = range(len(self))
+
+        ## ADDED GRAYBOX VARIANT
+        self.isGRAY = False
 
     @property
     def name(self):
@@ -160,6 +167,12 @@ class CustomNpzDataset(Dataset):
         label1 = 0
         if self.label_handler.has_labels():
             label1 = self.label_handler.get_label(index1)
+            if self.isGRAY:
+                for i in range(len(self.label_handler._label_weights)):
+
+
+                    label1 = self.label_weights(index1)
+
         return img1, label1
 
     def __len__(self):
@@ -214,7 +227,7 @@ class DisentanglementLibDataset(Dataset):
         return torch.from_numpy(np.moveaxis(output, 2, 0), ).type(torch.FloatTensor), 0
 
 
-def   (name, dset_dir, batch_size, seed, num_workers, image_size, include_labels, pin_memory,
+def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, image_size, include_labels, pin_memory,
                                 shuffle, droplast):
     transform = transforms.Compose([
         transforms.Resize((image_size, image_size)),
@@ -280,6 +293,7 @@ def   (name, dset_dir, batch_size, seed, num_workers, image_size, include_labels
                        'num_channels': 3}
         dset = CustomImageFolder
     elif name.lower() == 'dsprites_full':
+        print(name)
         root = os.path.join(dset_dir, 'dsprites/dsprites_ndarray_co1sh3sc6or40x32y32_64x64_smaller.npz')
         npz = np.load(root)
         print("Passed npz:", np.shape(npz), "and",type(npz))
@@ -345,6 +359,7 @@ def   (name, dset_dir, batch_size, seed, num_workers, image_size, include_labels
                        'class_values': class_values,
                        'num_channels': 1})
         dset = CustomNpzDataset
+
         #print("The r plane:",[random_plane(label_idx, ranges)])
 
         target_set = np.asarray(
@@ -359,12 +374,24 @@ def   (name, dset_dir, batch_size, seed, num_workers, image_size, include_labels
                         'transform': transform})
     dataset = dset(**data_kwargs)
 
+    # Setting the Graybox here
+    dataset.isGRAY = True
+    """
+    print("The created dataset")
+    print(dataset.label_handler.label_weights((1)))
+    print(dataset.label_handler.class_values())
+    quit()
+    
+    """
     data_loader = DataLoader(dataset,
                              batch_size=batch_size,
                              shuffle=shuffle,
                              num_workers=num_workers,
                              pin_memory=pin_memory,
                              drop_last=droplast)
+    if include_labels is not None:
+        logging.info('num_classes: {}'.format(dataset.num_classes(False)))
+        logging.info('class_values: {}'.format(class_values))
     if make_yset:
         target_loader = DataLoader(target_set,
                                    batch_size=batch_size,
@@ -375,11 +402,10 @@ def   (name, dset_dir, batch_size, seed, num_workers, image_size, include_labels
                                     )
         print("made target_loader")
         print("Population", len(target_set[target_set == 0]), "over", len(target_set))
-    if include_labels is not None:
-        logging.info('num_classes: {}'.format(dataset.num_classes(False)))
-        logging.info('class_values: {}'.format(class_values))
+        return data_loader, target_loader
+    else:
+        return data_loader
 
-    return data_loader, target_loader
 
 
 def get_dataset_name(name):
