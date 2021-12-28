@@ -3,6 +3,7 @@ from .vae import VAE
 from .betavae import BetaVAE
 from .cvae import CVAE
 from .ifcvae import IFCVAE
+from .grayvae import GRAYVAE
 
 
 # TODO: add author and license info to all files.

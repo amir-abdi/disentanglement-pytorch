@@ -79,6 +79,17 @@ class TestModels(object):
             sys_args.append('--include_labels')
             sys_args.extend(include_labels)
 
+        if 'GRAYVAE' in alg:
+            if dset_name == c.DATASETS[1]:
+                include_labels = '1', '2', '3'
+            elif dset_name == 'celebA':
+                include_labels = 'Wearing_Hat', 'Arched_Eyebrows'
+            else:
+                raise NotImplementedError
+            sys_args.append('--include_labels')
+            sys_args.extend(include_labels)
+            print("models_test.py==GRAYVAE: Passed here!")
+
         args = get_args(sys_args)
 
         logging.info('sys_args', sys_args)

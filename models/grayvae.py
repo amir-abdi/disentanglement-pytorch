@@ -6,7 +6,7 @@ from models.vae import VAE
 from architectures import encoders, decoders, others
 from common.ops import reparametrize
 from common.utils import one_hot_embedding
-
+from common import constants as c
 
 class GrayVAEModel(nn.Module):
     def __init__(self, encoder, decoder, tiler, num_classes):
@@ -47,9 +47,7 @@ class GrayVAEModel(nn.Module):
 
 class GrayVAE(VAE):
     """
-    Auto-Encoding Variational Bayes
-    by Kingma and Welling
-    https://arxiv.org/pdf/1312.6114.pdf
+    Graybox version of VAE. The discussion on
     """
 
     def __init__(self, args):
@@ -123,11 +121,11 @@ class GrayVAE(VAE):
         #added here
         prediction = self.predict(mu)
 
-        loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar, z=z}
+        loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar, z=z)
         losses.update(self.loss_fn(losses, **loss_fn_args))
         # add the classification loss
         losses.update(prediction=nn.BCELoss(prediction,y_true1))
-
+        print("BCE loss of classification",nn.BCELoss(prediction,y_true1))
 
         return losses, {'x_recon': x_recon, 'mu': mu, 'z': z, 'logvar': logvar, "prediction": prediction}
 

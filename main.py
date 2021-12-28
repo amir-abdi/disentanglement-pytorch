@@ -25,8 +25,9 @@ def main(_args):
         _args.all_iter = _args.max_iter + 1
 
     # load the model associated with args.alg
+    print("_Args.alg", _args.alg)
     model_cl = getattr(models, _args.alg)
-    model = model_cl(_args)
+    model = model_cl(_args) #return models.alg
 
     # load checkpoint
     if _args.ckpt_load:
