@@ -8,7 +8,7 @@ from common.ops import reparametrize
 from common.utils import one_hot_embedding
 from common import constants as c
 
-class GrayVAEModel(nn.Module):
+class GRAYVAEModel(nn.Module):
     def __init__(self, encoder, decoder, tiler, num_classes):
         super().__init__()
 
@@ -45,7 +45,7 @@ class GrayVAEModel(nn.Module):
         return self.decode(z, c)
 
 
-class GrayVAE(VAE):
+class GRAYVAE(VAE):
     """
     Graybox version of VAE. The discussion on
     """
@@ -72,7 +72,7 @@ class GrayVAE(VAE):
         decoder_input_channels = self.z_dim + label_channels
 
         # model and optimizer
-        self.model = GrayVAEModel(encoder(self.z_dim, input_channels, self.image_size),
+        self.model = GRAYVAEModel(encoder(self.z_dim, input_channels, self.image_size),
                                decoder(decoder_input_channels, self.num_channels, self.image_size),
                                tile_network(label_channels, self.image_size),
                                self.num_classes).to(self.device)
@@ -86,7 +86,7 @@ class GrayVAE(VAE):
                               args.w_recon_scheduler, args.w_recon_scheduler_args)
 
         ## add binary classification layer
-        self.classification = nn.Linear(self.z_dim, 1)
+        self.classification = nn.Linear(self.z_dim, 1, bias=False)
 
     def encode_deterministic(self, **kwargs):
         images = kwargs['images']
@@ -112,20 +112,24 @@ class GrayVAE(VAE):
         Predict the correct class for the input data.
         """
         input_x = kwargs['latent']
-        return nn.functional.sigmoid(self.classification(input_x))
+        return nn.Sigmoid()(self.classification(input_x).resize(len(input_x)))
 
     def vae_classification(self, losses, x_true1, label1, y_true1):
         mu, logvar = self.model.encode(x=x_true1, c=label1)
+        #print("mu", mu.size())
         z = reparametrize(mu, logvar)
         x_recon = self.model.decode(z=z, c=label1)
         #added here
-        prediction = self.predict(mu)
+        prediction = self.predict(latent=mu)
 
         loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar, z=z)
         losses.update(self.loss_fn(losses, **loss_fn_args))
         # add the classification loss
-        losses.update(prediction=nn.BCELoss(prediction,y_true1))
-        print("BCE loss of classification",nn.BCELoss(prediction,y_true1))
+        print("label",label1[:10])
+        print("y_true", (y_true1[:10]))
+        print("prediction", (prediction[:10]))
+        losses.update(prediction=nn.BCEWithLogitsLoss()(prediction,y_true1.type(torch.FloatTensor)))
+        #print("BCE loss of classification",nn.BCEWithLogitsLoss()(prediction,y_true1.type(torch.FloatTensor)))
 
         return losses, {'x_recon': x_recon, 'mu': mu, 'z': z, 'logvar': logvar, "prediction": prediction}
 
@@ -134,15 +138,23 @@ class GrayVAE(VAE):
         while not self.training_complete():
             self.net_mode(train=True)
             vae_loss_sum = 0
+#            print("Inside data_loader")
+#            print(next(iter(self.data_loader)))
+            printme = True
             for internal_iter, (x_true1, label1) in enumerate(self.data_loader):
+                if printme: print("x_true", x_true1.size(), "label", label1.size())
                 losses = dict()
                 x_true1 = x_true1.to(self.device)
                 label1 = label1.to(self.device)
-                y_true1 = self.target_loader(internal_iter)
+                ## loader here
+                y_true1 = next(iter(self.target_loader))
 
                 losses, params = self.vae_classification(losses, x_true1, label1, y_true1)
 
                 self.optim_G.zero_grad()
+
+                print("Losses:", losses)
+
                 losses[c.TOTAL_VAE].backward(retain_graph=False)
                 vae_loss_sum += losses[c.TOTAL_VAE]
                 losses[c.TOTAL_VAE_EPOCH] = vae_loss_sum / internal_iter
