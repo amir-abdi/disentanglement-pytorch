@@ -76,6 +76,11 @@ class LabelHandler(object):
             return torch.tensor(self.labels[idx], dtype=torch.long)
         return None
 
+    def get_values(self, idx):
+        if self.labels is not None:
+            return torch.tensor(self.labels[idx], dtype=torch.float32)
+        return None
+
     def has_labels(self):
         return self.labels is not None
 
@@ -125,7 +130,7 @@ class CustomImageFolder(ImageFolder):
         return img1, label1
 
 
-class CustomNpzDataset(Dataset):
+class CustomNpzDataset(Dataset): ### MODIFIED HERE THE DATABASE TYPE FOR _GET_ITEM
     def __init__(self, data_images, transform, labels, label_weights, name, class_values, num_channels, seed):
         self.seed = seed
         self.data_npz = data_images
@@ -160,6 +165,7 @@ class CustomNpzDataset(Dataset):
         return self._num_channels
 
     def __getitem__(self, index1):
+        #print("Passed index", index1)
         img1 = Image.fromarray(self.data_npz[index1] * 255)
         if self.transform is not None:
             img1 = self.transform(img1)
@@ -167,12 +173,25 @@ class CustomNpzDataset(Dataset):
         label1 = 0
         if self.label_handler.has_labels():
             label1 = self.label_handler.get_label(index1)
+            #print("The obtained label is", label1)
+            ### INSERTED THE TRUTH VALUE FOR DSPIRTES
             if self.isGRAY:
-                for i in range(len(self.label_handler._label_weights)):
-
-
-                    label1 = self.label_weights(index1)
-
+                z_values = self.label_handler.get_values(index1)
+                #label_z = torch.zeros(len(label1), dtype=torch.float32)
+                #for i in range(len(label1)):
+                 #   print("z values")
+                    #print("Len of label_handler._label_weights")
+                    #print(index1, " ", len(self.label_handler._label_weights[i]))
+                  #  z = self.label_handler.labels[i]
+                    #print(z)
+                   # _index = label1[i].item()
+                    #print(z[_index])
+                    #label_z[i]=(z[_index])
+        if self.isGRAY:
+            #print("Label_z", label_z)
+            #print("Passed to isGRAY = True")
+            #label_1 = label_z
+            return img1, label1, z_values
         return img1, label1
 
     def __len__(self):
