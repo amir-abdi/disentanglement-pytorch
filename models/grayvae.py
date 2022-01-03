@@ -88,7 +88,7 @@ class GRAYVAE(VAE):
                               args.w_recon_scheduler, args.w_recon_scheduler_args)
 
         ## add binary classification layer
-        self.classification = nn.Linear(self.z_dim, 1, bias=False)
+        self.classification = nn.Linear(self.z_dim, 1, bias=False).to(self.device)
 
     def encode_deterministic(self, **kwargs):
         images = kwargs['images']
@@ -113,7 +113,8 @@ class GRAYVAE(VAE):
         """
         Predict the correct class for the input data.
         """
-        input_x = kwargs['latent']
+        input_x = kwargs['latent'].to(self.device)
+        #print("predict term",input_x)
         return nn.Sigmoid()(self.classification(input_x).resize(len(input_x)))
 
     def vae_classification(self, losses, x_true1, label1, true_labels, y_true1, labelling=False):
@@ -131,7 +132,7 @@ class GRAYVAE(VAE):
         #print("label",true_labels[0])
         #print("y_true", (y_true1[:10]))
         #print("prediction", (prediction[:10]))
-        losses.update(prediction=nn.BCEWithLogitsLoss()(prediction,y_true1.type(torch.FloatTensor)))
+        losses.update(prediction=nn.BCEWithLogitsLoss()(prediction,y_true1.to(self.device, dtype= torch.float) ))
 
         if labelling:
             z_real = z[:, :true_labels.size(1)]

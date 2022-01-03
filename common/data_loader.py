@@ -394,7 +394,7 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
     dataset = dset(**data_kwargs)
 
     # Setting the Graybox here
-    dataset.isGRAY = True
+    dataset.isGRAY = False
     """
     print("The created dataset")
     print(dataset.label_handler.label_weights((1)))

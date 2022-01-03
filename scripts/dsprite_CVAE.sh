@@ -10,7 +10,7 @@ python3 main.py \
 --name=$NAME \
 --alg=CVAE \
 --controlled_capacity_increase=true \
---dset_dir=/home/emanuele/disentanglement_lib/  \
+--dset_dir=/home/marconato/disentanglement_lib/  \
 --dset_name=dsprites_full \
 --traverse_z=true \
 --traverse_c=true \
