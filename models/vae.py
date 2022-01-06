@@ -163,11 +163,11 @@ class VAE(BaseDisentangler):
         while not self.training_complete():
             self.net_mode(train=True)
             vae_loss_sum = 0
-            for internal_iter, (x_true1, label1) in enumerate(self.data_loader):
+            for internal_iter, (x_true1, label1, _) in enumerate(self.data_loader):
                 losses = dict()
                 x_true1 = x_true1.to(self.device)
                 label1 = label1.to(self.device)
-                x_true2, label2 = next(iter(self.data_loader))
+                x_true2, label2, _ = next(iter(self.data_loader))
                 x_true2 = x_true2.to(self.device)
                 label2 = label2.to(self.device)
 

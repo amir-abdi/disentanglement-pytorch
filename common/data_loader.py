@@ -187,12 +187,8 @@ class CustomNpzDataset(Dataset): ### MODIFIED HERE THE DATABASE TYPE FOR _GET_IT
                    # _index = label1[i].item()
                     #print(z[_index])
                     #label_z[i]=(z[_index])
-        if self.isGRAY:
-            #print("Label_z", label_z)
-            #print("Passed to isGRAY = True")
-            #label_1 = label_z
-            return img1, label1, z_values
-        return img1, label1
+                return img1, label1, z_values
+        return img1, label1, None
 
     def __len__(self):
         return self.data_npz.shape[0]
@@ -380,10 +376,10 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
         dset = CustomNpzDataset
 
         #print("The r plane:",[random_plane(label_idx, ranges)])
-
-        target_set = np.asarray(
-                    target_cast(labels, r_plane=random_plane(label_idx, labels))
-                    )
+        if labels is not None:
+            target_set = np.asarray(
+                        target_cast(labels, r_plane=random_plane(label_idx, labels))
+                        )
 
         make_yset = True
     else:
@@ -411,7 +407,7 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
     if include_labels is not None:
         logging.info('num_classes: {}'.format(dataset.num_classes(False)))
         logging.info('class_values: {}'.format(class_values))
-    if make_yset:
+    if make_yset and labels is not None:
         target_loader = DataLoader(target_set,
                                    batch_size=batch_size,
                                    shuffle=shuffle,
@@ -423,7 +419,7 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
         print("Population", len(target_set[target_set == 0]), "over", len(target_set))
         return data_loader, target_loader
     else:
-        return data_loader
+        return data_loader, None
 
 
 
