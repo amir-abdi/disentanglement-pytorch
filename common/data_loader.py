@@ -188,7 +188,7 @@ class CustomNpzDataset(Dataset): ### MODIFIED HERE THE DATABASE TYPE FOR _GET_IT
                     #print(z[_index])
                     #label_z[i]=(z[_index])
                 return img1, label1, z_values
-        return img1, label1, None
+        return img1, label1, 0
 
     def __len__(self):
         return self.data_npz.shape[0]
@@ -390,7 +390,7 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
     dataset = dset(**data_kwargs)
 
     # Setting the Graybox here
-    dataset.isGRAY = False
+    dataset.isGRAY = True
     """
     print("The created dataset")
     print(dataset.label_handler.label_weights((1)))
