@@ -23,5 +23,6 @@ python3 main.py \
 --use_wandb=false \
 --max_iter=5000 \
 --w_recon=0.1 \
---evaluation_metric mig 
-
+--evaluation_metric mig \
+--evaluate_iter=8 \
+--batch_size=10

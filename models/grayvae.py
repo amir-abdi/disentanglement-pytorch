@@ -128,16 +128,19 @@ class GRAYVAE(VAE):
 
         loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar, z=z)
         losses.update(self.loss_fn(losses, **loss_fn_args))
+
         # add the classification loss
         #print("label",true_labels[0])
         #print("y_true", (y_true1[:10]))
         #print("prediction", (prediction[:10]))
         losses.update(prediction=nn.BCEWithLogitsLoss()(prediction,y_true1.to(self.device, dtype= torch.float) ))
+        losses[c.TOTAL_VAE] += nn.BCEWithLogitsLoss()(prediction,y_true1.to(self.device, dtype= torch.float))
 
         if labelling:
             z_real = z[:, :true_labels.size(1)]
 #            print("Len z and true", z_real.size(), true_labels.size())
             losses.update(true_values=nn.MSELoss()(z_real, true_labels))
+            losses[c.TOTAL_VAE] += nn.MSELoss()(z_real, true_labels)
         #print("BCE loss of classification",nn.BCEWithLogitsLoss()(prediction,y_true1.type(torch.FloatTensor)))
 
         return losses, {'x_recon': x_recon, 'mu': mu, 'z': z, 'logvar': logvar, "prediction": prediction}
@@ -170,6 +173,11 @@ class GRAYVAE(VAE):
                 losses[c.TOTAL_VAE].backward(retain_graph=False)
                 vae_loss_sum += losses[c.TOTAL_VAE]
                 losses[c.TOTAL_VAE_EPOCH] = vae_loss_sum / internal_iter
+
+                ##CHECKING THE GRADIENT UPDATE##
+#                print("Classification weight grad")
+ #               print(self.classification.weight.grad)
+                #print(self.classification.bias.grad)
 
                 self.optim_G.step()
                 self.log_save(input_image=x_true1, recon_image=params['x_recon'], loss=losses)
