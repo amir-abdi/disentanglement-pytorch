@@ -13,16 +13,9 @@ torch.backends.cudnn.benchmark = True
 
 
 def main(_args):
-    on_aicrowd_server = is_on_aicrowd_server()
-
-    if on_aicrowd_server:
-        from aicrowd import aicrowd_helpers
-        aicrowd_helpers.execution_start()
-        aicrowd_helpers.register_progress(0.)
-
-        # turn off all logging and visualization
-        _args.use_wandb = False
-        _args.all_iter = _args.max_iter + 1
+    #
+    # REMOVED AIRCROWD CHALLENGE HERE
+    #
 
     # load the model associated with args.alg
     print("_Args.alg", _args.alg)
@@ -35,7 +28,7 @@ def main(_args):
 
     # run test or train
     if not _args.test:
-        model.train()
+        model.train(track_changes=True)
     else:
         model.test()
 

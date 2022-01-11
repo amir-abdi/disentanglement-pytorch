@@ -81,7 +81,7 @@ class TestModels(object):
 
         if 'GRAYVAE' in alg:
             if dset_name == c.DATASETS[1]:
-                include_labels = '1', '2', '3'
+                include_labels = '1', '2', '3', '4', '5'
             elif dset_name == 'celebA':
                 include_labels = 'Wearing_Hat', 'Arched_Eyebrows'
             else:

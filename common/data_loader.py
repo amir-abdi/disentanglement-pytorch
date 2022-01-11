@@ -419,7 +419,7 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
         print("Population", len(target_set[target_set == 0]), "over", len(target_set))
         return data_loader, target_loader
     else:
-        return data_loader, None
+        return data_loader, [None]
 
 
 

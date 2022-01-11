@@ -104,7 +104,7 @@ class VAE(BaseDisentangler):
             kld_loss = (kl_divergence_mu0_var1(mu, logvar) - capacity).abs() * self.w_kld
         return kld_loss
 
-    def loss_fn(self, input_losses, **kwargs):
+    def loss_fn(self, input_losses, reduce_rec=False, **kwargs):
         x_recon = kwargs['x_recon']
         x_true = kwargs['x_true']
         mu = kwargs['mu']
@@ -114,8 +114,12 @@ class VAE(BaseDisentangler):
         bs = self.batch_size
         output_losses = dict()
         output_losses[c.TOTAL_VAE] = input_losses.get(c.TOTAL_VAE, 0)
+        if reduce_rec:
+            output_losses[c.RECON] = F.binary_cross_entropy(x_recon, x_true,
+                                                            reduction='sum') / bs * self.w_recon * self.reduce_rec
+        else:
+            output_losses[c.RECON] = F.binary_cross_entropy(x_recon, x_true, reduction='sum') / bs * self.w_recon
 
-        output_losses[c.RECON] = F.binary_cross_entropy(x_recon, x_true, reduction='sum') / bs * self.w_recon
         output_losses[c.TOTAL_VAE] += output_losses[c.RECON]
 
         output_losses['kld'] = self._kld_loss_fn(mu, logvar)
@@ -146,6 +150,10 @@ class VAE(BaseDisentangler):
             from models.infovae import infovae_loss_fn
             output_losses['vae_mmd'] = infovae_loss_fn(self.w_infovae, self.z_dim, self.device, **kwargs)
             output_losses[c.TOTAL_VAE] += output_losses['vae_mmd']
+
+        #if "classification" in self.loss_terms:
+         #   pass
+         #   pass
 
         return output_losses
 
