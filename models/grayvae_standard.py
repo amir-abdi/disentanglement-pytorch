@@ -15,7 +15,7 @@ from time import perf_counter
 #from torch.utils.tensorboard import SummaryWriter
 ###                                           ###
 
-class GRAYVAE_STANDARD(VAE):
+class GrayVAE_Standard(VAE):
     """
     Graybox version of VAE, with standard implementation. The discussion on
     """
@@ -23,7 +23,7 @@ class GRAYVAE_STANDARD(VAE):
     def __init__(self, args):
         super().__init__(args)
 
-        print('Initialized GRAYVAE_STD model')
+        print('Initialized GrayVAE_Standard model')
 
         # checks
         assert self.num_classes is not None, 'please identify the number of classes for each label separated by comma'
@@ -38,7 +38,7 @@ class GRAYVAE_STANDARD(VAE):
         # number of channels
         image_channels = self.num_channels
         input_channels = image_channels
-        decoder_input_channels = self.z_dim 
+        decoder_input_channels = self.z_dim
 
         # model and optimizer
         self.model = VAEModel(encoder(self.z_dim, input_channels, self.image_size),
