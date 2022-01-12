@@ -1,195 +1,158 @@
 import torch
 from torch import nn
 import torch.optim as optim
-import torch.nn.functional as F
-
-from models.base.base_disentangler import BaseDisentangler
-from architectures import encoders, decoders
-from common.ops import kl_divergence_mu0_var1, reparametrize
+from models.vae import VAE
+from models.vae import VAEModel
+from architectures import encoders, decoders, others
+from common.ops import reparametrize
+from common.utils import one_hot_embedding, F1_Loss
 from common import constants as c
 
+### INSERTING THE LOG SESSION FOR TENSORBOARD ###
+import os
+import datetime
+from time import perf_counter
+#from torch.utils.tensorboard import SummaryWriter
+###                                           ###
 
-class VAEModel(nn.Module):
-    def __init__(self, encoder, decoder):
-        super().__init__()
-
-        self.encoder = encoder
-        self.decoder = decoder
-
-    def encode(self, x, **kwargs):
-        return self.encoder(x)
-
-    def decode(self, z, **kwargs):
-        return torch.sigmoid(self.decoder(z))
-
-    def forward(self, x, **kwargs):
-        mu, logvar = self.encode(x)
-        z = reparametrize(mu, logvar)
-        return self.decode(z)
-
-
-class VAE(BaseDisentangler):
+class GRAYVAE_STANDARD(VAE):
     """
-    Auto-Encoding Variational Bayes
-    by Kingma and Welling
-    https://arxiv.org/pdf/1312.6114.pdf
+    Graybox version of VAE, with standard implementation. The discussion on
     """
 
     def __init__(self, args):
         super().__init__(args)
 
-        # hyper-parameters
-        self.w_kld = args.w_kld
-        self.max_c = torch.tensor(args.max_c, dtype=torch.float)
-        self.iterations_c = torch.tensor(args.iterations_c, dtype=torch.float)
+        print('Initialized GRAYVAE_STD model')
 
-        # As a little joke
-        assert self.w_kld == 1.0 or self.alg != 'VAE', 'in vanilla VAE, w_kld should be 1.0. ' \
-                                                       'Please use BetaVAE if intended otherwise.'
+        # checks
+        assert self.num_classes is not None, 'please identify the number of classes for each label separated by comma'
 
         # encoder and decoder
         encoder_name = args.encoder[0]
         decoder_name = args.decoder[0]
+
         encoder = getattr(encoders, encoder_name)
         decoder = getattr(decoders, decoder_name)
 
+        # number of channels
+        image_channels = self.num_channels
+        input_channels = image_channels
+        decoder_input_channels = self.z_dim 
+
         # model and optimizer
-        self.model = VAEModel(encoder(self.z_dim, self.num_channels, self.image_size),
-                              decoder(self.z_dim, self.num_channels, self.image_size)).to(self.device)
+        self.model = VAEModel(encoder(self.z_dim, input_channels, self.image_size),
+                               decoder(decoder_input_channels, self.num_channels, self.image_size),
+                               ).to(self.device)
         self.optim_G = optim.Adam(self.model.parameters(), lr=self.lr_G, betas=(self.beta1, self.beta2))
 
-        # nets
-        self.net_dict = {
-            'G': self.model
-        }
-        self.optim_dict = {
-            'optim_G': self.optim_G,
-        }
-
-        # FactorVAE
-        if c.FACTORVAE in self.loss_terms:
-            from models.factorvae import factorvae_init
-            self.PermD, self.optim_PermD = factorvae_init(args.discriminator[0], self.z_dim, self.num_layer_disc,
-                                                          self.size_layer_disc, self.lr_D, self.beta1, self.beta2)
-            self.PermD.to(self.device)
-            self.net_dict.update({'PermD': self.PermD})
-            self.optim_dict.update({'optim_PermD': self.optim_PermD})
+        # update nets
+        self.net_dict['G'] = self.model
+        self.optim_dict['optim_G'] = self.optim_G
 
         self.setup_schedulers(args.lr_scheduler, args.lr_scheduler_args,
                               args.w_recon_scheduler, args.w_recon_scheduler_args)
 
-    def encode_deterministic(self, **kwargs):
-        images = kwargs['images']
-        if images.dim() == 3:
-            images = images.unsqueeze(0)
-        mu, logvar = self.model.encode(x=images)
-        return mu
+        ## add binary classification layer
+        self.classification = nn.Linear(self.z_dim, 1, bias=False).to(self.device)
 
-    def encode_stochastic(self, **kwargs):
-        images = kwargs['images']
-        if images.dim() == 3:
-            images = images.unsqueeze(0)
-        mu, logvar = self.model.encode(x=images)
-        return reparametrize(mu, logvar)
+    def predict(self, **kwargs):
+        """
+        Predict the correct class for the input data.
+        """
+        input_x = kwargs['latent'].to(self.device)
+        return nn.Sigmoid()(self.classification(input_x).resize(len(input_x)))
 
-    def _kld_loss_fn(self, mu, logvar):
-        if not self.controlled_capacity_increase:
-            kld_loss = kl_divergence_mu0_var1(mu, logvar) * self.w_kld
-        else:
-            """
-            Based on: Understanding disentangling in β-VAE
-            https://arxiv.org/pdf/1804.03599.pdf
-            """
-            capacity = torch.min(self.max_c, self.max_c * torch.tensor(self.iter) / self.iterations_c)
-            kld_loss = (kl_divergence_mu0_var1(mu, logvar) - capacity).abs() * self.w_kld
-        return kld_loss
-
-    def loss_fn(self, input_losses, reduce_rec=False, **kwargs):
-        x_recon = kwargs['x_recon']
-        x_true = kwargs['x_true']
-        mu = kwargs['mu']
-        logvar = kwargs['logvar']
-        #        prediction z= kwargs["prediction"]
-
-        bs = self.batch_size
-        output_losses = dict()
-        output_losses[c.TOTAL_VAE] = input_losses.get(c.TOTAL_VAE, 0)
-        if reduce_rec:
-            output_losses[c.RECON] = F.binary_cross_entropy(x_recon, x_true,
-                                                            reduction='sum') / bs * self.w_recon * self.reduce_rec
-        else:
-            output_losses[c.RECON] = F.binary_cross_entropy(x_recon, x_true, reduction='sum') / bs * self.w_recon
-
-        output_losses[c.TOTAL_VAE] += output_losses[c.RECON]
-
-        output_losses['kld'] = self._kld_loss_fn(mu, logvar)
-        output_losses[c.TOTAL_VAE] += output_losses['kld']
-
-        if c.FACTORVAE in self.loss_terms:
-            from models.factorvae import factorvae_loss_fn
-            output_losses['vae_tc_factor'], output_losses['discriminator_tc'] = factorvae_loss_fn(
-                self.w_tc, self.model, self.PermD, self.optim_PermD, self.ones, self.zeros, **kwargs)
-            output_losses[c.TOTAL_VAE] += output_losses['vae_tc_factor']
-
-        if c.DIPVAEI in self.loss_terms:
-            from models.dipvae import dipvaei_loss_fn
-            output_losses['vae_dipi'] = dipvaei_loss_fn(self.w_dipvae, self.lambda_od, self.lambda_d, **kwargs)
-            output_losses[c.TOTAL_VAE] += output_losses['vae_dipi']
-
-        if c.DIPVAEII in self.loss_terms:
-            from models.dipvae import dipvaeii_loss_fn
-            output_losses['vae_dipii'] = dipvaeii_loss_fn(self.w_dipvae, self.lambda_od, self.lambda_d, **kwargs)
-            output_losses[c.TOTAL_VAE] += output_losses['vae_dipii']
-
-        if c.BetaTCVAE in self.loss_terms:
-            from models.betatcvae import betatcvae_loss_fn
-            output_losses['vae_betatc'] = betatcvae_loss_fn(self.w_tc, **kwargs)
-            output_losses[c.TOTAL_VAE] += output_losses['vae_betatc']
-
-        if c.INFOVAE in self.loss_terms:
-            from models.infovae import infovae_loss_fn
-            output_losses['vae_mmd'] = infovae_loss_fn(self.w_infovae, self.z_dim, self.device, **kwargs)
-            output_losses[c.TOTAL_VAE] += output_losses['vae_mmd']
-
-        # if "classification" in self.loss_terms:
-        #   pass
-        #   pass
-
-        return output_losses
-
-    def vae_base(self, losses, x_true1, x_true2, label1, label2):
-        mu, logvar = self.model.encode(x=x_true1, c=label1)
+    def vae_classification(self, losses, x_true1, label1, y_true1, labelling=False):
+        mu, logvar = self.model.encode(x=x_true1,)
         z = reparametrize(mu, logvar)
-        x_recon = self.model.decode(z=z, c=label1)
-        loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar, z=z,
-                            x_true2=x_true2, label2=label2)
+        x_recon = self.model.decode(z=z,)
+        prediction = self.predict(latent=mu)
 
-        losses.update(self.loss_fn(losses, **loss_fn_args))
-        return losses, {'x_recon': x_recon, 'mu': mu, 'z': z, 'logvar': logvar}
+        loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar, z=z)
+        losses.update(self.loss_fn(losses, reduce_rec=labelling, **loss_fn_args))
 
-    def train(self):
+        if labelling:
+            losses.update(prediction=nn.BCEWithLogitsLoss()(prediction, y_true1.to(self.device, dtype=torch.float)))
+            losses[c.TOTAL_VAE] += nn.BCEWithLogitsLoss()(prediction,y_true1.to(self.device, dtype= torch.float))
+
+
+        z_real = z[:, :label1.size(1)]
+        losses.update(true_values=nn.MSELoss()(z_real, label1))
+        losses[c.TOTAL_VAE] += nn.MSELoss()(z_real, label1)
+        #print("BCE loss of classification",nn.BCEWithLogitsLoss()(prediction,y_true1.type(torch.FloatTensor)))
+
+        return losses, {'x_recon': x_recon, 'mu': mu, 'z': z, 'logvar': logvar, "prediction": prediction}
+
+
+    def train(self, track_changes=False):
+        if track_changes:
+            print("## Initializing Tensorboard")
+            dset_name = self.dset_name
+            nowstr = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+            out_path = os.path.join("logs", f"{dset_name}_{nowstr}")
+
+            os.makedirs(out_path,  exist_ok=True)
+            writer = SummaryWriter(log_dir=os.path.join(out_path, "train_runs"))
+            print("::path chosen ->",out_path+"/train_runs")
+        epoch = 0
         while not self.training_complete():
+            epoch += 1
             self.net_mode(train=True)
             vae_loss_sum = 0
-            for internal_iter, (x_true1, label1, _) in enumerate(self.data_loader):
+            # add the classification layer #
+            if epoch>3:
+                print("## STARTING CLASSIFICATION ##")
+                start_classification = True
+            else: start_classification = False
+
+            for internal_iter, (x_true1, _, label1) in enumerate(self.data_loader):
                 losses = dict()
                 x_true1 = x_true1.to(self.device)
                 label1 = label1.to(self.device)
-                x_true2, label2, _ = next(iter(self.data_loader))
-                x_true2 = x_true2.to(self.device)
-                label2 = label2.to(self.device)
 
-                losses, params = self.vae_base(losses, x_true1, x_true2, label1, label2)
+                y_true1 = next(iter(self.target_loader))
+
+                losses, params = self.vae_classification(losses, x_true1, label1, y_true1,
+                                                         labelling=start_classification)
 
                 self.optim_G.zero_grad()
+
+                if (internal_iter%250)==0: print("Losses:", losses)
+
+                t0 = perf_counter()
+
                 losses[c.TOTAL_VAE].backward(retain_graph=False)
                 vae_loss_sum += losses[c.TOTAL_VAE]
                 losses[c.TOTAL_VAE_EPOCH] = vae_loss_sum / internal_iter
 
+                dt = perf_counter() -t0
+
+                ## Insert losses -- only in training set
+                if track_changes:
+                    #RECONSTRUCTION ERROR
+                    rec_err = losses['recon'].item()
+                    writer.add_scalar("rec", rec_err, global_step=internal_iter, walltime=dt)
+
+                    if start_classification: #CLASSIFICATION + TRUE ON LATENT
+                        mse_true = losses['true_values'].item()
+                        f1_class = F1_Loss().to(self.device)
+                        f1_class(params['prediction'], y_true1)
+
+                        writer.add_scalar("MSE", mse_true, global_step=internal_iter, walltime=dt)
+                        writer.add_scalar( "f1", f1_class, global_step=internal_iter, walltime=dt)
+
+                    writer.flush()
+
                 self.optim_G.step()
                 self.log_save(input_image=x_true1, recon_image=params['x_recon'], loss=losses)
+
             # end of epoch
         self.pbar.close()
+
+        #close tracker
+        if track_changes: writer.close()
+
 
     def test(self):
         self.net_mode(train=False)
@@ -205,3 +168,4 @@ class VAE(BaseDisentangler):
 
             self.iter += 1
             self.pbar.update(1)
+
