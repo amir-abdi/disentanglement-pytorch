@@ -141,14 +141,15 @@ class GRAYVAE(VAE):
         #print("label",true_labels[0])
         #print("y_true", (y_true1[:10]))
         #print("prediction", (prediction[:10]))
-        losses.update(prediction=nn.BCEWithLogitsLoss()(prediction, y_true1.to(self.device, dtype=torch.float)))
-        losses[c.TOTAL_VAE] += nn.BCEWithLogitsLoss()(prediction,y_true1.to(self.device, dtype= torch.float))
-
         if labelling:
-            z_real = z[:, :true_labels.size(1)]
+            losses.update(prediction=nn.BCEWithLogitsLoss()(prediction, y_true1.to(self.device, dtype=torch.float)))
+            losses[c.TOTAL_VAE] += nn.BCEWithLogitsLoss()(prediction,y_true1.to(self.device, dtype= torch.float))
+
+
+        z_real = z[:, :true_labels.size(1)]
 #            print("Len z and true", z_real.size(), true_labels.size())
-            losses.update(true_values=nn.MSELoss()(z_real, true_labels))
-            losses[c.TOTAL_VAE] += nn.MSELoss()(z_real, true_labels)
+        losses.update(true_values=nn.MSELoss()(z_real, true_labels))
+        losses[c.TOTAL_VAE] += nn.MSELoss()(z_real, true_labels)
         #print("BCE loss of classification",nn.BCEWithLogitsLoss()(prediction,y_true1.type(torch.FloatTensor)))
 
         return losses, {'x_recon': x_recon, 'mu': mu, 'z': z, 'logvar': logvar, "prediction": prediction}

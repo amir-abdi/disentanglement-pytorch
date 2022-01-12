@@ -60,5 +60,7 @@ def evaluate_disentanglement_metric(model, metric_names=['mig'], dataset_name='m
                 results = value
         logging.info('Evaluation   {}={}'.format(metric_name, results))
         results_dict_all['eval_{}'.format(metric_name)] = results
+
+        del encoder_usage
     # print(results_dict)
     return results_dict_all
