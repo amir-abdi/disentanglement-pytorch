@@ -1,7 +1,7 @@
 import os
 import gin
 import logging
-
+import copy
 
 def is_on_aicrowd_server():
     on_aicrowd_server = os.getenv('AICROWD_IS_GRADING', False)
@@ -44,7 +44,8 @@ def evaluate_disentanglement_metric(model, metric_names=['mig'], dataset_name='m
         gin.parse_config_files_and_bindings([my_config], eval_bindings)
 
         model_path = os.path.join(model.ckpt_dir, 'pytorch_model.pt')
-        utils_pytorch.export_model(utils_pytorch.RepresentationExtractor(model.model.encoder, 'mean', model.num_channels),
+        encoder_usage = copy.deepcopy(model.model.encoder)
+        utils_pytorch.export_model(utils_pytorch.RepresentationExtractor(encoder_usage, 'mean', model.num_channels),
                                    input_shape=(1, model.num_channels, model.image_size, model.image_size),
                                    path=model_path)
 
