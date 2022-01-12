@@ -11,7 +11,7 @@ from common import constants as c
 import os
 import datetime
 from time import perf_counter
-from torch.utils.tensorboard import SummaryWriter
+#from torch.utils.tensorboard import SummaryWriter
 ###                                           ###
 class GRAYVAEModel(nn.Module):
     def __init__(self, encoder, decoder, tiler, num_classes):

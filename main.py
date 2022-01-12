@@ -28,29 +28,11 @@ def main(_args):
 
     # run test or train
     if not _args.test:
-        model.train(track_changes=True)
+        model.train()#track_changes=True)
     else:
         model.test()
 
-    # if this is part of the aicrowd_challenge, export and inference model and run disentanglement evaluation
-    if _args.aicrowd_challenge:
-        from aicrowd import utils_pytorch as pyu, aicrowd_helpers
-        # Export the representation extractor
-        path_to_saved = pyu.export_model(pyu.RepresentationExtractor(model.model.encoder, 'mean'),
-                                         input_shape=(1, model.num_channels, model.image_size, model.image_size))
-        logging.info(f'A copy of the model saved in {path_to_saved}')
-
-        if on_aicrowd_server:
-            # AICrowd will handle the evaluation
-            aicrowd_helpers.register_progress(1.0)
-            aicrowd_helpers.submit()
-        else:
-            # Run evaluation locally
-            # The local_evaluation is implemented by aicrowd in the global namespace, so importing it suffices.
-            #  todo: implement a modular version of local_evaluation
-            # noinspection PyUnresolvedReferences
-            from aicrowd import local_evaluation
-
+    ### REMOVED AIRCROWD ###
 
 if __name__ == "__main__":
     _args = get_args(sys.argv[1:])

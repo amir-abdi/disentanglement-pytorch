@@ -1,4 +1,4 @@
-name: disentanglement_challenge
+name: dis_local
 channels:
   - pytorch
   - anaconda
@@ -99,7 +99,7 @@ dependencies:
     - simplejson==3.16.0
     - tensorboard==1.13.1
     - tensorflow-estimator==1.13.0
-    - tensorflow-gpu==1.13.1
+    - tensorflow==1.13.1
     - tensorflow-hub==0.4.0
     - tensorflow-probability==0.6.0
     - termcolor==1.1.0
