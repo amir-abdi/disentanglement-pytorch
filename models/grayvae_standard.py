@@ -55,6 +55,8 @@ class GrayVAE_Standard(VAE):
 
         ## add binary classification layer
         self.classification = nn.Linear(self.z_dim, 1, bias=False).to(self.device)
+        self.classification_epoch = args.classification_epoch
+        self.reduce_rec = args.reduce_recon
 
     def predict(self, **kwargs):
         """
@@ -101,7 +103,7 @@ class GrayVAE_Standard(VAE):
             self.net_mode(train=True)
             vae_loss_sum = 0
             # add the classification layer #
-            if epoch>3:
+            if epoch>self.classification_epoch:
                 print("## STARTING CLASSIFICATION ##")
                 start_classification = True
             else: start_classification = False

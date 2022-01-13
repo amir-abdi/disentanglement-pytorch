@@ -290,7 +290,7 @@ def is_time_for(iteration, milestone):
 def setup_logging(verbose):
     # verbosity
     reload(logging)  # to turn off any changes to logging done by other imported libraries
-    h = logging.StreamHandler()
+    h = logging.StreamHandler()set
     h.setFormatter(StyleFormatter())
     h.setLevel(0)
     logging.root.addHandler(h)
