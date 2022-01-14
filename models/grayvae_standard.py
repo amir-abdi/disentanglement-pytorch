@@ -78,11 +78,11 @@ class GrayVAE_Standard(VAE):
             losses.update(prediction=nn.BCEWithLogitsLoss()(prediction, y_true1.to(self.device, dtype=torch.float)))
             losses[c.TOTAL_VAE] += nn.BCEWithLogitsLoss()(prediction,y_true1.to(self.device, dtype= torch.float))
 
-
-        z_real = z[:, :label1.size(1)]
-        losses.update(true_values=nn.MSELoss()(z_real, label1))
-        losses[c.TOTAL_VAE] += nn.MSELoss()(z_real, label1)
-        #print("BCE loss of classification",nn.BCEWithLogitsLoss()(prediction,y_true1.type(torch.FloatTensor)))
+            ## REMOVED FOR SIGNAL
+            z_real = z[:, :label1.size(1)]
+            losses.update(true_values=nn.MSELoss()(z_real, label1))
+            losses[c.TOTAL_VAE] += nn.MSELoss()(z_real, label1)
+            #print("BCE loss of classification",nn.BCEWithLogitsLoss()(prediction,y_true1.type(torch.FloatTensor)))
 
         return losses, {'x_recon': x_recon, 'mu': mu, 'z': z, 'logvar': logvar, "prediction": prediction}
 

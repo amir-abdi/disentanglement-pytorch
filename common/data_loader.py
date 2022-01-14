@@ -309,7 +309,7 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
         dset = CustomImageFolder
     elif name.lower() == 'dsprites_full':
         print(name)
-        root = os.path.join(dset_dir, 'dsprites/dsprites_ndarray_co1sh3sc6or40x32y32_64x64_smaller.npz')
+        root = os.path.join(dset_dir, 'dsprites/dsprites_ndarray_co1sh3sc6or40x32y32_64x64.npz')
         npz = np.load(root)
         print("Passed npz:", np.shape(npz), "and",type(npz))
         print(npz.files)
@@ -331,7 +331,7 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
         #print("The ranges are")
         #print(ranges)
 
-        print("label_idx", label_idx)
+        #print("label_idx", label_idx)
         #for i in range(len(ranges)):
          #   print(i)
           #  print("For class ", i, "min", np.min(ranges[i]),"max",np.max(ranges[i]))
@@ -340,7 +340,7 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
 
 
         if label_idx is not None:
-            print("Passed label_idx:",label_idx)
+            #print("Passed label_idx:",label_idx)
             labels = npz['latents_values'][:, label_idx]
             if 1 in label_idx:
                 index_shape = label_idx.index(1)
@@ -364,7 +364,7 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
                 unique_values_mock = np.arange(len(unique_values))
                 class_values.append(unique_values_mock)
             label_weights = np.array(label_weights)
-        print("Labels is size: ", np.shape(labels))
+        #print("Labels is size: ", np.shape(labels))
 
         #max_capacity = 10000
 
