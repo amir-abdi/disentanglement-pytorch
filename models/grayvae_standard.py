@@ -3,15 +3,15 @@ from torch import nn
 import torch.optim as optim
 from models.vae import VAE
 from models.vae import VAEModel
-from architectures import encoders, decoders, others
+from architectures import encoders, decoders
 from common.ops import reparametrize
-from common.utils import one_hot_embedding, F1_Loss
+from common.utils import F1_Loss
 from common import constants as c
 
+import numpy as np
+import pandas as pd
+
 ### INSERTING THE LOG SESSION FOR TENSORBOARD ###
-import os
-import datetime
-from time import perf_counter
 #from torch.utils.tensorboard import FileWriter
 ###                                           ###
 
@@ -87,17 +87,18 @@ class GrayVAE_Standard(VAE):
         return losses, {'x_recon': x_recon, 'mu': mu, 'z': z, 'logvar': logvar, "prediction": prediction}
 
 
-    def train(self, track_changes=False):
-        if track_changes:
-            print("## Initializing Tensorboard")
-            dset_name = self.dset_name
-            nowstr = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-            out_path = os.path.join("logs", f"{dset_name}_{nowstr}")
+    def train(self, **kwargs):
+        if 'output'  in kwargs.keys():
+            out_path = kwargs['output']
+            track_changes=True
 
-            os.makedirs(out_path,  exist_ok=True)
-            writer = FileWriter(log_dir=os.path.join(out_path, "train_runs"))
+        else: track_changes=False;
+
+        if track_changes:
+            print("## Initializing Train indexes")
             print("::path chosen ->",out_path+"/train_runs")
         epoch = 0
+        Iterations, Epochs, Reconstructions, True_Values, Classifications = [], [], [], [], []
         while not self.training_complete():
             epoch += 1
             self.net_mode(train=True)
@@ -109,6 +110,8 @@ class GrayVAE_Standard(VAE):
             else: start_classification = False
 
             for internal_iter, (x_true1, _, label1) in enumerate(self.data_loader):
+                Iterations.append(internal_iter+1)
+                Epochs.append(epoch)
                 losses = dict()
                 x_true1 = x_true1.to(self.device)
                 label1 = label1.to(self.device)
@@ -122,38 +125,36 @@ class GrayVAE_Standard(VAE):
 
                 if (internal_iter%250)==0: print("Losses:", losses)
 
-                t0 = perf_counter()
 
                 losses[c.TOTAL_VAE].backward(retain_graph=False)
                 vae_loss_sum += losses[c.TOTAL_VAE]
                 losses[c.TOTAL_VAE_EPOCH] = vae_loss_sum / internal_iter
 
-                dt = perf_counter() -t0
 
                 ## Insert losses -- only in training set
                 if track_changes:
                     #RECONSTRUCTION ERROR
                     rec_err = losses['recon'].item()
-                    writer.add_scalar("rec", rec_err, global_step=internal_iter, walltime=dt)
+                    Reconstructions.append(rec_err)
+
 
                     if start_classification: #CLASSIFICATION + TRUE ON LATENT
                         mse_true = losses['true_values'].item()
+                        True_Values.append(mse_true)
                         f1_class = F1_Loss().to(self.device)
                         f1_class(params['prediction'], y_true1)
-
-                        writer.add_scalar("MSE", mse_true, global_step=internal_iter, walltime=dt)
-                        writer.add_scalar( "f1", f1_class, global_step=internal_iter, walltime=dt)
-
-                    writer.flush()
+                        Classifications.append(f1_class.item())
 
                 self.optim_G.step()
                 self.log_save(input_image=x_true1, recon_image=params['x_recon'], loss=losses)
 
+            #insert into pd dataframe
+            sofar = pd.DataFrame(data=np.array([Iterations, Epochs, Reconstructions, True_Values, Classifications]).T,
+                                 columns=['iter', 'epoch', 'reconstruction_error', 'latent_error', 'f1_score'], )
+            sofar.to_csv(out_path, index=False)
+
             # end of epoch
         self.pbar.close()
-
-        #close tracker
-        if track_changes: writer.close()
 
 
     def test(self):

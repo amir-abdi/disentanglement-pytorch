@@ -327,7 +327,7 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
         dset = CustomImageFolder
     elif name.lower() == 'dsprites_full':
         #print(name)
-        root = os.path.join(dset_dir, 'dsprites/dsprites_ndarray_co1sh3sc6or40x32y32_64x64.npz')
+        root = os.path.join(dset_dir, 'dsprites/dsprites_ndarray_co1sh3sc6or40x32y32_64x64_smaller.npz')
         npz = np.load(root)
         """
         print("Passed npz:", np.shape(npz), "and",type(npz))
