@@ -14,17 +14,20 @@ import matplotlib.pyplot as plt
 
 from common import constants as c
 
-def target_cast(inputs, r_plane):
+def target_cast(inputs, r_plane, irrelevant_components=0):
     targets = []
     #print(inputs[0])
     print("mean:",r_plane[1])
     #print(len(r_plane))
 
+    admitted = np.ones(len(r_plane[0]))
+    admitted[irrelevant_components] = 0
+
     for i in range(len(inputs)):
         #print("difference:",inputs[i] - r_plane[1])
         #print("input data:",inputs[i])
 
-        target =  (np.dot(inputs[i] - r_plane[1], r_plane[0]))
+        target =  (np.dot(inputs[i] - r_plane[1], r_plane[0]*admitted))
         #print("target:", target)
         if target < 0: target = 0
         else: target = 1
