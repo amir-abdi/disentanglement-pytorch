@@ -1,4 +1,6 @@
 import os
+
+import matplotlib.pyplot as plt
 import numpy as np
 import logging
 
@@ -7,6 +9,8 @@ from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torchvision.datasets import ImageFolder
 from torchvision import transforms
+import matplotlib.pyplot as plt
+
 
 from common import constants as c
 
@@ -29,7 +33,7 @@ def target_cast(inputs, r_plane):
         #if i == 30: quit()
     return targets
 
-def random_plane(labels, space):
+def random_plane(labels, space, _plot=False):
     l = len(labels)
 
     random_versor = np.random.uniform(size=l)
@@ -38,11 +42,22 @@ def random_plane(labels, space):
     mean_vect = np.zeros(l)
 
     for i in range(l):
-        mean_vect[i] = np.mean(space[i])
+        mean_vect[i] = np.mean(space[:,i])
         #print("Max", np.max(space[i]), "min", np.min(space[i]))
 
     #print("Random", random_versor)
     #print("Mean", mean_vect)
+
+    f = plt.figure(figsize=(18, 10))  # plot the calculated values
+
+    if _plot:
+        for i in range(l):
+            f.add_subplot(2, 3, i+1)
+            z = space[:,i]
+            plt.hist(z, int(len(z)/100), label='component-%i'%i)
+            plt.legend()
+        plt.show()
+
     return [random_versor, mean_vect]
 
 
@@ -308,9 +323,10 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
                        'num_channels': 3}
         dset = CustomImageFolder
     elif name.lower() == 'dsprites_full':
-        print(name)
+        #print(name)
         root = os.path.join(dset_dir, 'dsprites/dsprites_ndarray_co1sh3sc6or40x32y32_64x64.npz')
         npz = np.load(root)
+        """
         print("Passed npz:", np.shape(npz), "and",type(npz))
         print(npz.files)
         print("Information on how they're stored")
@@ -338,14 +354,13 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
  #        print([np.min(npz["latents_values"][:, i] for i in range(len(npz["latents_values"][0] )))])
 #        print([np.max(npz["latents_values"][:, i] for i in range(len(npz["latents_values"][0] )))])
 
-
+        """
         if label_idx is not None:
             #print("Passed label_idx:",label_idx)
-            labels = npz['latents_values'][:, label_idx]
+            labels = (npz['latents_values'][:, label_idx])
             if 1 in label_idx:
                 index_shape = label_idx.index(1)
                 labels[:, index_shape] -= 1
-
 
             # dsprite has uniformly distributed labels
             num_labels = labels.shape[1]
@@ -363,22 +378,23 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
                 # always set label values to integers starting from zero
                 unique_values_mock = np.arange(len(unique_values))
                 class_values.append(unique_values_mock)
-            label_weights = np.array(label_weights)
+            print("the npz is of size", np.size(npz['latents_values']))
+            label_weights = np.array(label_weights)#, dtype=np.float32)
         #print("Labels is size: ", np.shape(labels))
 
         #max_capacity = 10000
-
+        print("labels are of size", np.size(labels))
+        print("the npz is of size", np.size(npz['latents_values']))
         data_kwargs = {'data_images': npz['imgs']}
         data_kwargs.update({'labels': labels,
                        'label_weights': label_weights,
                        'class_values': class_values,
                        'num_channels': 1})
         dset = CustomNpzDataset
-
         #print("The r plane:",[random_plane(label_idx, ranges)])
         if labels is not None:
             target_set = np.asarray(
-                        target_cast(labels, r_plane=random_plane(label_idx, labels))
+                        target_cast(labels, r_plane=random_plane(label_idx, npz['latents_values']))
                         )
 
         make_yset = True

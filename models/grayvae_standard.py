@@ -12,7 +12,7 @@ from common import constants as c
 import os
 import datetime
 from time import perf_counter
-#from torch.utils.tensorboard import SummaryWriter
+#from torch.utils.tensorboard import FileWriter
 ###                                           ###
 
 class GrayVAE_Standard(VAE):
@@ -95,7 +95,7 @@ class GrayVAE_Standard(VAE):
             out_path = os.path.join("logs", f"{dset_name}_{nowstr}")
 
             os.makedirs(out_path,  exist_ok=True)
-            writer = SummaryWriter(log_dir=os.path.join(out_path, "train_runs"))
+            writer = FileWriter(log_dir=os.path.join(out_path, "train_runs"))
             print("::path chosen ->",out_path+"/train_runs")
         epoch = 0
         while not self.training_complete():
