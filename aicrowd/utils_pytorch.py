@@ -181,10 +181,7 @@ class RepresentationExtractor(torch.nn.Module):
         super(RepresentationExtractor, self).__init__()
         assert mode in self.VALID_MODES, '`mode` must be one of {self.VALID_MODES}'
         self.encoder = encoder
-        self.encoder.update_input_channels(num_channels)
         self.mode = mode
-        print("#Istantiated RepresentationExtractor")
-        print("with channels", self.encoder.num_channels)
 
     def forward(self, x):
         mu, logvar = self.encoder(x)
