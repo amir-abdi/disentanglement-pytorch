@@ -68,17 +68,23 @@ class GrayVAE_Standard(VAE):
         return nn.Sigmoid()(self.classification(input_x).resize(len(input_x)))
 
     def vae_classification(self, losses, x_true1, label1, y_true1, labelling=False):
-        mu, logvar = self.model.encode(x=x_true1,)
+        x_true1.requires_grad = True
+        with torch.no_grad():
+            mu, logvar = self.model.encode(x=x_true1,)
+
         z = reparametrize(mu, logvar)
         x_recon = self.model.decode(z=z,)
+
         prediction = self.predict(latent=mu)
 
         loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar, z=z)
         losses.update(self.loss_fn(losses, reduce_rec=labelling, **loss_fn_args))
 
         if labelling:
+            ## DISJOINT VERSION
             losses.update(prediction=nn.BCEWithLogitsLoss()(prediction, y_true1.to(self.device, dtype=torch.float)))
-            losses[c.TOTAL_VAE] += nn.BCEWithLogitsLoss()(prediction,y_true1.to(self.device, dtype= torch.float))
+            #losses[c.TOTAL_VAE] += nn.BCEWithLogitsLoss()(prediction,y_true1.to(self.device, dtype= torch.float))
+
 
             ## REMOVED FOR SIGNAL
             z_real = z[:, :label1.size(1)]
@@ -100,7 +106,7 @@ class GrayVAE_Standard(VAE):
             print("## Initializing Train indexes")
             print("::path chosen ->",out_path+"/train_runs")
         epoch = 0
-        Iterations, Epochs, Reconstructions, True_Values, Accuracies, F1_scores = [], [], [], [], [], []
+        Iterations, Epochs, Reconstructions, KLDs, True_Values, Accuracies, F1_scores = [], [], [], [], [], [], []
         while not self.training_complete():
             epoch += 1
             self.net_mode(train=True)
@@ -129,6 +135,11 @@ class GrayVAE_Standard(VAE):
 
 
                 losses[c.TOTAL_VAE].backward(retain_graph=False)
+
+                ## INSERT HERE CLASSIFICATION
+                losses['prediction'].backward()
+                #print("Is it backprop to ")
+                #print(self.classification.weight.grad)
                 vae_loss_sum += losses[c.TOTAL_VAE]
                 losses[c.TOTAL_VAE_EPOCH] = vae_loss_sum / internal_iter
 
@@ -138,19 +149,23 @@ class GrayVAE_Standard(VAE):
                     #RECONSTRUCTION ERROR
                     rec_err = losses['recon'].item()
                     Reconstructions.append(rec_err)
+                    kld_error = losses['kld'].item()
+                    KLDs.append(kld_error)
 
 
                     if start_classification: #CLASSIFICATION + TRUE ON LATENT
                         mse_true = losses['true_values'].item()
                         True_Values.append(mse_true)
 
+                        y_pred1 = torch.zeros(size=(len(y_true1), 2), dtype=torch.float ).to(self.device)
+                        y_pred1[:,0] = params['prediction']
+                        y_pred1[:,1] = 1- params['prediction']
+
                         accuracy = Accuracy_Loss().to(self.device)
-                        accuracy(params['prediction'], y_true1)
-                        Accuracies.append(accuracy.item())
+                        Accuracies.append(accuracy(y_pred1, y_true1).item())
 
                         f1_class = F1_Loss().to(self.device)
-                        f1_class(params['prediction'], y_true1)
-                        F1_scores.append(f1_class.item())
+                        F1_scores.append(f1_class(y_pred1, y_true1).item())
 
 
 
@@ -161,14 +176,9 @@ class GrayVAE_Standard(VAE):
             if track_changes:
                 if not start_classification:
                     True_Values, Accuracies, F1_scores = np.zeros(len(Iterations)), np.zeros(len(Iterations)), np.zeros(len(Iterations))
-                print("The metrics dataset:",
-                      np.shape(np.array([Iterations, Epochs, Reconstructions, True_Values, Accuracies, F1_scores]).T))
-                print(Iterations)
-                print(Epochs)
-                print(Reconstructions)
 
-                sofar = pd.DataFrame(data=np.array([Iterations, Epochs, Reconstructions, True_Values, Accuracies, F1_scores]).T,
-                                     columns=['iter', 'epoch', 'reconstruction_error', 'latent_error', 'accuracy', 'f1_score'], )
+                sofar = pd.DataFrame(data=np.array([Iterations, Epochs, Reconstructions, KLDs, True_Values, Accuracies, F1_scores]).T,
+                                     columns=['iter', 'epoch', 'reconstruction_error', 'kld', 'latent_error', 'accuracy', 'f1_score'], )
                 sofar.to_csv(os.path.join(out_path,'metrics.csv'), index=False)
 
             # end of epoch

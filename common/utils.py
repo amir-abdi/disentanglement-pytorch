@@ -10,7 +10,7 @@ import os
 import torch.nn
 import torch.nn.init as init
 from torch.autograd import Variable
-
+import torch.nn.functional as F
 from common import constants as c
 
 
@@ -406,6 +406,7 @@ class Accuracy_Loss(torch.nn.Module):
         self.epsilon = epsilon
 
     def forward(self, y_pred, y_true, ):
+        #print(y_pred.ndim)
         assert y_pred.ndim == 2
         assert y_true.ndim == 1
         y_true = F.one_hot(y_true, 2).to(torch.float32)
@@ -420,4 +421,4 @@ class Accuracy_Loss(torch.nn.Module):
 
 #        acc = acc.clamp(min=self.epsilon, max=1 - self.epsilon)
 
-        return acc
+        return acc.mean()
