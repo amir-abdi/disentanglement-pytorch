@@ -1,3 +1,4 @@
+import copy
 import os.path
 
 import torch
@@ -68,9 +69,8 @@ class GrayVAE_Standard(VAE):
         return nn.Sigmoid()(self.classification(input_x).resize(len(input_x)))
 
     def vae_classification(self, losses, x_true1, label1, y_true1, labelling=False):
-        x_true1.requires_grad = True
-        with torch.no_grad():
-            mu, logvar = self.model.encode(x=x_true1,)
+        #x_true1.requires_grad = True
+        mu, logvar = self.model.encode(x=x_true1,)
 
         z = reparametrize(mu, logvar)
         x_recon = self.model.decode(z=z,)
@@ -82,6 +82,7 @@ class GrayVAE_Standard(VAE):
 
         if labelling:
             ## DISJOINT VERSION
+
             losses.update(prediction=nn.BCEWithLogitsLoss()(prediction, y_true1.to(self.device, dtype=torch.float)))
             #losses[c.TOTAL_VAE] += nn.BCEWithLogitsLoss()(prediction,y_true1.to(self.device, dtype= torch.float))
 
@@ -121,6 +122,10 @@ class GrayVAE_Standard(VAE):
                 Iterations.append(internal_iter+1)
                 Epochs.append(epoch)
                 losses = dict()
+
+                for parameters in self.model.parameters():
+                    parameters.requires_grad = True
+
                 x_true1 = x_true1.to(self.device)
                 label1 = label1.to(self.device)
 
@@ -135,11 +140,20 @@ class GrayVAE_Standard(VAE):
 
 
                 losses[c.TOTAL_VAE].backward(retain_graph=False)
+#                print("Weights")
+ #               past_weights = self.model.decoder.main[1].weight.grad
+                #print(self.model.decoder.main[1].weight.grad[:4])
+
+                ## SWITCH OFF PROP OF GRADIENT
+                for parameters in self.model.parameters():
+                    parameters.requires_grad = False
 
                 ## INSERT HERE CLASSIFICATION
-                losses['prediction'].backward()
-                #print("Is it backprop to ")
-                #print(self.classification.weight.grad)
+                if start_classification:
+                    losses['prediction'].backward()
+
+#                print("Weights")
+ #               print("Changed of", torch.mean(self.model.decoder.main[1].weight.grad -past_weights))
                 vae_loss_sum += losses[c.TOTAL_VAE]
                 losses[c.TOTAL_VAE_EPOCH] = vae_loss_sum / internal_iter
 
@@ -151,6 +165,7 @@ class GrayVAE_Standard(VAE):
                     Reconstructions.append(rec_err)
                     kld_error = losses['kld'].item()
                     KLDs.append(kld_error)
+
 
 
                     if start_classification: #CLASSIFICATION + TRUE ON LATENT
