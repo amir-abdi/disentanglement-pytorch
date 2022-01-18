@@ -191,7 +191,7 @@ class GrayVAE_Standard(VAE):
             #insert into pd dataframe
             if track_changes:
                 if not start_classification:
-                    True_Values, Accuracies, F1_scores = np.zeros(len(Iterations)), np.zeros(len(Iterations)), np.zeros(len(Iterations))
+                    True_Values, Accuracies, F1_scores = [0]*len(Iterations), [0]*len(Iterations), [0]*len(Iterations)
 
                 sofar = pd.DataFrame(data=np.array([Iterations, Epochs, Reconstructions, KLDs, True_Values, Accuracies, F1_scores]).T,
                                      columns=['iter', 'epoch', 'reconstruction_error', 'kld', 'latent_error', 'accuracy', 'f1_score'], )
