@@ -75,7 +75,8 @@ class GrayVAE_Standard(VAE):
         z = reparametrize(mu, logvar)
         x_recon = self.model.decode(z=z,)
 
-        prediction = self.predict(latent=mu)
+        mu_detatch = mu.detach().clone().to(self.device)
+        prediction = self.predict(latent=mu_detatch)
 
         loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar, z=z)
         losses.update(self.loss_fn(losses, reduce_rec=labelling, **loss_fn_args))
@@ -123,8 +124,8 @@ class GrayVAE_Standard(VAE):
                 Epochs.append(epoch)
                 losses = dict()
 
-                for parameters in self.model.parameters():
-                    parameters.requires_grad = True
+#                for parameters in self.model.parameters():
+ #                   parameters.requires_grad = True
 
                 x_true1 = x_true1.to(self.device)
                 label1 = label1.to(self.device)
@@ -139,14 +140,14 @@ class GrayVAE_Standard(VAE):
                 if (internal_iter%250)==0: print("Losses:", losses)
 
 
-                losses[c.TOTAL_VAE].backward(retain_graph=True)
+                losses[c.TOTAL_VAE].backward(retain_graph=False)
 #                print("Weights")
  #               past_weights = self.model.decoder.main[1].weight.grad
                 #print(self.model.decoder.main[1].weight.grad[:4])
 
                 ## SWITCH OFF PROP OF GRADIENT
-                for parameters in self.model.parameters():
-                    parameters.requires_grad = False
+#                for parameters in self.model.parameters():
+ #                   parameters.requires_grad = False
 
                 ## INSERT HERE CLASSIFICATION
                 if start_classification:
