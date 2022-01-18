@@ -139,7 +139,7 @@ class GrayVAE_Standard(VAE):
                 if (internal_iter%250)==0: print("Losses:", losses)
 
 
-                losses[c.TOTAL_VAE].backward(retain_graph=False)
+                losses[c.TOTAL_VAE].backward(retain_graph=True)
 #                print("Weights")
  #               past_weights = self.model.decoder.main[1].weight.grad
                 #print(self.model.decoder.main[1].weight.grad[:4])
