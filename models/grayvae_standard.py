@@ -1,3 +1,5 @@
+import os.path
+
 import torch
 from torch import nn
 import torch.optim as optim
@@ -158,16 +160,16 @@ class GrayVAE_Standard(VAE):
             #insert into pd dataframe
             if track_changes:
                 if not start_classification:
-                    True_Values, Accuracies, F1_scores = np.zeros(len(Iterations))
+                    True_Values, Accuracies, F1_scores = np.zeros(len(Iterations)), np.zeros(len(Iterations)), np.zeros(len(Iterations))
                 print("The metrics dataset:",
                       np.shape(np.array([Iterations, Epochs, Reconstructions, True_Values, Accuracies, F1_scores]).T))
                 print(Iterations)
                 print(Epochs)
                 print(Reconstructions)
 
-            sofar = pd.DataFrame(data=np.array([Iterations, Epochs, Reconstructions, True_Values, Accuracies, F1_scores]).T,
+                sofar = pd.DataFrame(data=np.array([Iterations, Epochs, Reconstructions, True_Values, Accuracies, F1_scores]).T,
                                      columns=['iter', 'epoch', 'reconstruction_error', 'latent_error', 'accuracy', 'f1_score'], )
-                sofar.to_csv(out_path, index=False)
+                sofar.to_csv(os.path.join(out_path,'metrics.csv'), index=False)
 
             # end of epoch
         self.pbar.close()
