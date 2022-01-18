@@ -435,7 +435,7 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
                                    drop_last=droplast
                                     )
         print("made target_loader")
-        print("Population of 0", len(target_set[target_set == 0])/len(target_set),"%.")
+        print("Population of 0:", len(target_set[target_set == 0])/len(target_set),"%.")
         return data_loader, target_loader
     else:
         return data_loader, [None]
