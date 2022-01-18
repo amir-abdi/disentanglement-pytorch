@@ -5,7 +5,7 @@ from models.vae import VAE
 from models.vae import VAEModel
 from architectures import encoders, decoders
 from common.ops import reparametrize
-from common.utils import F1_Loss
+from common.utils import F1_Loss, Accuracy_Loss
 from common import constants as c
 
 import numpy as np
@@ -98,7 +98,7 @@ class GrayVAE_Standard(VAE):
             print("## Initializing Train indexes")
             print("::path chosen ->",out_path+"/train_runs")
         epoch = 0
-        Iterations, Epochs, Reconstructions, True_Values, Classifications = [], [], [], [], []
+        Iterations, Epochs, Reconstructions, True_Values, Accuracies, F1_scores = [], [], [], [], [], []
         while not self.training_complete():
             epoch += 1
             self.net_mode(train=True)
@@ -141,17 +141,25 @@ class GrayVAE_Standard(VAE):
                     if start_classification: #CLASSIFICATION + TRUE ON LATENT
                         mse_true = losses['true_values'].item()
                         True_Values.append(mse_true)
+
+                        accuracy = Accuracy_Loss().to(self.device)
+                        accuracy(params['prediction'], y_true1)
+                        Accuracies.append(accuracy.item())
+
                         f1_class = F1_Loss().to(self.device)
                         f1_class(params['prediction'], y_true1)
-                        Classifications.append(f1_class.item())
+                        F1_scores.append(f1_class.item())
+
+
 
                 self.optim_G.step()
                 self.log_save(input_image=x_true1, recon_image=params['x_recon'], loss=losses)
 
             #insert into pd dataframe
-            sofar = pd.DataFrame(data=np.array([Iterations, Epochs, Reconstructions, True_Values, Classifications]).T,
-                                 columns=['iter', 'epoch', 'reconstruction_error', 'latent_error', 'f1_score'], )
-            sofar.to_csv(out_path, index=False)
+            if track_changes:
+                sofar = pd.DataFrame(data=np.array([Iterations, Epochs, Reconstructions, True_Values, Accuracies, F1_scores]).T,
+                                     columns=['iter', 'epoch', 'reconstruction_error', 'latent_error', 'accuracy', 'f1_score'], )
+                sofar.to_csv(out_path, index=False)
 
             # end of epoch
         self.pbar.close()

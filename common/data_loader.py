@@ -224,7 +224,7 @@ class DisentanglementLibDataset(Dataset):
         This is done to ensure compatibility with disentanglement_lib.
     """
 
-    def __init__(self, name, seed=0):
+    def __init__(self, name, seed=0, make_yset=False):
         """
         Parameters
         ----------
@@ -381,13 +381,13 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
                 # always set label values to integers starting from zero
                 unique_values_mock = np.arange(len(unique_values))
                 class_values.append(unique_values_mock)
-            print("the npz is of size", np.size(npz['latents_values']))
+#            print("the npz is of size", np.size(npz['latents_values']))
             label_weights = np.array(label_weights)#, dtype=np.float32)
         #print("Labels is size: ", np.shape(labels))
 
         #max_capacity = 10000
-        print("labels are of size", np.size(labels))
-        print("the npz is of size", np.size(npz['latents_values']))
+ #       print("labels are of size", np.size(labels))
+  #      print("the npz is of size", np.size(npz['latents_values']))
         data_kwargs = {'data_images': npz['imgs']}
         data_kwargs.update({'labels': labels,
                        'label_weights': label_weights,
@@ -435,7 +435,7 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
                                    drop_last=droplast
                                     )
         print("made target_loader")
-        print("Population", len(target_set[target_set == 0]), "over", len(target_set))
+        print("Population of 0", len(target_set[target_set == 0])/len(target_set),"%.")
         return data_loader, target_loader
     else:
         return data_loader, [None]
