@@ -131,6 +131,7 @@ class GrayVAE_Standard(VAE):
                 label1 = label1.to(self.device)
 
                 y_true1 = next(iter(self.target_loader))
+                y_true1 = y_true1.to(self.device)
 
                 losses, params = self.vae_classification(losses, x_true1, label1, y_true1,
                                                          labelling=start_classification)
