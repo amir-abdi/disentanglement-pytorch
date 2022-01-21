@@ -149,6 +149,8 @@ def get_args(sys_args):
 
     # Other
     parser.add_argument('--seed', default=123, type=int, help='Seed value for torch, cuda, and numpy.')
+    parser.add_argument('--d_version', default="smaller", type=str,
+                        help='Select the dataset version for dsprites (for debugging: smaller).')
 
 
     # Hyper-parameters

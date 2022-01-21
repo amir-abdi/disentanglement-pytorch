@@ -116,9 +116,9 @@ class VAE(BaseDisentangler):
         output_losses[c.TOTAL_VAE] = input_losses.get(c.TOTAL_VAE, 0)
         if reduce_rec:
             output_losses[c.RECON] = F.binary_cross_entropy(input=x_recon, target=x_true,
-                                                            reduction='sum') / bs * self.w_recon * self.reduce_rec
+                                                            reduction='mean') #/ bs * self.w_recon * self.reduce_rec
         else:
-            output_losses[c.RECON] = F.binary_cross_entropy(input=x_recon, target=x_true, reduction='sum') / bs * self.w_recon
+            output_losses[c.RECON] = F.binary_cross_entropy(input=x_recon, target=x_true, reduction='mean') # / bs * self.w_recon
 
         output_losses[c.TOTAL_VAE] += output_losses[c.RECON]
 

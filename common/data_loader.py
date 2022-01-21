@@ -1,5 +1,7 @@
 import os
+from .utils import Accuracy_Loss, F1_Loss
 
+from sklearn.linear_model import LogisticRegression
 import matplotlib.pyplot as plt
 import numpy as np
 import logging
@@ -11,49 +13,81 @@ from torchvision.datasets import ImageFolder
 from torchvision import transforms
 import matplotlib.pyplot as plt
 
-
 from common import constants as c
 
-def target_cast(inputs, r_plane, irrelevant_components=0):
+
+def target_cast(inputs, r_plane, irrelevant_components=0, _plot=False):
     targets = []
     #print(inputs[0])
-    print("mean:",r_plane[1])
+    #print("mean:",r_plane[1])
     #print(len(r_plane))
 
     admitted = np.ones(len(r_plane[0]))
     admitted[irrelevant_components] = 0
-
     for i in range(len(inputs)):
-        #print("difference:",inputs[i] - r_plane[1])
-        #print("input data:",inputs[i])
 
-        target =  (np.dot(inputs[i] - r_plane[1], r_plane[0]*admitted))
-        #print("target:", target)
+        ## INSERT ONLY FOR CHECKING
+        if len(inputs[i]) < len(r_plane[0])   and irrelevant_components==0:
+            #print(np.array(inputs[i]).reshape(5,1) )
+            #print("Extended the components")
+            inputs_i = np.concatenate(  (np.array(inputs[i]).reshape(5,1), np.ones(shape=(1,1) )), axis=0)
+            target = (np.dot(inputs_i.reshape(6) - r_plane[1]*admitted, r_plane[0]*admitted))
+            #print("target:", target)
+        else:
+            target =  (np.dot(inputs[i] - r_plane[1]*admitted, r_plane[0]*admitted))
+
         if target < 0: target = 0
         else: target = 1
-        if np.random.uniform() > 0.95: target = (target+1)%2
+        #if np.random.uniform() > 0.95: target = (target+1)%2
         targets.append(int(target))
         #if i == 30: quit()
-    return targets
 
-def random_plane(labels, space, _plot=False):
+    if _plot:
+        f = plt.figure(figsize=(18, 10))
+        mask = (np.array(targets, dtype=np.int) > 0)
+        for i in range(len(r_plane[0])-1):
+            f.add_subplot(2, 3, i + 1)
+
+            z0 = inputs[:, i][mask]; z1 = inputs[:, i][~mask];
+            z2 = inputs[:, i+1][mask]; z3 = inputs[:, i+1][~mask];
+            plt.plot(z0, z2, "b.", label="Negatives", )
+            plt.plot(z1, z3, "r.", label="Positive", linestyle="")
+            plt.xlabel("z%i"%i)
+            plt.ylabel("z%i"%(i+1))
+#                plt.hist(z0, int(len(z0) / 100)+1, label='0 component-%i' % i,color="red" )
+#               plt.hist(z1, int(len(z1) / 100)+1, label='1 component-%i' % i,color="blue" )
+            plt.legend()
+        f.add_subplot(2,3,6)
+        z0 = inputs[:, 3][mask];
+        z1 = inputs[:, 3][~mask];
+        z2 = inputs[:, 4 + 1][mask];
+        z3 = inputs[:, 4 + 1][~mask];
+        plt.plot(z0, z2, "b.", label="Negatives", )
+        plt.plot(z1, z3, "r.", label="Positive", linestyle="")
+        plt.xlabel("z%i" % 3)
+        plt.ylabel("z%i" % (5))
+        plt.legend()
+        plt.show()
+    return np.array(targets, dtype=np.int)
+
+
+def random_plane(labels, space, irrelevant_components=0,_plot=False):
     l = len(labels)
 
     random_versor = np.random.uniform(size=l)
     random_versor /= np.linalg.norm(random_versor)
 
-    mean_vect = np.zeros(l)
+    mean_vect = np.mean(space, axis=0)
 
-    for i in range(l):
-        mean_vect[i] = np.mean(space[:,i])
-        #print("Max", np.max(space[i]), "min", np.min(space[i]))
+    assert np.all( space[:,0] ==0 ), space[:50,0]
+    assert np.all( mean_vect < 0.1 ), mean_vect
 
-    #print("Random", random_versor)
-    #print("Mean", mean_vect)
-
-    f = plt.figure(figsize=(18, 10))  # plot the calculated values
+    print("Random", random_versor)
+ #   print("Mean", mean_vect)
+      # plot the calculated values
 
     if _plot:
+        f = plt.figure(figsize=(18, 10))
         for i in range(l):
             f.add_subplot(2, 3, i+1)
             z = space[:,i]
@@ -96,7 +130,7 @@ class LabelHandler(object):
 
     def get_values(self, idx):
         if self.labels is not None:
-            return torch.tensor(self.labels[idx], dtype=torch.float32)
+            return torch.tensor(self.labels[idx], dtype=torch.float)
         return None
 
     def has_labels(self):
@@ -149,7 +183,7 @@ class CustomImageFolder(ImageFolder):
 
 
 class CustomNpzDataset(Dataset): ### MODIFIED HERE THE DATABASE TYPE FOR _GET_ITEM
-    def __init__(self, data_images, transform, labels, label_weights, name, class_values, num_channels, seed):
+    def __init__(self, data_images, transform, labels, label_weights, name, class_values, num_channels, seed, y_target=None):
         self.seed = seed
         self.data_npz = data_images
         self._name = name
@@ -162,6 +196,7 @@ class CustomNpzDataset(Dataset): ### MODIFIED HERE THE DATABASE TYPE FOR _GET_IT
 
         ## ADDED GRAYBOX VARIANT
         self.isGRAY = False
+        self.y_data = y_target
 
     @property
     def name(self):
@@ -194,18 +229,9 @@ class CustomNpzDataset(Dataset): ### MODIFIED HERE THE DATABASE TYPE FOR _GET_IT
             #print("The obtained label is", label1)
             ### INSERTED THE TRUTH VALUE FOR DSPIRTES
             if self.isGRAY:
+                y = self.y_data[index1]
                 z_values = self.label_handler.get_values(index1)
-                #label_z = torch.zeros(len(label1), dtype=torch.float32)
-                #for i in range(len(label1)):
-                 #   print("z values")
-                    #print("Len of label_handler._label_weights")
-                    #print(index1, " ", len(self.label_handler._label_weights[i]))
-                  #  z = self.label_handler.labels[i]
-                    #print(z)
-                   # _index = label1[i].item()
-                    #print(z[_index])
-                    #label_z[i]=(z[_index])
-                return img1, label1, z_values
+                return img1, z_values, y
         return img1, label1, 0
 
     def __len__(self):
@@ -261,7 +287,7 @@ class DisentanglementLibDataset(Dataset):
 
 
 def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, image_size, include_labels, pin_memory,
-                                shuffle, droplast):
+                                shuffle, droplast, d_version="full"):
     transform = transforms.Compose([
         transforms.Resize((image_size, image_size)),
         transforms.ToTensor(), ])
@@ -327,7 +353,11 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
         dset = CustomImageFolder
     elif name.lower() == 'dsprites_full':
         #print(name)
-        root = os.path.join(dset_dir, 'dsprites/dsprites_ndarray_co1sh3sc6or40x32y32_64x64_smaller.npz')
+        if d_version == "full":
+            root = os.path.join(dset_dir, 'dsprites/dsprites_ndarray_co1sh3sc6or40x32y32_64x64.npz')
+        elif d_version=="smaller":
+            root = os.path.join(dset_dir, 'dsprites/dsprites_ndarray_co1sh3sc6or40x32y32_64x64_smaller.npz')
+
         npz = np.load(root)
         """
         print("Passed npz:", np.shape(npz), "and",type(npz))
@@ -361,9 +391,15 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
         if label_idx is not None:
             #print("Passed label_idx:",label_idx)
             labels = (npz['latents_values'][:, label_idx])
-            if 1 in label_idx:
-                index_shape = label_idx.index(1)
-                labels[:, index_shape] -= 1
+
+            ### SHIFTING ALL VALUES OVER THEIR MEANS
+            Mean = np.mean(labels, axis=0 )
+            for j in label_idx:
+                labels[:, j] -= Mean[j]
+
+#            if 1 in label_idx:
+ #               index_shape = label_idx.index(1)
+  #              labels[:, index_shape] -= 2
 
             # dsprite has uniformly distributed labels
             num_labels = labels.shape[1]
@@ -397,12 +433,49 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
         #print("The r plane:",[random_plane(label_idx, ranges)])
         if labels is not None:
             target_set = np.asarray(
-                        target_cast(labels, r_plane=random_plane(label_idx, npz['latents_values']))
+                        target_cast(labels, r_plane=random_plane(label_idx, labels, _plot=False), _plot=False), dtype=np.int
                         )
+            print("target", np.shape(target_set))
+            data_kwargs.update({'y_target': target_set})
 
+            print("Population of 0:", len(target_set[target_set == 0]) / len(target_set) * 100, "%.")
+
+            """ 
+            print("Start verification")
+#            print("labels shape:", (np.shape(labels)))
+            in_data = labels
+
+            print("Labels in data_loader")
+
+            y_target1 = target_set
+
+            lr = LogisticRegression( solver='lbfgs')
+            lr.fit(in_data, y_target1)
+            y_pred = lr.predict_proba(in_data)
+
+            random_versor = np.array([0.54736527, 0.22488107, 0.17828586, 0.4332863, 0.56544113, 0.33252552])
+
+            y_pred = 0.5*np.sign(np.matmul(in_data, random_versor)) + 0.5
+            y_passed = np.zeros(shape=(len(y_pred),2))
+            y_passed[:,0] = (1 - 0.001 - y_pred*0.99)
+            y_passed[:,1] = 0.999*y_pred
+
+            print("Predictions")
+            print("Y FROM DATASET VS PREDICTED", np.sum(np.abs(target_set - y_pred)))
+            print("Y FROM DATASET VS RECONSTRUCTED", (np.mean(np.abs(target_set - y_passed[:,1]))) )
+
+
+            baseline = torch.nn.CrossEntropyLoss(reduction="mean")(torch.tensor(y_passed), torch.tensor(y_target1))
+
+            print("Fitting a LogReg model, loss:",  baseline)
+
+            accuracy = Accuracy_Loss()(torch.tensor(y_passed, dtype=torch.float), torch.tensor(y_target1, dtype=torch.float))
+            print("ACCURACY: ", accuracy)
+            """
         make_yset = True
     else:
         raise NotImplementedError
+
     data_kwargs.update({'seed': seed,
                         'name': name,
                         'transform': transform})
@@ -410,22 +483,18 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
 
     # Setting the Graybox here
     dataset.isGRAY = True
-    """
-    print("The created dataset")
-    print(dataset.label_handler.label_weights((1)))
-    print(dataset.label_handler.class_values())
-    quit()
-    
-    """
+
     data_loader = DataLoader(dataset,
                              batch_size=batch_size,
                              shuffle=shuffle,
                              num_workers=num_workers,
                              pin_memory=pin_memory,
                              drop_last=droplast)
+
     if include_labels is not None:
         logging.info('num_classes: {}'.format(dataset.num_classes(False)))
         logging.info('class_values: {}'.format(class_values))
+    """ 
     if make_yset and labels is not None:
         target_loader = DataLoader(target_set,
                                    batch_size=batch_size,
@@ -434,11 +503,15 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
                                    pin_memory=pin_memory,
                                    drop_last=droplast
                                     )
-        print("made target_loader")
-        print("Population of 0:", len(target_set[target_set == 0])/len(target_set),"%.")
+        print("Made target_loader")
+
+#        quit()
         return data_loader, target_loader
+    
+
     else:
-        return data_loader, [None]
+    """
+    return data_loader, [None]
 
 
 
@@ -468,7 +541,7 @@ def _get_dataloader(name, batch_size, seed, num_workers, pin_memory, shuffle, dr
 
 
 def get_dataloader(dset_name, dset_dir, batch_size, seed, num_workers, image_size, include_labels, pin_memory,
-                   shuffle, droplast):
+                   shuffle, droplast, d_version="full"):
     locally_supported_datasets = c.DATASETS[0:2]
     dset_name = get_dataset_name(dset_name)
     dsets_dir = get_datasets_dir(dset_dir)
@@ -478,7 +551,7 @@ def get_dataloader(dset_name, dset_dir, batch_size, seed, num_workers, image_siz
 
     if dset_name in locally_supported_datasets:
         return _get_dataloader_with_labels(dset_name, dsets_dir, batch_size, seed, num_workers, image_size,
-                                           include_labels, pin_memory, shuffle, droplast)
+                                           include_labels, pin_memory, shuffle, droplast, d_version="full")
     else:
         # use the dataloader of Google's disentanglement_lib
         return _get_dataloader(dset_name, batch_size, seed, num_workers, pin_memory, shuffle, droplast)

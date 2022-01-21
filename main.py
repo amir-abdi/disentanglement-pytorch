@@ -47,7 +47,7 @@ def main(_args):
 
     # run test or train
     if not _args.test:
-        model.train(output=os.path.join(out_path,'train_runs'))
+        model.train() # output=os.path.join(out_path,'train_runs'))
     else:
         model.test()
 
