@@ -103,9 +103,9 @@ class GrayVAE_Standard(VAE):
             losses.update(self.loss_fn(losses, reduce_rec=labelling, **loss_fn_args))
 
             ## REMOVED FOR SIGNAL
-            z_real = z[:, :label1.size(1)]
-            losses.update(true_values=nn.MSELoss()(z_real, label1))
-            losses[c.TOTAL_VAE] += nn.MSELoss()(z_real, label1)
+
+            losses.update(true_values=nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1))
+            losses[c.TOTAL_VAE] += nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1)
             # print("BCE loss of classification",nn.BCEWithLogitsLoss()(prediction,y_true1.type(torch.FloatTensor)))
 
         else:
@@ -207,7 +207,7 @@ class GrayVAE_Standard(VAE):
                 self.optim_G.zero_grad()
                 self.class_G.zero_grad()
 
-                if (internal_iter%5)==0: print("Losses:", losses)
+                if (internal_iter%250)==0: print("Losses:", losses)
 
                 if not start_classification:
                     losses[c.TOTAL_VAE].backward(retain_graph=False)
