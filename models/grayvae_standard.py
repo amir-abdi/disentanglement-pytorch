@@ -157,7 +157,7 @@ class GrayVAE_Standard(VAE):
             #print("Loss from y_real",  nn.BCEWithLogitsLoss()(y_pred1[:,0], y_real).item() )
 
 
-            print("CrossEntropy", nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1))
+            #print("CrossEntropy", nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1))
 #            print("CrossEntropy for y_pred from LOG-REG ", nn.CrossEntropyLoss(reduction='mean')(y_pred1, y_true1))
 
 
@@ -196,7 +196,7 @@ class GrayVAE_Standard(VAE):
                 label1 = label1[:, 1:]
 
                 #y_true1 = next(iter(self.target_loader))
-                #y_true1 = y_true1.to(self.device)
+                y_true1 = y_true1.to(self.device)
 
                 losses = {c.TOTAL_VAE: 0}
                 ###configuration for dsprites
