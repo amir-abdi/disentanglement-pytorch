@@ -357,6 +357,8 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
             root = os.path.join(dset_dir, 'dsprites/dsprites_ndarray_co1sh3sc6or40x32y32_64x64.npz')
         elif d_version=="smaller":
             root = os.path.join(dset_dir, 'dsprites/dsprites_ndarray_co1sh3sc6or40x32y32_64x64_smaller.npz')
+        else:
+            raise ValueError
 
         npz = np.load(root)
         """
@@ -551,7 +553,7 @@ def get_dataloader(dset_name, dset_dir, batch_size, seed, num_workers, image_siz
 
     if dset_name in locally_supported_datasets:
         return _get_dataloader_with_labels(dset_name, dsets_dir, batch_size, seed, num_workers, image_size,
-                                           include_labels, pin_memory, shuffle, droplast, d_version="full")
+                                           include_labels, pin_memory, shuffle, droplast, d_version=d_version)
     else:
         # use the dataloader of Google's disentanglement_lib
         return _get_dataloader(dset_name, batch_size, seed, num_workers, pin_memory, shuffle, droplast)

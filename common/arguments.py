@@ -151,11 +151,13 @@ def get_args(sys_args):
     parser.add_argument('--seed', default=123, type=int, help='Seed value for torch, cuda, and numpy.')
     parser.add_argument('--d_version', default="smaller", type=str,
                         help='Select the dataset version for dsprites (for debugging: smaller).')
-
+    parser.add_argument('--out_path', default=None, type=str,
+                        help='Select the output folder where record training Loss over time '
+                             'default=None, => no registration.')
 
     # Hyper-parameters
     parser.add_argument('--classification_epoch', default=1, type=int, help='Epoch for starting the classification.')
-    parser.add_argument('--reduce_recon', default=0.1, type=float, help='Constant reducing the reconstruction cost when classification starts.')
+    parser.add_argument('--reduce_recon', default=1, type=float, help='Constant reducing the reconstruction cost when classification starts.')
     args = parser.parse_args(sys_args)
 
     assert args.image_size == 64, 'for now, models are hard coded to support only image size of 64x64'
