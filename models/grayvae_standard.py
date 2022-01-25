@@ -125,7 +125,7 @@ class GrayVAE_Standard(VAE):
             loss_dict.update(true_values=nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1))
             loss_dict[c.TOTAL_VAE] += nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1)
             losses.update({'total_vae': loss_dict['total_vae'].detach(), 'recon': loss_dict['recon'].detach(),
-                           'kld': loss_dict['kld'].detach()})
+                           'kld': loss_dict['kld'].detach(), 'true_values': loss_dict['true_values'].detach()})
 
             del loss_dict
 
