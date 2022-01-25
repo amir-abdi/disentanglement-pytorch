@@ -109,12 +109,12 @@ class GrayVAE_Standard(VAE):
             del loss_dict
             ## REMOVED FOR SIGNAL
 #            chosen_value=2
-            #losses.update(true_values=nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1))
-            losses.update(true_values=nn.MSELoss(reduction='mean')(mu[:, chosen_value], label1[:,chosen_value] ))
+            losses.update(true_values=nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1))
+            #losses.update(true_values=nn.MSELoss(reduction='mean')(mu[:, ], label1[:,1:] ))
 
             losses[c.TOTAL_VAE] += nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1).detach()
 #            print("MSE loss of true latents",nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1))
-            print("MSE loss for true latents" , nn.MSELoss(reduction='mean')(mu[:, chosen_value], label1[:,chosen_value] ) )
+            #print("MSE loss for true latents" , nn.MSELoss(reduction='mean')(mu[:, chosen_value], label1[:,chosen_value] ) )
 
         if labelling:
             ## DISJOINT VERSION
@@ -192,8 +192,8 @@ class GrayVAE_Standard(VAE):
         epoch = 0
         Iterations, Epochs, Reconstructions, KLDs, True_Values, Accuracies, F1_scores = [], [], [], [], [], [], []
 
-        global chosen_value
-        chosen_value = 1
+        #global chosen_value
+        #chosen_value = 1
 
         while not self.training_complete():
             Iterations, Epochs, Reconstructions, KLDs, True_Values, Accuracies, F1_scores = [], [], [], [], [], [], [] ## JUST HERE FOR NOW
@@ -273,7 +273,7 @@ class GrayVAE_Standard(VAE):
 
                 ## Insert losses -- only in training set
                 if track_changes:
-                    print(losses.keys())
+
                     rec_err = losses['recon'].item()
                     Reconstructions.append(rec_err)
                     kld_error = losses['kld'].item()
@@ -295,10 +295,10 @@ class GrayVAE_Standard(VAE):
                     sofar = pd.DataFrame(data=np.array([Iterations, Epochs, Reconstructions, KLDs, True_Values, Accuracies, F1_scores]).T,
                                          columns=['iter', 'epoch', 'reconstruction_error', 'kld', 'latent_error', 'accuracy', 'f1_score'], )
 
-                    sofar.to_csv(os.path.join(out_path, 'metrics_c%i.csv'%chosen_value), index=False)
+                    sofar.to_csv(os.path.join(out_path, 'metrics.csv'), index=False)
                 self.log_save(input_image=x_true1, recon_image=params['x_recon'], loss=losses)
-            chosen_value += 1
-            if chosen_value == 5: break
+            #chosen_value += 1
+            #if chosen_value == 5: break
             """ 
             #insert into pd dataframe
             if track_changes:
