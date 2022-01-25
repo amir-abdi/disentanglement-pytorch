@@ -99,40 +99,41 @@ class GrayVAE_Standard(VAE):
 
         prediction = self.predict(latent=mu_detatch)
 
-        loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar, z=z)
-        losses.update(self.loss_fn(losses, reduce_rec=labelling, **loss_fn_args))
-
-        ## REMOVED FOR SIGNAL
-        chosen_value = 2
-        losses.update(true_values=nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1))
-        # losses.update(true_values=nn.MSELoss(reduction='mean')(mu[:, chosen_value], label1[:,chosen_value] ))
-
-        losses[c.TOTAL_VAE] += nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1)
-        """ 
         if not labelling:
             loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar, z=z)
-            losses.update(self.loss_fn(losses, reduce_rec=labelling, **loss_fn_args))
+            loss_dict = self.loss_fn(losses, reduce_rec=labelling, **loss_fn_args)
 
+            losses.update({'total_vae': loss_dict['total_vae'].detach(), 'recon': loss_dict['recon'].detach(),
+                           'kld': loss_dict['kld'].detach()})
+
+            del loss_dict
             ## REMOVED FOR SIGNAL
-            chosen_value=2
-            losses.update(true_values=nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1))
-            #losses.update(true_values=nn.MSELoss(reduction='mean')(mu[:, chosen_value], label1[:,chosen_value] ))
+#            chosen_value=2
+            #losses.update(true_values=nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1))
+            losses.update(true_values=nn.MSELoss(reduction='mean')(mu[:, chosen_value], label1[:,chosen_value] ))
 
-            losses[c.TOTAL_VAE] += nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1)
-#            print("BCE loss of true latents",nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1))
-#            print("BCE loss for true latents" , nn.MSELoss(reduction='mean')(mu[:, chosen_value], label1[:,chosen_value] ) )
-        """
+            losses[c.TOTAL_VAE] += nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1).detach()
+#            print("MSE loss of true latents",nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1))
+            print("MSE loss for true latents" , nn.MSELoss(reduction='mean')(mu[:, chosen_value], label1[:,chosen_value] ) )
+
         if labelling:
             ## DISJOINT VERSION
             #print("Prediction", torch.max(prediction), torch.min(prediction))
             #print("Y TRUE", y_true1[:10])
+            loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar, z=z)
+            loss_dict = self.loss_fn(losses, reduce_rec=labelling, **loss_fn_args)
+            loss_dict.update(true_values=nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1))
+            loss_dict[c.TOTAL_VAE] += nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1)
+            losses.update({'total_vae': loss_dict['total_vae'].detach(), 'recon': loss_dict['recon'].detach(),
+                           'kld': loss_dict['kld'].detach()})
+
+            del loss_dict
 
             losses.update(prediction=nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long)))
             #losses[c.TOTAL_VAE] += nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long))
 
             #losses.update(prediction=nn.BCEWithLogitsLoss()(prediction, y_true1.to(self.device, dtype=torch.float)))
             #losses[c.TOTAL_VAE] = nn.BCEWithLogitsLoss()(prediction,y_true1.to(self.device, dtype= torch.float))
-
 
             ## INSERT DEVICE IN THE CREATION OF EACH TENSOR
             ### AVOID COPYING FROM CPU TO GPU AS MUCH AS POSSIBLE
@@ -154,7 +155,6 @@ class GrayVAE_Standard(VAE):
 
             print("REALVALUES - The percentage of 0s is ", len(y_real[y_real==0])/len(y_real)*100, "%" )
             print("PASSEDVALUES - The percentage of 0s is ", len(y_real[y_true1 == 0]) / len(y_real) * 100, "%")
-
 
             in_data = z_prediction
             lr = LogisticRegression()
@@ -192,7 +192,12 @@ class GrayVAE_Standard(VAE):
         epoch = 0
         Iterations, Epochs, Reconstructions, KLDs, True_Values, Accuracies, F1_scores = [], [], [], [], [], [], []
 
+        global chosen_value
+        chosen_value = 1
+
         while not self.training_complete():
+            Iterations, Epochs, Reconstructions, KLDs, True_Values, Accuracies, F1_scores = [], [], [], [], [], [], [] ## JUST HERE FOR NOW
+
             epoch += 1
             self.net_mode(train=True)
             vae_loss_sum = 0
@@ -201,10 +206,6 @@ class GrayVAE_Standard(VAE):
                 print("## STARTING CLASSIFICATION ##")
                 start_classification = True
             else: start_classification = False
-
-            chosen_value = 2
-
-            collection = []
 
             for internal_iter, (x_true1, label1, y_true1) in enumerate(self.data_loader):
                 Iterations.append(internal_iter+1)
@@ -221,8 +222,6 @@ class GrayVAE_Standard(VAE):
                 #plt.hist(collection, bins=int(len(collection)/10), )
                 #plt.show()
 
-
-
                 ###configuration for dsprites
 
                 losses, params = self.vae_classification(losses, x_true1, label1, y_true1,
@@ -235,7 +234,8 @@ class GrayVAE_Standard(VAE):
                 if (internal_iter%250)==0: print("Losses:", losses)
 
                 if not start_classification:
-                    losses[c.TOTAL_VAE].backward(retain_graph=False)
+                    #losses[c.TOTAL_VAE].backward(retain_graph=False)
+                    losses['true_values'].backward(retain_graph=False)
                     self.optim_G.step()
                     """ 
                     print("GRADIENTS")
@@ -273,6 +273,7 @@ class GrayVAE_Standard(VAE):
 
                 ## Insert losses -- only in training set
                 if track_changes:
+                    print(losses.keys())
                     rec_err = losses['recon'].item()
                     Reconstructions.append(rec_err)
                     kld_error = losses['kld'].item()
@@ -281,7 +282,6 @@ class GrayVAE_Standard(VAE):
                     True_Values.append(mse_true)
                     if not start_classification: #RECONSTRUCTION ERROR + KLD + MSE on Z
                         Accuracies, F1_scores = [0] * len(Iterations), [0] * len(Iterations)
-
 
                     else: #CLASSIFICATION
 
@@ -295,9 +295,10 @@ class GrayVAE_Standard(VAE):
                     sofar = pd.DataFrame(data=np.array([Iterations, Epochs, Reconstructions, KLDs, True_Values, Accuracies, F1_scores]).T,
                                          columns=['iter', 'epoch', 'reconstruction_error', 'kld', 'latent_error', 'accuracy', 'f1_score'], )
 
-                    sofar.to_csv(os.path.join(out_path, 'metrics.csv'), index=False)
-
+                    sofar.to_csv(os.path.join(out_path, 'metrics_c%i.csv'%chosen_value), index=False)
                 self.log_save(input_image=x_true1, recon_image=params['x_recon'], loss=losses)
+            chosen_value += 1
+            if chosen_value == 5: break
             """ 
             #insert into pd dataframe
             if track_changes:

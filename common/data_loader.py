@@ -16,57 +16,33 @@ import matplotlib.pyplot as plt
 from common import constants as c
 
 
-def target_cast(inputs, r_plane, irrelevant_components=0, _plot=False):
+def target_cast(inputs, r_plane, irrelevant_components=[0], _plot=False):
     targets = []
-    #print(inputs[0])
-    #print("mean:",r_plane[1])
-    #print(len(r_plane))
-
     admitted = np.ones(len(r_plane[0]))
     admitted[irrelevant_components] = 0
+    print(admitted)
     for i in range(len(inputs)):
+        guess =  (np.dot(inputs[i] - r_plane[1]*admitted, (r_plane[0]*admitted) ))
+        if guess < 0: target = 1
+        else: target = 0
+        #if np.random.uniform() > 0.99:
+         #   if target > 0:
+          #      target = 0
+           # else: target = 1
 
-        ## INSERT ONLY FOR CHECKING
-        if len(inputs[i]) < len(r_plane[0])   and irrelevant_components==0:
-            #print(np.array(inputs[i]).reshape(5,1) )
-            #print("Extended the components")
-            inputs_i = np.concatenate(  (np.array(inputs[i]).reshape(5,1), np.ones(shape=(1,1) )), axis=0)
-            target = (np.dot(inputs_i.reshape(6) - r_plane[1]*admitted, r_plane[0]*admitted))
-            #print("target:", target)
-        else:
-            target =  (np.dot(inputs[i] - r_plane[1]*admitted, r_plane[0]*admitted))
-
-        if target < 0: target = 0
-        else: target = 1
-        #if np.random.uniform() > 0.95: target = (target+1)%2
-        targets.append(int(target))
-        #if i == 30: quit()
+        targets.append((target))
 
     if _plot:
         f = plt.figure(figsize=(18, 10))
         mask = (np.array(targets, dtype=np.int) > 0)
-        for i in range(len(r_plane[0])-1):
-            f.add_subplot(2, 3, i + 1)
-
-            z0 = inputs[:, i][mask]; z1 = inputs[:, i][~mask];
-            z2 = inputs[:, i+1][mask]; z3 = inputs[:, i+1][~mask];
-            plt.plot(z0, z2, "b.", label="Negatives", )
-            plt.plot(z1, z3, "r.", label="Positive", linestyle="")
-            plt.xlabel("z%i"%i)
-            plt.ylabel("z%i"%(i+1))
-#                plt.hist(z0, int(len(z0) / 100)+1, label='0 component-%i' % i,color="red" )
-#               plt.hist(z1, int(len(z1) / 100)+1, label='1 component-%i' % i,color="blue" )
-            plt.legend()
-        f.add_subplot(2,3,6)
-        z0 = inputs[:, 3][mask];
-        z1 = inputs[:, 3][~mask];
-        z2 = inputs[:, 4 + 1][mask];
-        z3 = inputs[:, 4 + 1][~mask];
-        plt.plot(z0, z2, "b.", label="Negatives", )
-        plt.plot(z1, z3, "r.", label="Positive", linestyle="")
-        plt.xlabel("z%i" % 3)
-        plt.ylabel("z%i" % (5))
+        plt.plot(inputs[:,4][mask], inputs[:,5][mask], 'r.', label='classified 1' )
+        plt.plot(inputs[:,4][~mask], inputs[:,5][~mask], 'b.', label='classified 0' )
+        x = np.linspace(np.min(inputs[:,4]), np.max(inputs[:,4]))
+        y = -r_plane[0][4]/r_plane[0][5]*x
+        plt.plot(x,y, color='black', label='separation plane')
         plt.legend()
+        plt.xlim(x[0], x[-1])
+        plt.ylim(np.min(inputs[:,5]), np.max(inputs[:,5]) )
         plt.show()
     return np.array(targets, dtype=np.int)
 
@@ -83,8 +59,6 @@ def random_plane(labels, space, irrelevant_components=0,_plot=False):
     assert np.all( mean_vect < 0.1 ), mean_vect
 
     print("Random", random_versor)
- #   print("Mean", mean_vect)
-      # plot the calculated values
 
     if _plot:
         f = plt.figure(figsize=(18, 10))
@@ -434,15 +408,15 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
         dset = CustomNpzDataset
         #print("The r plane:",[random_plane(label_idx, ranges)])
         if labels is not None:
+            ### NOW CREATE A PARTICULAR TYPE THAT PREDICTS ONLY WITH TWO COMPONENTS
             target_set = np.asarray(
-                        target_cast(labels, r_plane=random_plane(label_idx, labels, _plot=False), _plot=False), dtype=np.int
+                        target_cast(labels, r_plane=random_plane(label_idx, labels,  _plot=False), irrelevant_components=[0], _plot=False), dtype=np.int
                         )
             print("target", np.shape(target_set))
             data_kwargs.update({'y_target': target_set})
 
             print("Population of 0:", len(target_set[target_set == 0]) / len(target_set) * 100, "%.")
 
-            """ 
             print("Start verification")
 #            print("labels shape:", (np.shape(labels)))
             in_data = labels
@@ -452,28 +426,32 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
             y_target1 = target_set
 
             lr = LogisticRegression( solver='lbfgs')
-            lr.fit(in_data, y_target1)
-            y_pred = lr.predict_proba(in_data)
+            lr.fit(in_data[:,1:], y_target1)
+            y_pred = lr.predict_proba(in_data[:,1:])
+            """ 
+            f = plt.figure(figsize=(20,10))
+            f.add_subplot(1,2,1)
+            mask = (y_target1>0.5)
+            plt.plot(in_data[mask][:,4], in_data[mask][:,5], 'b.', label='1' )
+            plt.plot(in_data[~mask][:,4], in_data[~mask][:,5], 'r.', label='0' )
+            plt.legend()
 
-            random_versor = np.array([0.54736527, 0.22488107, 0.17828586, 0.4332863, 0.56544113, 0.33252552])
+            f.add_subplot(1,2,2)
+            mask = (y_pred[:,1]>0.5)
+            plt.plot(in_data[mask][:,4], in_data[mask][:,5], 'b.', label='1' )
+            plt.plot(in_data[~mask][:,4], in_data[~mask][:,5], 'r.', label='0' )
+            plt.legend()
 
-            y_pred = 0.5*np.sign(np.matmul(in_data, random_versor)) + 0.5
-            y_passed = np.zeros(shape=(len(y_pred),2))
-            y_passed[:,0] = (1 - 0.001 - y_pred*0.99)
-            y_passed[:,1] = 0.999*y_pred
+            plt.show()
+            """
 
-            print("Predictions")
-            print("Y FROM DATASET VS PREDICTED", np.sum(np.abs(target_set - y_pred)))
-            print("Y FROM DATASET VS RECONSTRUCTED", (np.mean(np.abs(target_set - y_passed[:,1]))) )
-
-
-            baseline = torch.nn.CrossEntropyLoss(reduction="mean")(torch.tensor(y_passed), torch.tensor(y_target1))
+            baseline = torch.nn.CrossEntropyLoss(reduction="mean")(torch.tensor(y_pred), torch.tensor(y_target1))
 
             print("Fitting a LogReg model, loss:",  baseline)
 
-            accuracy = Accuracy_Loss()(torch.tensor(y_passed, dtype=torch.float), torch.tensor(y_target1, dtype=torch.float))
-            print("ACCURACY: ", accuracy)
-            """
+            accuracy = Accuracy_Loss()(torch.tensor(y_pred, dtype=torch.float), torch.tensor(y_target1, dtype=torch.float))
+            print("ACCURACY for logreg: ", accuracy)
+
         make_yset = True
     else:
         raise NotImplementedError
