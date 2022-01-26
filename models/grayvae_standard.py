@@ -93,7 +93,7 @@ class GrayVAE_Standard(VAE):
         # CHECKING THE CONSISTENCY
         z_prediction = torch.zeros(size=(len(mu), self.z_dim))
         z_prediction[:, :label1.size(1)] = label1
-        z_prediction[:, 7:] = mu[:, label1.size(1):]
+        z_prediction[:, label1.size(1):] = mu[:, label1.size(1):]
 
         mu_detatch = z_prediction
 
@@ -110,6 +110,8 @@ class GrayVAE_Standard(VAE):
             ## REMOVED FOR SIGNAL
 #            chosen_value=2
             losses.update(true_values=nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1))
+            loss_soft = nn.CrossEntropyLoss(reduction='mean')(mu[:,:3], label1[:,:3])
+            losses.update(true_values=nn.MSELoss(reduction='mean')(mu[:, 3:label1.size(1)], label1[:,3:])+loss_soft)
             #losses.update(true_values=nn.MSELoss(reduction='mean')(mu[:, ], label1[:,1:] ))
 
             losses[c.TOTAL_VAE] += nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1).detach()

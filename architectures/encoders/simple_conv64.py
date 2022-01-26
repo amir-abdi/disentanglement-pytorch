@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch.nn.functional
 
 from architectures.encoders.base.base_encoder import BaseImageEncoder
 from common.ops import Flatten3D
@@ -32,6 +33,7 @@ class SimpleConv64(BaseImageEncoder):
         init_layers(self._modules)
 
     def forward(self, x):
+        h = self.main(x)
         return self.main(x)
 
     def update_input_channels(self, n_channels):

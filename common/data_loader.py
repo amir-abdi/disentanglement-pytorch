@@ -55,7 +55,7 @@ def random_plane(labels, space, irrelevant_components=0,_plot=False):
 
     mean_vect = np.mean(space, axis=0)
 
-    assert np.all( space[:,0] ==0 ), space[:50,0]
+    assert np.all( space[:,0] ==1 ), space[:10]
     assert np.all( mean_vect[2:] < 0.1 ), mean_vect
 
     print("Random versor=", random_versor)
@@ -371,8 +371,9 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
             ### SHIFTING ALL VALUES OVER THEIR MEANS
             Mean = np.mean(labels, axis=0 )
             for j in label_idx:
-                if j != 1:  labels[:, j] -= Mean[j]
-
+                if j != 0 and j != 1:
+                    labels[:, j] -= Mean[j]
+                    labels[:, j] /= (np.max(labels[:, j] ) )
             if 1 in label_idx:
                 index_shape = label_idx.index(1)
                 labels[:, 1] -= 1
