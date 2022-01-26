@@ -92,8 +92,8 @@ class GrayVAE_Standard(VAE):
 
         # CHECKING THE CONSISTENCY
         z_prediction = torch.zeros(size=(len(mu), self.z_dim))
-        z_prediction[:, :5] = label1
-        z_prediction[:, 5:] = mu[:, 5:]
+        z_prediction[:, :label1.size(1)] = label1
+        z_prediction[:, 7:] = mu[:, label1.size(1):]
 
         mu_detatch = z_prediction
 
@@ -194,6 +194,9 @@ class GrayVAE_Standard(VAE):
 
         #global chosen_value
         #chosen_value = 1
+
+        print("The model we are using")
+        print(self.model)
 
         while not self.training_complete():
             Iterations, Epochs, Reconstructions, KLDs, True_Values, Accuracies, F1_scores = [], [], [], [], [], [], [] ## JUST HERE FOR NOW

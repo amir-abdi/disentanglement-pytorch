@@ -56,16 +56,16 @@ def random_plane(labels, space, irrelevant_components=0,_plot=False):
     mean_vect = np.mean(space, axis=0)
 
     assert np.all( space[:,0] ==0 ), space[:50,0]
-    assert np.all( mean_vect < 0.1 ), mean_vect
+    assert np.all( mean_vect[2:] < 0.1 ), mean_vect
 
-    print("Random", random_versor)
+    print("Random versor=", random_versor)
 
     if _plot:
         f = plt.figure(figsize=(18, 10))
         for i in range(l):
             f.add_subplot(2, 3, i+1)
             z = space[:,i]
-            plt.hist(z, int(len(z)/100), label='component-%i'%i)
+            plt.hist(z, int(len(z)/100), label='component-%i'%(i-1))
             plt.legend()
         plt.show()
 
@@ -371,11 +371,26 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
             ### SHIFTING ALL VALUES OVER THEIR MEANS
             Mean = np.mean(labels, axis=0 )
             for j in label_idx:
-                labels[:, j] -= Mean[j]
+                if j != 1:  labels[:, j] -= Mean[j]
 
-#            if 1 in label_idx:
- #               index_shape = label_idx.index(1)
-  #              labels[:, index_shape] -= 2
+            if 1 in label_idx:
+                index_shape = label_idx.index(1)
+                labels[:, 1] -= 1
+
+            ### CREATE THE H-STACK with the usual np onehot
+                #print("Info on labels")
+                #print(np.shape(labels))
+                #print(type(labels))
+                #print(len(labels))
+
+                b = np.zeros((len(labels),3))
+                b[np.arange(len(labels)), np.asarray(labels[:,1], dtype=np.int) ] = 1
+
+#                print(np.shape(labels[:,0].reshape(-1,1)   ), b )
+                new_labels = np.hstack( (labels[:,0].reshape(-1,1) , b))
+                labels_one_hot = np.hstack((new_labels, labels[:,2:] ) )
+
+
 
             # dsprite has uniformly distributed labels
             num_labels = labels.shape[1]
@@ -401,7 +416,7 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
  #       print("labels are of size", np.size(labels))
   #      print("the npz is of size", np.size(npz['latents_values']))
         data_kwargs = {'data_images': npz['imgs']}
-        data_kwargs.update({'labels': labels,
+        data_kwargs.update({'labels': labels_one_hot,
                        'label_weights': label_weights,
                        'class_values': class_values,
                        'num_channels': 1})
@@ -445,7 +460,7 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
             plt.show()
             """
 
-            baseline = torch.nn.CrossEntropyLoss(reduction="mean")(torch.tensor(y_pred), torch.tensor(y_target1))
+            baseline = torch.nn.CrossEntropyLoss(reduction="mean", )(torch.tensor(y_pred), torch.tensor(y_target1))
 
             print("Fitting a LogReg model, loss:",  baseline)
 
