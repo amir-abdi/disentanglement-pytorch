@@ -414,6 +414,10 @@ class Accuracy_Loss(torch.nn.Module):
         y_true = F.one_hot(y_true.to(dtype = torch.long), 2).to(torch.float32)
         #y_pred = F.softmax(y_pred, dim=1)
 
+#        ymask = (y_pred[:,0] > 0.5)
+ #       y_pred[ymask][:,0], y_pred[ymask][:,1] = 1, 0
+  #      y_pred[~ymask][:,0], y_pred[~ymask][:,1] = 0,1
+
         tp = (y_true * y_pred).sum(dim=0).to(torch.float32)
         tn = ((1 - y_true) * (1 - y_pred)).sum(dim=0).to(torch.float32)
         fp = ((1 - y_true) * y_pred).sum(dim=0).to(torch.float32)

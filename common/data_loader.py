@@ -56,7 +56,7 @@ def random_plane(labels, space, irrelevant_components=0,_plot=False):
     mean_vect = np.mean(space, axis=0)
 
     assert np.all( space[:,0] ==1 ), space[:10]
-    assert np.all( mean_vect[2:] < 0.1 ), mean_vect
+    assert np.all( (mean_vect[2:] -0.5)**2 < 0.1 ), mean_vect
 
     print("Random versor=", random_versor)
 
@@ -371,8 +371,8 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
             ### SHIFTING ALL VALUES OVER THEIR MEANS
             Mean = np.mean(labels, axis=0 )
             for j in label_idx:
-                if j != 0 and j != 1:
-                    labels[:, j] -= Mean[j]
+                if j > 1:
+                    labels[:, j] -= np.min(labels[:,j])
                     labels[:, j] /= (np.max(labels[:, j] ) )
             if 1 in label_idx:
                 index_shape = label_idx.index(1)
@@ -384,13 +384,12 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
                 #print(type(labels))
                 #print(len(labels))
 
-                b = np.zeros((len(labels),3))
-                b[np.arange(len(labels)), np.asarray(labels[:,1], dtype=np.int) ] = 1
+            b = np.zeros((len(labels),3))
+            b[np.arange(len(labels)), np.asarray(labels[:,1], dtype=np.int) ] = 1
 
 #                print(np.shape(labels[:,0].reshape(-1,1)   ), b )
-                new_labels = np.hstack( (labels[:,0].reshape(-1,1) , b))
-                labels_one_hot = np.hstack((new_labels, labels[:,2:] ) )
-
+            new_labels = np.hstack( (labels[:,0].reshape(-1,1) , b))
+            labels_one_hot = np.hstack((new_labels, labels[:,2:] ) )
 
 
             # dsprite has uniformly distributed labels
@@ -441,7 +440,7 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
 
             y_target1 = target_set
 
-            lr = LogisticRegression( solver='lbfgs')
+            lr = LogisticRegression( solver='lbfgs')#, penalty='none')
             lr.fit(in_data[:,1:], y_target1)
             y_pred = lr.predict_proba(in_data[:,1:])
             """ 
@@ -460,12 +459,19 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
 
             plt.show()
             """
+#            x_pred = np.zeros(shape=np.shape(y_pred))
+ #           x_pred[:,0] = np.log( y_pred[:,0]/(1-y_pred[:,0]+0.01) )
+  #          x_pred[:,1] = - x_pred[:,0]
 
-            baseline = torch.nn.CrossEntropyLoss(reduction="mean", )(torch.tensor(y_pred), torch.tensor(y_target1))
 
-            print("Fitting a LogReg model, loss:",  baseline)
 
-            accuracy = Accuracy_Loss()(torch.tensor(y_pred, dtype=torch.float), torch.tensor(y_target1, dtype=torch.float))
+            #baseline1 = torch.nn.CrossEntropyLoss(reduction="mean", )(torch.tensor(y_pred), torch.tensor(y_target1))
+            baseline2 = torch.nn.BCELoss(reduction='mean')(torch.tensor(y_pred[:,1], dtype=torch.float),
+                                                           torch.tensor(y_target1, dtype=torch.float) )
+            #print("Fitting a LogReg model, loss - CE:",  baseline1)
+            print("Fitting a LogReg model, loss - CE:",  baseline2)
+
+            accuracy = Accuracy_Loss()((torch.tensor(y_pred, dtype=torch.float)), torch.tensor(y_target1, dtype=torch.float))
             print("ACCURACY for logreg: ", accuracy)
 
         make_yset = True

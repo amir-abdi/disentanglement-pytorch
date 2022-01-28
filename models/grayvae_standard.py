@@ -80,28 +80,30 @@ class GrayVAE_Standard(VAE):
         Predict the correct class for the input data.
         """
         input_x = kwargs['latent'].to(self.device)
-        pred = nn.Softmax(dim=1)( self.classification(input_x) ,)
-        return  pred.to(self.device, dtype=torch.float32) #nn.Sigmoid()(self.classification(input_x).resize(len(input_x)))
+        pred_raw = self.classification(input_x)
+        pred = nn.Softmax(dim=1)(pred_raw)
+        return  pred_raw, pred.to(self.device, dtype=torch.float32) #nn.Sigmoid()(self.classification(input_x).resize(len(input_x)))
 
-    def vae_classification(self, losses, x_true1, label1, y_true1, labelling=False):
+    def vae_classification(self, losses, x_true1, label1, y_true1, classification=False):
         #x_true1.requires_grad = True
         mu, logvar = self.model.encode(x=x_true1,)
 
         z = reparametrize(mu, logvar)
+        #z = torch.sigmoid(reparametrize(mu, logvar))
         x_recon = self.model.decode(z=z,)
 
         # CHECKING THE CONSISTENCY
         z_prediction = torch.zeros(size=(len(mu), self.z_dim))
         z_prediction[:, :label1.size(1)] = label1
-        z_prediction[:, label1.size(1):] = mu[:, label1.size(1):]
+        z_prediction[:, label1.size(1):] = mu[:, label1.size(1):].detach()
 
         mu_detatch = z_prediction
 
-        prediction = self.predict(latent=mu_detatch)
+        prediction, _ = self.predict(latent=mu_detatch)
 
-        if not labelling:
+        if not classification:
             loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar, z=z)
-            loss_dict = self.loss_fn(losses, reduce_rec=labelling, **loss_fn_args)
+            loss_dict = self.loss_fn(losses, reduce_rec=classification, **loss_fn_args)
 
             losses.update({'total_vae': loss_dict['total_vae'].detach(), 'recon': loss_dict['recon'].detach(),
                            'kld': loss_dict['kld'].detach()})
@@ -109,31 +111,36 @@ class GrayVAE_Standard(VAE):
             del loss_dict
             ## REMOVED FOR SIGNAL
 #            chosen_value=2
-            losses.update(true_values=nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1))
-            loss_soft = nn.CrossEntropyLoss(reduction='mean')(mu[:,:3], label1[:,:3])
-            losses.update(true_values=nn.MSELoss(reduction='mean')(mu[:, 3:label1.size(1)], label1[:,3:])+loss_soft)
-            #losses.update(true_values=nn.MSELoss(reduction='mean')(mu[:, ], label1[:,1:] ))
+#            losses.update(true_values=nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1))
+#            loss_soft = nn.CrossEntropyLoss(reduction='mean')(mu[:,:3], label1[:,:3])
 
-            losses[c.TOTAL_VAE] += nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1).detach()
+            loss_bin = nn.BCELoss(reduction='mean')( torch.sigmoid(z[:,:label1.size(1)]), label1)
+
+            losses.update(true_values=loss_bin)
+            #losses.update(true_values=nn.MSELoss(reduction='mean')(mu[:, ], label1[:,1:] ))
+            losses[c.TOTAL_VAE] += loss_bin.detach()
+
+#            losses[c.TOTAL_VAE] += nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1).detach()
 #            print("MSE loss of true latents",nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1))
             #print("MSE loss for true latents" , nn.MSELoss(reduction='mean')(mu[:, chosen_value], label1[:,chosen_value] ) )
 
-        if labelling:
+        if classification:
             ## DISJOINT VERSION
             #print("Prediction", torch.max(prediction), torch.min(prediction))
             #print("Y TRUE", y_true1[:10])
             loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar, z=z)
-            loss_dict = self.loss_fn(losses, reduce_rec=labelling, **loss_fn_args)
-            loss_dict.update(true_values=nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1))
-            loss_dict[c.TOTAL_VAE] += nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1)
+            loss_dict = self.loss_fn(losses, reduce_rec=classification, **loss_fn_args)
+            loss_dict.update(true_values=nn.BCELoss(reduction='mean')(torch.sigmoid(z[:,:label1.size(1)]), label1))
+            loss_dict[c.TOTAL_VAE] += nn.BCELoss(reduction='mean')(torch.sigmoid(z[:, :label1.size(1)]), label1)
             losses.update({'total_vae': loss_dict['total_vae'].detach(), 'recon': loss_dict['recon'].detach(),
                            'kld': loss_dict['kld'].detach(), 'true_values': loss_dict['true_values'].detach()})
+
 
             del loss_dict
 
             losses.update(prediction=nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long)))
             #losses[c.TOTAL_VAE] += nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long))
-
+            #print("BCE loss", nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long)))
             #losses.update(prediction=nn.BCEWithLogitsLoss()(prediction, y_true1.to(self.device, dtype=torch.float)))
             #losses[c.TOTAL_VAE] = nn.BCEWithLogitsLoss()(prediction,y_true1.to(self.device, dtype= torch.float))
 
@@ -230,7 +237,7 @@ class GrayVAE_Standard(VAE):
                 ###configuration for dsprites
 
                 losses, params = self.vae_classification(losses, x_true1, label1, y_true1,
-                                                         labelling=start_classification)
+                                                         classification=start_classification)
 
                 self.optim_G.zero_grad()
                 self.optim_G_mse.zero_grad()
