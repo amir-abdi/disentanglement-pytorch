@@ -26,8 +26,13 @@ class SimpleConv64(BaseImageEncoder):
             nn.ReLU(True),
             nn.Conv2d(256, 256, 4, 2, 1),
             nn.ReLU(True),
-            Flatten3D(),
-            nn.Linear(256, latent_dim, bias=True)
+            Flatten3D(), ## ADDED MORE LINEAR LAYERS ##
+            nn.Linear(256, 128, bias=True),
+            nn.ReLU(),
+            nn.Linear(128, 32, bias=True),
+            nn.ReLU(),
+            nn.Linear(32, latent_dim, bias=True)
+            #nn.Linear(256, latent_dim, bias=True)
         )
 
         init_layers(self._modules)
