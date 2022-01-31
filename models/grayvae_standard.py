@@ -106,7 +106,7 @@ class GrayVAE_Standard(VAE):
 
         if not classification:
             loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar, z=z)
-            loss_dict = self.loss_fn(losses, reduce_rec=classification, **loss_fn_args)
+            loss_dict = self.loss_fn(losses, reduce_rec=False, **loss_fn_args)
             losses.update(loss_dict)
 #            losses.update({'total_vae': loss_dict['total_vae'].detach(), 'recon': loss_dict['recon'].detach(),
  #                          'kld': loss_dict['kld'].detach()})
@@ -119,14 +119,29 @@ class GrayVAE_Standard(VAE):
 
             rn_mask = (torch.randn(size=(self.batch_size,)) < self.masking_fact/100*torch.ones(size=(self.batch_size,)) )
             if len(z[rn_mask]) > 0: # added the presence of only small labelled generative factors
-                loss_bin = nn.BCELoss(reduction='mean')( (1+z[rn_mask][:,:label1.size(1)])/2, label1[rn_mask])
+                ## loss of categorical variables
+                loss_bin =  nn.BCELoss(reduction='mean')( (1+z[rn_mask][:,:3])/2, label1[rn_mask][:,:3])
+                ## loss of continuous variables
+                loss_bin += nn.MSELoss(reduction='mean')( z[rn_mask][:, 3:label1.size(1)], 2*label1[rn_mask][:,3:]-1  )
 
-                err_latent = [ nn.BCELoss(reduction='mean')( (1+z[rn_mask][:,i])/2, label1[:,i][rn_mask] ).item() for i in range(label1.size(1)) ]
+                ## track losses
+                err_latent = []
+                for i in range(label1.size(1)):
+                    if i < 3:
+                        err_latent.append(nn.BCELoss(reduction='mean')( (1+z[rn_mask][:,i])/2, label1[:,i][rn_mask] ).detach().item())
+                    else:
+                        err_latent.append(nn.MSELoss(reduction='mean')(z[rn_mask][:,i], 2*label1[rn_mask][:,1] -1).detach().item() )
+
                 losses.update(true_values= self.label_weight*loss_bin)
                 #losses.update(true_values=nn.MSELoss(reduction='mean')(mu[:, ], label1[:,1:] ))
-                losses[c.TOTAL_VAE] += self.label_weight*loss_bin #.detach()
+                losses[c.TOTAL_VAE] += self.label_weight*loss_bin.detach()
 
-#            losses[c.TOTAL_VAE] += nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1).detach()
+                ## REMOVE THIS PIECE
+                losses[c.TOTAL_VAE] = losses[c.TOTAL_VAE].detach()
+                losses['recon'], losses['kld'] = torch.tensor(0), torch.tensor(0)
+                ##
+
+        #            losses[c.TOTAL_VAE] += nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1).detach()
 #            print("MSE loss of true latents",nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1))
             #print("MSE loss for true latents" , nn.MSELoss(reduction='mean')(mu[:, chosen_value], label1[:,chosen_value] ) )
 
@@ -213,9 +228,11 @@ class GrayVAE_Standard(VAE):
         print(self.model)
         print('Total parameters:', sum(p.numel() for p in self.model.parameters()))
 
+        Iterations, Epochs, Reconstructions, KLDs, True_Values, Accuracies, F1_scores = [], [], [], [], [], [], []  ## JUST HERE FOR NOW
+        latent_errors = []
+
         while not self.training_complete():
-            Iterations, Epochs, Reconstructions, KLDs, True_Values, Accuracies, F1_scores = [], [], [], [], [], [], [] ## JUST HERE FOR NOW
-            latent_errors = []
+
             epoch += 1
             self.net_mode(train=True)
             vae_loss_sum = 0
@@ -246,8 +263,8 @@ class GrayVAE_Standard(VAE):
                 if (internal_iter%250)==0: print("Losses:", losses)
 
                 if not start_classification:
-                    losses[c.TOTAL_VAE].backward(retain_graph=False)
-                    #losses['true_values'].backward(retain_graph=False)
+                    #losses[c.TOTAL_VAE].backward(retain_graph=False)
+                    losses['true_values'].backward(retain_graph=False)
                     self.optim_G.step()
                     """ 
                     print("GRADIENTS")
@@ -270,7 +287,8 @@ class GrayVAE_Standard(VAE):
                 losses[c.TOTAL_VAE_EPOCH] = vae_loss_sum /( internal_iter+1) ## ADDED +1 HERE IDK WHY NOT BEFORE!!!!!
 
                 ## Insert losses -- only in training set
-                if track_changes:
+                if track_changes and (internal_iter%250)==0:
+                    #TODO: set the tracking at a given iter_number/epoch
 
                     rec_err = losses['recon'].item()
                     Reconstructions.append(rec_err)

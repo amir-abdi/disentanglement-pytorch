@@ -24,7 +24,7 @@ def main(_args):
     #include path for saving model performances
 
     dset_name = _args.dset_name
-    nowstr = datetime.datetime.now().strftime("%Y_%m_%d-%H_%M")
+    nowstr = datetime.datetime.now().strftime("%Y_%m_%d-%H")
 
 #    data_args = pd.DataFrame(vars(_args) )#list(_args.values()), index=_args.keys())
  #   data_args.to_csv(out_path, index=False)
