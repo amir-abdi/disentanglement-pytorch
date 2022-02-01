@@ -104,25 +104,27 @@ class GrayVAE_Standard(VAE):
             rn_mask = (torch.randn(size=(self.batch_size,)) < self.masking_fact/100*torch.ones(size=(self.batch_size,)) )
             if len(z[rn_mask]) > 0: # added the presence of only small labelled generative factors
                 ## loss of categorical variables
-                loss_bin =  nn.BCELoss(reduction='mean')( (1+z[rn_mask][:,:3])/2, label1[rn_mask][:,:3])*(3/label1.size(1))
+                #loss_bin =  nn.BCELoss(reduction='mean')( (1+z[rn_mask][:,:3])/2, label1[rn_mask][:,:3])*(3/label1.size(1))
                 ## loss of continuous variables
-                loss_bin += nn.MSELoss(reduction='mean')( z[rn_mask][:, 3:label1.size(1)], 2*label1[rn_mask][:,3:]-1  )*(1 - 3/label1.size(1))
+                loss_bin = nn.MSELoss(reduction='mean')( z[rn_mask][:, :label1.size(1)], 2*label1[rn_mask]-1  ) #*(1 - 3/label1.size(1))
 
                 ## track losses
                 err_latent = []
                 for i in range(label1.size(1)):
+                    err_latent.append(nn.MSELoss(reduction='mean')(z[rn_mask][:, i], 2 * label1[rn_mask][:,i] - 1))
+                    """ 
                     if i < 3:
                         err_latent.append(nn.BCELoss(reduction='mean')( (1+z[rn_mask][:,i])/2, label1[:,i][rn_mask] ).detach().item())
                     else:
                         err_latent.append(nn.MSELoss(reduction='mean')(z[rn_mask][:,i], 2*label1[rn_mask][:,1] -1).detach().item() )
-
+                    """
                 losses.update(true_values= self.label_weight*loss_bin)
                 #losses.update(true_values=nn.MSELoss(reduction='mean')(mu[:, ], label1[:,1:] ))
                 losses[c.TOTAL_VAE] += self.label_weight*loss_bin.detach()
 
                 ## REMOVE THIS PIECE
-                losses[c.TOTAL_VAE] = losses[c.TOTAL_VAE].detach()
-                losses['recon'], losses['kld'] = torch.tensor(0), torch.tensor(0)
+                #losses[c.TOTAL_VAE] = losses[c.TOTAL_VAE].detach()
+                #losses['recon'], losses['kld'] = torch.tensor(0), torch.tensor(0)
 
         #            losses[c.TOTAL_VAE] += nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1).detach()
 
