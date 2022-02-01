@@ -1,7 +1,4 @@
-import copy
 import os.path
-
-import matplotlib.pyplot as plt
 import torch
 from torch import nn
 import torch.optim as optim
@@ -11,16 +8,10 @@ from architectures import encoders, decoders
 from common.ops import reparametrize
 from common.utils import F1_Loss, Accuracy_Loss
 from common import constants as c
-from common.data_loader import  target_cast
 
-from sklearn.linear_model import LogisticRegression
 
 import numpy as np
 import pandas as pd
-
-### INSERTING THE LOG SESSION FOR TENSORBOARD ###
-#from torch.utils.tensorboard import FileWriter
-###                                           ###
 
 class GrayVAE_Standard(VAE):
     """
@@ -55,11 +46,6 @@ class GrayVAE_Standard(VAE):
         self.optim_G = optim.Adam(self.model.parameters(), lr=self.lr_G, betas=(self.beta1, self.beta2))
         self.optim_G_mse = optim.Adam(self.model.encoder.parameters(), lr=self.lr_G, betas=(self.beta1, self.beta2))
 
-#        print("Printing parameters")
- #       for param in self.model.parameters():
-  #          print(type(param), param.size())
-
-   #     quit()
         # update nets
         self.net_dict['G'] = self.model
         self.optim_dict['optim_G'] = self.optim_G
@@ -100,9 +86,7 @@ class GrayVAE_Standard(VAE):
         z_prediction[:, :label1.size(1)] = label1
         z_prediction[:, label1.size(1):] = mu[:, label1.size(1):].detach()
 
-        mu_detatch = z_prediction
-
-        prediction, _ = self.predict(latent=mu_detatch)
+        prediction, _ = self.predict(latent=z_prediction)
 
         if not classification:
             loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar, z=z)
@@ -120,9 +104,9 @@ class GrayVAE_Standard(VAE):
             rn_mask = (torch.randn(size=(self.batch_size,)) < self.masking_fact/100*torch.ones(size=(self.batch_size,)) )
             if len(z[rn_mask]) > 0: # added the presence of only small labelled generative factors
                 ## loss of categorical variables
-                loss_bin =  nn.BCELoss(reduction='mean')( (1+z[rn_mask][:,:3])/2, label1[rn_mask][:,:3])
+                loss_bin =  nn.BCELoss(reduction='mean')( (1+z[rn_mask][:,:3])/2, label1[rn_mask][:,:3])*(3/label1.size(1))
                 ## loss of continuous variables
-                loss_bin += nn.MSELoss(reduction='mean')( z[rn_mask][:, 3:label1.size(1)], 2*label1[rn_mask][:,3:]-1  )
+                loss_bin += nn.MSELoss(reduction='mean')( z[rn_mask][:, 3:label1.size(1)], 2*label1[rn_mask][:,3:]-1  )*(1 - 3/label1.size(1))
 
                 ## track losses
                 err_latent = []
@@ -139,16 +123,12 @@ class GrayVAE_Standard(VAE):
                 ## REMOVE THIS PIECE
                 losses[c.TOTAL_VAE] = losses[c.TOTAL_VAE].detach()
                 losses['recon'], losses['kld'] = torch.tensor(0), torch.tensor(0)
-                ##
 
         #            losses[c.TOTAL_VAE] += nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1).detach()
-#            print("MSE loss of true latents",nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1))
-            #print("MSE loss for true latents" , nn.MSELoss(reduction='mean')(mu[:, chosen_value], label1[:,chosen_value] ) )
 
         if classification:
+            #TODO: INSERT MORE OPTIONS ON HOW TRAINING METRICS AFFECT
             ## DISJOINT VERSION
-            #print("Prediction", torch.max(prediction), torch.min(prediction))
-            #print("Y TRUE", y_true1[:10])
             loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar, z=z)
             loss_dict = self.loss_fn(losses, reduce_rec=True, **loss_fn_args)
             loss_dict.update(true_values=nn.BCELoss(reduction='mean')((1+z[:,:label1.size(1)])/2, label1))
@@ -161,52 +141,14 @@ class GrayVAE_Standard(VAE):
 
             losses.update(prediction=nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long)))
             #losses[c.TOTAL_VAE] += nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long))
-            #print("BCE loss", nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long)))
             #losses.update(prediction=nn.BCEWithLogitsLoss()(prediction, y_true1.to(self.device, dtype=torch.float)))
             #losses[c.TOTAL_VAE] = nn.BCEWithLogitsLoss()(prediction,y_true1.to(self.device, dtype= torch.float))
 
             ## INSERT DEVICE IN THE CREATION OF EACH TENSOR
             ### AVOID COPYING FROM CPU TO GPU AS MUCH AS POSSIBLE
 
-            """ 
-            Random = [0.54736527, 0.22488107, 0.17828586, 0.4332863, 0.56544113, 0.33252552]
-            Mean = [1., 2.00356, 0.7513, 3.14917759, 0.49945935, 0.49974452]
-            r_plane = [Random, Mean]
-
-            print("Z latent values")
-            print(label1[:10])# -torch.tensor(Mean[1:]))
-            print("Len", len(label1))
-
-            z_prediction_smaller = z_prediction[:, :5]
-
-            y_real = target_cast( z_prediction_smaller.detach().numpy(),  r_plane, irrelevant_components=0)
-            y_real = torch.tensor(y_real, device=self.device, dtype=torch.long)
-            ### y_real is the real value as predicted by r_plane
-
-            print("REALVALUES - The percentage of 0s is ", len(y_real[y_real==0])/len(y_real)*100, "%" )
-            print("PASSEDVALUES - The percentage of 0s is ", len(y_real[y_true1 == 0]) / len(y_real) * 100, "%")
-
-            in_data = z_prediction
-            lr = LogisticRegression()
-            lr.fit(in_data.detach(), y_true1)
-            y_pred1 = lr.predict_proba(in_data.detach())
-            y_pred1 = torch.tensor(y_pred1, dtype=torch.float)
-            ### y_pre1 is the prediction from LogReg
-            """
-#            print("SKLEARN/REAL ", torch.mean((y_pred1[:,1] -y_real)**2))
- #           print(" ")
-            #print("Analytic loss:", nn.BCEWithLogitsLoss()(y_pred1[:,1],y_true1.to(self.device, dtype= torch.float)).item() )
-            #print("Analytic loss from y_real:", nn.BCEWithLogitsLoss()(prediction, y_real).item() )
-            #print('Difference between y_real and y_loaded', nn.BCEWithLogitsLoss()(y_real,y_true1.to(self.device, dtype= torch.float)).item() )
-            #print("Loss from y_real",  nn.BCEWithLogitsLoss()(y_pred1[:,0], y_real).item() )
-
-            #print("CrossEntropy", nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1))
-#            print("CrossEntropy for y_pred from LOG-REG ", nn.CrossEntropyLoss(reduction='mean')(y_pred1, y_true1))
-
-
         return losses, {'x_recon': x_recon, 'mu': mu, 'z': z, 'logvar': logvar, "prediction": prediction,
                         'latents': err_latent}
-
 
     def train(self, **kwargs):
 
@@ -263,23 +205,12 @@ class GrayVAE_Standard(VAE):
                 if (internal_iter%250)==0: print("Losses:", losses)
 
                 if not start_classification:
-                    #losses[c.TOTAL_VAE].backward(retain_graph=False)
-                    losses['true_values'].backward(retain_graph=False)
+                    losses[c.TOTAL_VAE].backward(retain_graph=False)
+                    #losses['true_values'].backward(retain_graph=False)
                     self.optim_G.step()
-                    """ 
-                    print("GRADIENTS")
-                    print((self.model.encoder.main[-1].weight.grad))
-                    print(" ")
-                    print(" ")
-                    print(" SIZE OF GRADIENT ")
-                    print(self.model.encoder.main[-1].weight.size())
-                    """
-
                     latent_errors.append(params['latents'])
 
-                ## INSERT HERE CLASSIFICATION
                 if start_classification:
-
                     losses['prediction'].backward(retain_graph=False)
                     self.class_G.step()
 
@@ -287,7 +218,7 @@ class GrayVAE_Standard(VAE):
                 losses[c.TOTAL_VAE_EPOCH] = vae_loss_sum /( internal_iter+1) ## ADDED +1 HERE IDK WHY NOT BEFORE!!!!!
 
                 ## Insert losses -- only in training set
-                if track_changes and (internal_iter%250)==0:
+                if track_changes:
                     #TODO: set the tracking at a given iter_number/epoch
 
                     rec_err = losses['recon'].item()
@@ -304,16 +235,16 @@ class GrayVAE_Standard(VAE):
                         accuracy = losses['prediction']
                         Accuracies.append(accuracy.item())
 
-                        F1_scores = [0] * len(Iterations)
                         #f1_class = F1_Loss().to(self.device)
                         #F1_scores.append(f1_class(y_pred1, y_true1).item())
 
-                    sofar = pd.DataFrame(data=np.array([Iterations, Epochs, Reconstructions, KLDs, True_Values, Accuracies, F1_scores]).T,
-                                         columns=['iter', 'epoch', 'reconstruction_error', 'kld', 'latent_error', 'accuracy', 'f1_score'], )
-                    for i in range(label1.size(1)):
-                        sofar['latent%i'%i] = np.asarray(latent_errors)[:,i]
+                    if (internal_iter%250)==0:
+                        sofar = pd.DataFrame(data=np.array([Iterations, Epochs, Reconstructions, KLDs, True_Values, Accuracies]).T,
+                                             columns=['iter', 'epoch', 'reconstruction_error', 'kld', 'latent_error', 'accuracy'], )
+                        for i in range(label1.size(1)):
+                            sofar['latent%i'%i] = np.asarray(latent_errors)[:,i]
 
-                    sofar.to_csv(os.path.join(out_path, 'metrics.csv'), index=False)
+                        sofar.to_csv(os.path.join(out_path, 'metrics.csv'), index=False)
                 self.log_save(input_image=x_true1, recon_image=params['x_recon'], loss=losses)
             #chosen_value += 1
             #if chosen_value == 5: break
