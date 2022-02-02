@@ -111,7 +111,7 @@ class GrayVAE_Standard(VAE):
                 ## track losses
                 err_latent = []
                 for i in range(label1.size(1)):
-                    err_latent.append(nn.MSELoss(reduction='mean')(z[rn_mask][:, i], 2 * label1[rn_mask][:,i] - 1))
+                    err_latent.append(nn.MSELoss(reduction='mean')(z[rn_mask][:, i], 2 * label1[rn_mask][:,i] - 1).detach().item() )
                     """ 
                     if i < 3:
                         err_latent.append(nn.BCELoss(reduction='mean')( (1+z[rn_mask][:,i])/2, label1[:,i][rn_mask] ).detach().item())
@@ -240,7 +240,7 @@ class GrayVAE_Standard(VAE):
                         #f1_class = F1_Loss().to(self.device)
                         #F1_scores.append(f1_class(y_pred1, y_true1).item())
 
-                    if (internal_iter%250)==0:
+                    if (internal_iter%500)==0:
                         sofar = pd.DataFrame(data=np.array([Iterations, Epochs, Reconstructions, KLDs, True_Values, Accuracies]).T,
                                              columns=['iter', 'epoch', 'reconstruction_error', 'kld', 'latent_error', 'accuracy'], )
                         for i in range(label1.size(1)):
