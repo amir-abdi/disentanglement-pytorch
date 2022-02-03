@@ -149,18 +149,17 @@ def get_args(sys_args):
 
     # Other
     parser.add_argument('--seed', default=123, type=int, help='Seed value for torch, cuda, and numpy.')
-    parser.add_argument('--d_version', default="smaller", type=str,
-                        help='Select the dataset version for dsprites (for debugging: smaller).')
-    parser.add_argument('--out_path', default=None, type=str,
-                        help='Select the output folder where record training Loss over time '
-                             'default=None, => no registration.')
+    parser.add_argument('--d_version', default="smaller", type=str, help='Select the dataset version for dsprites (for debugging: smaller).')
+    parser.add_argument('--out_path', default=None, type=str, help='Select the output folder where record training Loss over time-- default=None, => no registration.')
+
+    # Methodology on Latents
+    parser.add_argument('--latent_error', default='BCE', type=str, choices=['BCE', 'MSE', 'Hybrid'], help='Select the error function on the latent variables')
+    parser.add_argument('--label_weight', default=5, type=float, help='Constant increasing the effect of predicting right generative factors.')
+    parser.add_argument('--masking_fact', default=100, type=float, help='Percent of generative factors seen.')
 
     # Hyper-parameters
     parser.add_argument('--classification_epoch', default=1, type=int, help='Epoch for starting the classification.')
     parser.add_argument('--reduce_recon', default=1, type=float, help='Constant reducing the reconstruction cost when classification starts.')
-
-    parser.add_argument('--label_weight', default=5, type=float, help='Constant increasing the effect of predicting right generative factors.')
-    parser.add_argument('--masking_fact', default=100, type=float, help='Percent of generative factors seen.')
 
 
     args = parser.parse_args(sys_args)

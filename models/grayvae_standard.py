@@ -64,6 +64,8 @@ class GrayVAE_Standard(VAE):
         self.label_weight = args.label_weight
         self.masking_fact = args.masking_fact
 
+        self.dataframe_eval = pd.DataFrame(columns=self.evaluation_metric)
+
     def predict(self, **kwargs):
         """
         Predict the correct class for the input data.
@@ -94,7 +96,6 @@ class GrayVAE_Standard(VAE):
             losses.update(loss_dict)
 #            losses.update({'total_vae': loss_dict['total_vae'].detach(), 'recon': loss_dict['recon'].detach(),
  #                          'kld': loss_dict['kld'].detach()})
-
             del loss_dict
             ## REMOVED FOR SIGNAL
 #            chosen_value=2
@@ -163,7 +164,7 @@ class GrayVAE_Standard(VAE):
         if track_changes:
             print("## Initializing Train indexes")
             print("::path chosen ->",out_path+"/train_runs")
-        epoch = 0
+
 
         #global chosen_value
         #chosen_value = 1
@@ -174,7 +175,7 @@ class GrayVAE_Standard(VAE):
 
         Iterations, Epochs, Reconstructions, KLDs, True_Values, Accuracies, F1_scores = [], [], [], [], [], [], []  ## JUST HERE FOR NOW
         latent_errors = []
-
+        epoch = 0
         while not self.training_complete():
 
             epoch += 1
@@ -187,6 +188,11 @@ class GrayVAE_Standard(VAE):
             else: start_classification = False
 
             for internal_iter, (x_true1, label1, y_true1) in enumerate(self.data_loader):
+
+                if internal_iter > 1 and (internal_iter%(self.evaluate_iter) == 1):
+                    self.dataframe_eval = self.dataframe_eval.append(self.evaluate_results,  ignore_index=True)
+
+
                 Iterations.append(internal_iter+1)
                 Epochs.append(epoch)
                 losses = {'total_vae':0}
@@ -247,6 +253,10 @@ class GrayVAE_Standard(VAE):
                             sofar['latent%i'%i] = np.asarray(latent_errors)[:,i]
 
                         sofar.to_csv(os.path.join(out_path, 'metrics.csv'), index=False)
+
+                        if not self.dataframe_eval.empty:
+                            self.dataframe_eval.to_csv(os.path.join(out_path, 'dis_metrics.csv'), index=False)
+
                 self.log_save(input_image=x_true1, recon_image=params['x_recon'], loss=losses)
             #chosen_value += 1
             #if chosen_value == 5: break
