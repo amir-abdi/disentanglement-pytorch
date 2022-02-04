@@ -76,7 +76,7 @@ class GrayVAE_Standard(VAE):
         return  pred_raw, pred.to(self.device, dtype=torch.float32) #nn.Sigmoid()(self.classification(input_x).resize(len(input_x)))
 
     def vae_classification(self, losses, x_true1, label1, y_true1, classification=False):
-        #x_true1.requires_grad = True
+
         mu, logvar = self.model.encode(x=x_true1,)
 
 #        z = reparametrize(mu, logvar)
@@ -84,11 +84,11 @@ class GrayVAE_Standard(VAE):
         x_recon = self.model.decode(z=z,)
 
         # CHECKING THE CONSISTENCY
-        z_prediction = torch.zeros(size=(len(mu), self.z_dim))
-        z_prediction[:, :label1.size(1)] = label1
-        z_prediction[:, label1.size(1):] = mu[:, label1.size(1):].detach()
+#        z_prediction = torch.zeros(size=(len(mu), self.z_dim))
+ #       z_prediction[:, :label1.size(1)] = label1.detach()
+  #      z_prediction[:, label1.size(1):] = mu[:, label1.size(1):].detach()
 
-        prediction, _ = self.predict(latent=z_prediction)
+        prediction, _ = self.predict(latent=z)
 
         if not classification:
             loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar, z=z)
@@ -122,6 +122,9 @@ class GrayVAE_Standard(VAE):
                 losses.update(true_values= self.label_weight*loss_bin)
                 #losses.update(true_values=nn.MSELoss(reduction='mean')(mu[:, ], label1[:,1:] ))
                 losses[c.TOTAL_VAE] += self.label_weight*loss_bin.detach()
+            else:
+                losses.update(true_values=torch.tensor(-1))
+                err_latent =[-1]*label1.size(1)
 
                 ## REMOVE THIS PIECE
                 #losses[c.TOTAL_VAE] = losses[c.TOTAL_VAE].detach()
@@ -165,10 +168,6 @@ class GrayVAE_Standard(VAE):
             print("## Initializing Train indexes")
             print("::path chosen ->",out_path+"/train_runs")
 
-
-        #global chosen_value
-        #chosen_value = 1
-
         print("The model we are using")
         print(self.model)
         print('Total parameters:', sum(p.numel() for p in self.model.parameters()))
@@ -177,7 +176,6 @@ class GrayVAE_Standard(VAE):
         latent_errors = []
         epoch = 0
         while not self.training_complete():
-
             epoch += 1
             self.net_mode(train=True)
             vae_loss_sum = 0
@@ -191,6 +189,7 @@ class GrayVAE_Standard(VAE):
 
                 if internal_iter > 1 and (internal_iter%(self.evaluate_iter) == 1):
                     self.dataframe_eval = self.dataframe_eval.append(self.evaluate_results,  ignore_index=True)
+
 
 
                 Iterations.append(internal_iter+1)
@@ -216,7 +215,6 @@ class GrayVAE_Standard(VAE):
                     losses[c.TOTAL_VAE].backward(retain_graph=False)
                     #losses['true_values'].backward(retain_graph=False)
                     self.optim_G.step()
-                    latent_errors.append(params['latents'])
 
                 if start_classification:
                     losses['prediction'].backward(retain_graph=False)
@@ -229,19 +227,18 @@ class GrayVAE_Standard(VAE):
                 if track_changes:
                     #TODO: set the tracking at a given iter_number/epoch
 
-                    rec_err = losses['recon'].item()
-                    Reconstructions.append(rec_err)
-                    kld_error = losses['kld'].item()
-                    KLDs.append(kld_error)
-                    mse_true = losses['true_values'].item()
-                    True_Values.append(mse_true)
+                    Reconstructions.append(losses['recon'].item())
+
+                    KLDs.append(losses['kld'].item())
+                    True_Values.append(losses['true_values'].item())
+                    latent_errors.append(params['latents'])
+
                     if not start_classification: #RECONSTRUCTION ERROR + KLD + MSE on Z
-                        Accuracies, F1_scores = [0] * len(Iterations), [0] * len(Iterations)
+                        Accuracies, F1_scores = [-1] * len(Iterations), [-1] * len(Iterations)
 
                     else: #CLASSIFICATION
 
-                        accuracy = losses['prediction']
-                        Accuracies.append(accuracy.item())
+                        Accuracies.append(losses['prediction'].item())
 
                         #f1_class = F1_Loss().to(self.device)
                         #F1_scores.append(f1_class(y_pred1, y_true1).item())
