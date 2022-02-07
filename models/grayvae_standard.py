@@ -64,7 +64,7 @@ class GrayVAE_Standard(VAE):
         self.label_weight = args.label_weight
         self.masking_fact = args.masking_fact
 
-        self.dataframe_eval = pd.DataFrame(columns=self.evaluation_metric)
+        self.dataframe_eval = pd.DataFrame(columns=['eval_%s'%s for s in self.evaluation_metric])
 
     def predict(self, **kwargs):
         """
@@ -89,6 +89,8 @@ class GrayVAE_Standard(VAE):
   #      z_prediction[:, label1.size(1):] = mu[:, label1.size(1):].detach()
 
         prediction, _ = self.predict(latent=z)
+        rn_mask = (torch.randn(size=(self.batch_size,)) < self.masking_fact / 100 * torch.ones(size=(self.batch_size,)))
+        n_passed = len(z[rn_mask])
 
         if not classification:
             loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar, z=z)
@@ -102,8 +104,8 @@ class GrayVAE_Standard(VAE):
 #            losses.update(true_values=nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1))
 #            loss_soft = nn.CrossEntropyLoss(reduction='mean')(mu[:,:3], label1[:,:3])
 
-            rn_mask = (torch.randn(size=(self.batch_size,)) < self.masking_fact/100*torch.ones(size=(self.batch_size,)) )
-            if len(z[rn_mask]) > 0: # added the presence of only small labelled generative factors
+
+            if n_passed > 0: # added the presence of only small labelled generative factors
                 ## loss of categorical variables
                 #loss_bin =  nn.BCELoss(reduction='mean')( (1+z[rn_mask][:,:3])/2, label1[rn_mask][:,:3])*(3/label1.size(1))
                 ## loss of continuous variables
@@ -135,6 +137,7 @@ class GrayVAE_Standard(VAE):
         if classification:
             #TODO: INSERT MORE OPTIONS ON HOW TRAINING METRICS AFFECT
             ## DISJOINT VERSION
+
             loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar, z=z)
             loss_dict = self.loss_fn(losses, reduce_rec=True, **loss_fn_args)
             loss_dict.update(true_values=nn.BCELoss(reduction='mean')((1+z[:,:label1.size(1)])/2, label1))
@@ -143,9 +146,17 @@ class GrayVAE_Standard(VAE):
                            'kld': loss_dict['kld'].detach(), 'true_values': loss_dict['true_values'].detach()})
 
             del loss_dict
-            #TODO insert BCE Classification
 
-            losses.update(prediction=nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long)))
+            #TODO insert MSE Classification
+
+            err_latent = [-1] * label1.size(1)
+
+            #TODO: insert the regression on the latents factor matching
+
+            if n_passed > 0:
+                losses.update(prediction=nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long)))
+            else:
+                losses.update(prediction=torch.tensor(-1))
             #losses[c.TOTAL_VAE] += nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long))
             #losses.update(prediction=nn.BCEWithLogitsLoss()(prediction, y_true1.to(self.device, dtype=torch.float)))
             #losses[c.TOTAL_VAE] = nn.BCEWithLogitsLoss()(prediction,y_true1.to(self.device, dtype= torch.float))
@@ -154,7 +165,7 @@ class GrayVAE_Standard(VAE):
             ### AVOID COPYING FROM CPU TO GPU AS MUCH AS POSSIBLE
 
         return losses, {'x_recon': x_recon, 'mu': mu, 'z': z, 'logvar': logvar, "prediction": prediction,
-                        'latents': err_latent}
+                        'latents': err_latent, 'n_passed': n_passed}
 
     def train(self, **kwargs):
 
@@ -216,7 +227,7 @@ class GrayVAE_Standard(VAE):
                     #losses['true_values'].backward(retain_graph=False)
                     self.optim_G.step()
 
-                if start_classification:
+                if start_classification and (params['n_passed']>0):
                     losses['prediction'].backward(retain_graph=False)
                     self.class_G.step()
 

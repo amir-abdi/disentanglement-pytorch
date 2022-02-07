@@ -151,6 +151,7 @@ def get_args(sys_args):
     parser.add_argument('--seed', default=123, type=int, help='Seed value for torch, cuda, and numpy.')
     parser.add_argument('--d_version', default="smaller", type=str, help='Select the dataset version for dsprites (for debugging: smaller).')
     parser.add_argument('--out_path', default=None, type=str, help='Select the output folder where record training Loss over time-- default=None, => no registration.')
+    parser.add_argument('--save_iter', default=2500, type=int, help='Save on .csv on the chosen iter.') #todo
 
     # Methodology on Latents
     parser.add_argument('--latent_error', default='BCE', type=str, choices=['BCE', 'MSE', 'Hybrid'], help='Select the error function on the latent variables')
