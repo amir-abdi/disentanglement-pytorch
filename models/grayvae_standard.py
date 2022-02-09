@@ -64,7 +64,8 @@ class GrayVAE_Standard(VAE):
         self.label_weight = args.label_weight
         self.masking_fact = args.masking_fact
 
-        self.dataframe_eval = pd.DataFrame(columns=['eval_%s'%s for s in self.evaluation_metric])
+        self.dataframe_eval = pd.DataFrame()
+        self.latent_loss = args.latent_loss
 
     def predict(self, **kwargs):
         """
@@ -79,8 +80,8 @@ class GrayVAE_Standard(VAE):
 
         mu, logvar = self.model.encode(x=x_true1,)
 
-#        z = reparametrize(mu, logvar)
-        z = torch.tanh(2*reparametrize(mu, logvar))
+        z = reparametrize(mu, logvar)
+        z = torch.tanh(2*z)
         x_recon = self.model.decode(z=z,)
 
         # CHECKING THE CONSISTENCY
@@ -99,39 +100,45 @@ class GrayVAE_Standard(VAE):
 #            losses.update({'total_vae': loss_dict['total_vae'].detach(), 'recon': loss_dict['recon'].detach(),
  #                          'kld': loss_dict['kld'].detach()})
             del loss_dict
-            ## REMOVED FOR SIGNAL
-#            chosen_value=2
-#            losses.update(true_values=nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1))
-#            loss_soft = nn.CrossEntropyLoss(reduction='mean')(mu[:,:3], label1[:,:3])
-
 
             if n_passed > 0: # added the presence of only small labelled generative factors
                 ## loss of categorical variables
-                #loss_bin =  nn.BCELoss(reduction='mean')( (1+z[rn_mask][:,:3])/2, label1[rn_mask][:,:3])*(3/label1.size(1))
-                ## loss of continuous variables
-                loss_bin = nn.MSELoss(reduction='mean')( z[rn_mask][:, :label1.size(1)], 2*label1[rn_mask]-1  ) #*(1 - 3/label1.size(1))
 
-                ## track losses
-                err_latent = []
-                for i in range(label1.size(1)):
-                    err_latent.append(nn.MSELoss(reduction='mean')(z[rn_mask][:, i], 2 * label1[rn_mask][:,i] - 1).detach().item() )
-                    """ 
-                    if i < 3:
-                        err_latent.append(nn.BCELoss(reduction='mean')( (1+z[rn_mask][:,i])/2, label1[:,i][rn_mask] ).detach().item())
-                    else:
-                        err_latent.append(nn.MSELoss(reduction='mean')(z[rn_mask][:,i], 2*label1[rn_mask][:,1] -1).detach().item() )
-                    """
+                ## loss of continuous variables
+                if self.latent_loss == 'MSE':
+                    #TODO: PLACE ONEHOT ENCODING
+                    loss_bin = nn.MSELoss(reduction='mean')( z[rn_mask][:, :label1.size(1)], 2*label1[rn_mask]-1  )
+                    ## track losses
+                    err_latent = []
+                    for i in range(label1.size(1)):
+                        err_latent.append(nn.MSELoss(reduction='mean')(z[rn_mask][:, i], 2 * label1[rn_mask][:,i] - 1).detach().item() )
+
+                elif self.latent_loss == 'BCE':
+
+                    loss_bin = nn.BCELoss(reduction='mean')((1+z[rn_mask][:, :label1.size(1)])/2,
+                                                             label1[rn_mask] )
+
+                    ## track losses
+                    err_latent = []
+                    for i in range(label1.size(1)):
+                        err_latent.append(nn.BCELoss(reduction='mean')((1+z[rn_mask][:, i])/2,
+                                                                        label1[rn_mask][:, i] ).detach().item())
+
+                else:
+                    raise NotImplementedError('Not implemented loss.')
+
+                """ 
+                if i < 3:
+                    err_latent.append(nn.BCELoss(reduction='mean')( (1+z[rn_mask][:,i])/2, label1[:,i][rn_mask] ).detach().item())
+                else:
+                    err_latent.append(nn.MSELoss(reduction='mean')(z[rn_mask][:,i], 2*label1[rn_mask][:,1] -1).detach().item() )
+                """
                 losses.update(true_values= self.label_weight*loss_bin)
                 #losses.update(true_values=nn.MSELoss(reduction='mean')(mu[:, ], label1[:,1:] ))
-                losses[c.TOTAL_VAE] += self.label_weight*loss_bin.detach()
+                losses[c.TOTAL_VAE] += self.label_weight*loss_bin
             else:
                 losses.update(true_values=torch.tensor(-1))
                 err_latent =[-1]*label1.size(1)
-
-                ## REMOVE THIS PIECE
-                #losses[c.TOTAL_VAE] = losses[c.TOTAL_VAE].detach()
-                #losses['recon'], losses['kld'] = torch.tensor(0), torch.tensor(0)
-
         #            losses[c.TOTAL_VAE] += nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1).detach()
 
         if classification:
@@ -201,8 +208,6 @@ class GrayVAE_Standard(VAE):
                 if internal_iter > 1 and (internal_iter%(self.evaluate_iter) == 1):
                     self.dataframe_eval = self.dataframe_eval.append(self.evaluate_results,  ignore_index=True)
 
-
-
                 Iterations.append(internal_iter+1)
                 Epochs.append(epoch)
                 losses = {'total_vae':0}
@@ -250,7 +255,6 @@ class GrayVAE_Standard(VAE):
                     else: #CLASSIFICATION
 
                         Accuracies.append(losses['prediction'].item())
-
                         #f1_class = F1_Loss().to(self.device)
                         #F1_scores.append(f1_class(y_pred1, y_true1).item())
 
@@ -266,8 +270,6 @@ class GrayVAE_Standard(VAE):
                             self.dataframe_eval.to_csv(os.path.join(out_path, 'dis_metrics.csv'), index=False)
 
                 self.log_save(input_image=x_true1, recon_image=params['x_recon'], loss=losses)
-            #chosen_value += 1
-            #if chosen_value == 5: break
             # end of epoch
         self.pbar.close()
 

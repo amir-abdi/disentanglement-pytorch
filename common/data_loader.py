@@ -391,7 +391,6 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
             new_labels = np.hstack( (labels[:,0].reshape(-1,1) , b))
             labels_one_hot = np.hstack((new_labels, labels[:,2:] ) )
 
-
             # dsprite has uniformly distributed labels
             num_labels = labels.shape[1]
             label_weights = []
