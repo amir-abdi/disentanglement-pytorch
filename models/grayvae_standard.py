@@ -89,7 +89,7 @@ class GrayVAE_Standard(VAE):
   #      z_prediction[:, label1.size(1):] = mu[:, label1.size(1):].detach()
 
         prediction, _ = self.predict(latent=z)
-        rn_mask = (torch.randn(size=(self.batch_size,)) < self.masking_fact / 100 * torch.ones(size=(self.batch_size,)))
+        rn_mask = (torch.rand(size=(self.batch_size,)) < self.masking_fact / 100)
         n_passed = len(z[rn_mask])
 
         if not classification:
