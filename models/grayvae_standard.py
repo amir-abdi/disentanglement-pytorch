@@ -303,7 +303,7 @@ class GrayVAE_Standard(VAE):
         rec, kld, latent, BCE, Acc = 0, 0, 0, 0, 0
         for internal_iter, (x_true, label, y_true) in enumerate(self.test_loader):
             x_true = x_true.to(self.device)
-            label = label.to(self.device, dtype=torch.long)
+            label = label[:,1:].to(self.device, dtype=torch.long)
 
             mu, logvar = self.model.encode(x=x_true, )
             z = torch.tanh(2*reparametrize(mu, logvar))
