@@ -65,7 +65,7 @@ class BaseDisentangler(object):
 
 
         from common.data_loader import get_dataloader
-        self.data_loader, self.target_loader  = get_dataloader(args.dset_name, args.dset_dir, args.batch_size, args.seed, args.num_workers,
+        self.data_loader, self.test_loader  = get_dataloader(args.dset_name, args.dset_dir, args.batch_size, args.seed, args.num_workers,
                                                 args.image_size, args.include_labels, args.pin_memory, not args.test,
                                                 not args.test, args.d_version) # included dsprite version
 

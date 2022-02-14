@@ -1,6 +1,8 @@
 import os
 from .utils import Accuracy_Loss, F1_Loss
 
+
+
 from sklearn.linear_model import LogisticRegression
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,6 +11,7 @@ import logging
 import torch
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
+from torch.utils.data.sampler import SubsetRandomSampler
 from torchvision.datasets import ImageFolder
 from torchvision import transforms
 import matplotlib.pyplot as plt
@@ -332,38 +335,10 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
         elif d_version=="smaller":
             root = os.path.join(dset_dir, 'dsprites/dsprites_ndarray_co1sh3sc6or40x32y32_64x64_smaller.npz')
         else:
-            raise ValueError
+            raise NotImplementedError('Dsprites, passed invalid argument.')
 
         npz = np.load(root)
-        """
-        print("Passed npz:", np.shape(npz), "and",type(npz))
-        print(npz.files)
-        print("Information on how they're stored")
-        print(" ")
-        print(np.shape(npz["latents_values"]))
-        print("latents_values contains \n", npz["latents_values"][:10] )
-        print(" ")
-        print("Here the min/max is for every column:")
-        ranges = []
-#        for i in range(len(npz["latents_values"][0])  ):
- #           new_list = []
-  #          for any_number in npz["latents_values"][:,i]:
-   #             if  not any_number in new_list:
-    #                new_list.append(any_number)
-     #       ranges.append(new_list)
 
-        #del new_list
-        #print("The ranges are")
-        #print(ranges)
-
-        #print("label_idx", label_idx)
-        #for i in range(len(ranges)):
-         #   print(i)
-          #  print("For class ", i, "min", np.min(ranges[i]),"max",np.max(ranges[i]))
- #        print([np.min(npz["latents_values"][:, i] for i in range(len(npz["latents_values"][0] )))])
-#        print([np.max(npz["latents_values"][:, i] for i in range(len(npz["latents_values"][0] )))])
-
-        """
         if label_idx is not None:
             #print("Passed label_idx:",label_idx)
             labels = (npz['latents_values'][:, label_idx])
@@ -379,15 +354,10 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
                 labels[:, 1] -= 1
 
             ### CREATE THE H-STACK with the usual np onehot
-                #print("Info on labels")
-                #print(np.shape(labels))
-                #print(type(labels))
-                #print(len(labels))
 
             b = np.zeros((len(labels),3))
             b[np.arange(len(labels)), np.asarray(labels[:,1], dtype=np.int) ] = 1
 
-#                print(np.shape(labels[:,0].reshape(-1,1)   ), b )
             new_labels = np.hstack( (labels[:,0].reshape(-1,1) , b))
             labels_one_hot = np.hstack((new_labels, labels[:,2:] ) )
 
@@ -473,7 +443,9 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
             accuracy = Accuracy_Loss()((torch.tensor(y_pred, dtype=torch.float)), torch.tensor(y_target1, dtype=torch.float))
             print("ACCURACY for logreg: ", accuracy)
 
-        make_yset = True
+
+
+
     else:
         raise NotImplementedError
 
@@ -485,12 +457,53 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
     # Setting the Graybox here
     dataset.isGRAY = True
 
+    # CREATING DATA LOADER + TEST LOADER
+
+#    train_size = round( 0.8 * len(dataset), 0)
+#    test_size = len(dataset) - train_size
+
+#    train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
+
+#    data_loader = DataLoader(train_dataset, #dataset,
+#                             batch_size=batch_size,
+ #                            shuffle=shuffle,
+  #                           num_workers=num_workers,
+   #                          pin_memory=pin_memory,
+    #                         drop_last=droplast)
+
+#    test_loader = DataLoader(test_dataset,
+     #                        batch_size=batch_size,
+      #                       shuffle=shuffle,
+       #                      num_workers=num_workers,
+        #                     pin_memory=pin_memory,
+         #                    drop_last=droplast) #
+    validation_split = .2
+
+    # Creating data indices for training and validation splits:
+    dataset_size = len(dataset)
+    indices = list(range(dataset_size))
+    np.random.seed(seed)
+    np.random.shuffle(indices)
+    split = int(np.floor(validation_split * dataset_size))
+    train_indices, val_indices = indices[split:], indices[:split]
+
+    # Creating PT data samplers and loaders:
+    train_sampler = SubsetRandomSampler(train_indices)
+    test_sampler = SubsetRandomSampler(val_indices)
+
     data_loader = DataLoader(dataset,
                              batch_size=batch_size,
-                             shuffle=shuffle,
                              num_workers=num_workers,
                              pin_memory=pin_memory,
-                             drop_last=droplast)
+                             drop_last=droplast,
+                             sampler=train_sampler)
+
+    test_loader = DataLoader(dataset,
+                             batch_size=batch_size,
+                             num_workers=num_workers,
+                             pin_memory=pin_memory,
+                             drop_last=droplast,
+                             sampler=test_sampler)
 
     if include_labels is not None:
         logging.info('num_classes: {}'.format(dataset.num_classes(False)))
@@ -512,7 +525,8 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
 
     else:
     """
-    return data_loader, [None]
+
+    return data_loader, test_loader
 
 
 
