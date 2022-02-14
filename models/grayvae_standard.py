@@ -317,7 +317,7 @@ class GrayVAE_Standard(VAE):
                                         data=(x_true, label), test=True)
 
             rec+=(F.binary_cross_entropy(input=x_recon, target=x_true,reduction='sum').detach().item()/self.batch_size )
-            kld+=(self._kld_loss_fn(mu, logvar).deatch().item())
+            kld+=(self._kld_loss_fn(mu, logvar).detach().item())
 
             if self.latent_loss == 'MSE':
                 loss_bin = nn.MSELoss(reduction='mean')(z[:, :label.size(1)], 2 * label - 1)
