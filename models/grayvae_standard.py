@@ -189,7 +189,7 @@ class GrayVAE_Standard(VAE):
         print(self.model)
         print('Total parameters:', sum(p.numel() for p in self.model.parameters()))
 
-        Iter_t, Rec_t, KLD_t, Latent_t, BCE_t, Acc_t = [], [], [], [], [], []
+#        Iter_t, Rec_t, KLD_t, Latent_t, BCE_t, Acc_t = [], [], [], [], [], []
         Iterations, Epochs, Reconstructions, KLDs, True_Values, Accuracies, F1_scores = [], [], [], [], [], [], []  ## JUST HERE FOR NOW
         latent_errors = []
         epoch = 0
@@ -210,14 +210,10 @@ class GrayVAE_Standard(VAE):
 
                     # test the behaviour on other losses
                     trec, tkld, tlat, tbce, tacc = self.test(end_of_epoch=False)
-                    Iter_t.append(self.iter); Rec_t.append(trec); KLD_t.append(tkld);
-                    Latent_t.append(tlat); BCE_t.append(tbce); Acc_t.append(tacc)
-
-
-                    self.dataframe_eval.append(pd.DataFrame(Iter_t, Rec_t, KLD_t, Latent_t, BCE_t, Acc_t,
-                                                            columns=['iter', 'rec', 'kld', 'latent', 'bce', 'acc'] ),
-                                               ignore_index=True)
+                    self.dataframe_eval = self.dataframe_eval.append({'iter': self.iter, 'rec': trec, 'kld': tkld, 'latent': tlat,'BCE': tbce, 'Acc':tacc},
+                                                                     ignore_index=True)
                     self.net_mode(train=True)
+                    if track_changes: self.dataframe_eval.to_csv(os.path.join(out_path, 'dis_metrics.csv'), index=False)
 
                 Iterations.append(internal_iter+1)
                 Epochs.append(epoch)
@@ -285,12 +281,10 @@ class GrayVAE_Standard(VAE):
                             sofar['latent%i'%i] = np.asarray(latent_errors)[:,i]
 
                         sofar.to_csv(os.path.join(out_path, 'metrics.csv'), index=False)
+                        del sofar
 
-                        if not self.dataframe_test.empty:
-                            self.dataframe_test.to_csv(os.path.join(out_path, 'test_metrics.csv'), index=False)
-
-                        if not self.dataframe_eval.empty:
-                            self.dataframe_eval.to_csv(os.path.join(out_path, 'dis_metrics.csv'), index=False)
+#                        if not self.dataframe_eval.empty:
+ #                           self.dataframe_eval.to_csv(os.path.join(out_path, 'dis_metrics.csv'), index=False)
 
                 self.log_save(input_image=x_true1, recon_image=params['x_recon'], loss=losses)
             # end of epoch
@@ -330,10 +324,11 @@ class GrayVAE_Standard(VAE):
 
             BCE+=(nn.CrossEntropyLoss(reduction='mean')(prediction,
                                                         y_true.to(self.device, dtype=torch.long)).detach().item)
-            Acc+=(Accuracy_Loss(prediction, y_true).detach().item() )
+            Acc+=(Accuracy_Loss()(prediction,
+                                   y_true.to(self.device, dtype=torch.long)).detach().item )
 
             #self.iter += 1
-            self.pbar.update(1)
+            #self.pbar.update(1)
 
         print('Done testing')
         nrm = internal_iter + 1
