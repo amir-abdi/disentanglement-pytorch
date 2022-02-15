@@ -157,6 +157,7 @@ def get_args(sys_args):
     parser.add_argument('--latent_loss', default='MSE', type=str, choices=['BCE', 'MSE', 'Hybrid'], help='Select the error function on the latent variables')
     parser.add_argument('--label_weight', default=5, type=float, help='Constant increasing the effect of predicting right generative factors.')
     parser.add_argument('--masking_fact', default=100, type=float, help='Percent of generative factors seen.')
+    parser.add_argument('--show_loss', default=500, type=float, help='Choose iter when to show behaviour of the model')
 
     # Hyper-parameters
     parser.add_argument('--classification_epoch', default=1, type=int, help='Epoch for starting the classification.')

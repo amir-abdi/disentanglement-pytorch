@@ -19,58 +19,59 @@ import matplotlib.pyplot as plt
 from common import constants as c
 
 
-def target_cast(inputs, r_plane, irrelevant_components=[0], _plot=False):
+def target_cast(labels, inputs, r_plane, irrelevant_components=[0], noise_fact=0.1, _plot=False):
+    l = len(labels)
+
     targets = []
     admitted = np.ones(len(r_plane[0]))
     admitted[irrelevant_components] = 0
-    print(admitted)
+    print([iter for iter, i in enumerate(admitted) if i == 1])
     for i in range(len(inputs)):
-        guess =  (np.dot(inputs[i] - r_plane[1]*admitted, (r_plane[0]*admitted) ))
-        if guess < 0: target = 1
-        else: target = 0
-        #if np.random.uniform() > 0.99:
-         #   if target > 0:
-          #      target = 0
-           # else: target = 1
+        guess = (np.dot(inputs[i] - r_plane[1] * admitted, (r_plane[0] * admitted)))
+        if guess < 0:
+            target = 1
+        else:
+            target = 0
+        if np.random.uniform() < noise_fact:
+            target = (target + 1) % 2
 
         targets.append((target))
+    for i in irrelevant_components:
+        labels.remove(i)
 
-    if _plot:
+    if _plot and len(labels) == 2:
         f = plt.figure(figsize=(18, 10))
         mask = (np.array(targets, dtype=np.int) > 0)
-        plt.plot(inputs[:,4][mask], inputs[:,5][mask], 'r.', label='classified 1' )
-        plt.plot(inputs[:,4][~mask], inputs[:,5][~mask], 'b.', label='classified 0' )
-        x = np.linspace(np.min(inputs[:,4]), np.max(inputs[:,4]))
-        y = -r_plane[0][4]/r_plane[0][5]*x
-        plt.plot(x,y, color='black', label='separation plane')
+
+        f.add_subplot(2, 1, 1)
+        plt.plot(inputs[:, labels[0]][mask], inputs[:, labels[1]][mask], 'r.', label='classified 1')
+        x = np.linspace(np.min(inputs[:, labels[0]]), np.max(inputs[:, labels[0]]))
+        y = -r_plane[0][labels[0]] / r_plane[0][labels[1]] * (x - r_plane[1][labels[0]]) + r_plane[1][labels[1]]
+        plt.plot(x, y, color='black', label='separation plane')
         plt.legend()
         plt.xlim(x[0], x[-1])
-        plt.ylim(np.min(inputs[:,5]), np.max(inputs[:,5]) )
+        plt.ylim(np.min(inputs[:, labels[1]]), np.max(inputs[:, labels[1]]))
+
+        f.add_subplot(2, 1, 2)
+        plt.plot(inputs[:, labels[0]][~mask], inputs[:, labels[1]][~mask], 'b.', label='classified 0')
+        x = np.linspace(np.min(inputs[:, labels[0]]), np.max(inputs[:, labels[0]]))
+        y = -r_plane[0][labels[0]] / r_plane[0][labels[1]] * (x - r_plane[1][labels[0]]) + r_plane[1][labels[1]]
+        plt.plot(x, y, color='black', label='separation plane')
+        plt.legend()
+        plt.xlim(x[0], x[-1])
+        plt.ylim(np.min(inputs[:, labels[1]]), np.max(inputs[:, labels[1]]))
+
         plt.show()
     return np.array(targets, dtype=np.int)
 
 
-def random_plane(labels, space, irrelevant_components=0,_plot=False):
+def random_plane(labels, space, _plot=False):
     l = len(labels)
 
     random_versor = np.random.uniform(size=l)
     random_versor /= np.linalg.norm(random_versor)
 
     mean_vect = np.mean(space, axis=0)
-
-    assert np.all( space[:,0] ==1 ), space[:10]
-    assert np.all( (mean_vect[2:] -0.5)**2 < 0.1 ), mean_vect
-
-    print("Random versor=", random_versor)
-
-    if _plot:
-        f = plt.figure(figsize=(18, 10))
-        for i in range(l):
-            f.add_subplot(2, 3, i+1)
-            z = space[:,i]
-            plt.hist(z, int(len(z)/100), label='component-%i'%(i-1))
-            plt.legend()
-        plt.show()
 
     return [random_versor, mean_vect]
 
@@ -160,7 +161,9 @@ class CustomImageFolder(ImageFolder):
 
 
 class CustomNpzDataset(Dataset): ### MODIFIED HERE THE DATABASE TYPE FOR _GET_ITEM
-    def __init__(self, data_images, transform, labels, label_weights, name, class_values, num_channels, seed, y_target=None):
+    def __init__(self, data_images, transform, labels, label_weights, name, class_values, num_channels, seed, examples=None, y_target=None):
+        assert len(examples) == len(y_target), len(examples)+' '+len(y_target)
+
         self.seed = seed
         self.data_npz = data_images
         self._name = name
@@ -174,6 +177,7 @@ class CustomNpzDataset(Dataset): ### MODIFIED HERE THE DATABASE TYPE FOR _GET_IT
         ## ADDED GRAYBOX VARIANT
         self.isGRAY = False
         self.y_data = y_target
+        self.examples = examples
 
     @property
     def name(self):
@@ -208,8 +212,10 @@ class CustomNpzDataset(Dataset): ### MODIFIED HERE THE DATABASE TYPE FOR _GET_IT
             if self.isGRAY:
                 y = self.y_data[index1]
                 z_values = self.label_handler.get_values(index1)
-                return img1, z_values, y
-        return img1, label1, 0
+
+                return img1, z_values, y, self.examples[index1]
+
+        return img1, label1, 0, 0
 
     def __len__(self):
         return self.data_npz.shape[0]
@@ -264,7 +270,7 @@ class DisentanglementLibDataset(Dataset):
 
 
 def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, image_size, include_labels, pin_memory,
-                                shuffle, droplast, d_version="full"):
+                                shuffle, droplast, masking_fact=100, d_version="full", noise_class=0.01):
     transform = transforms.Compose([
         transforms.Resize((image_size, image_size)),
         transforms.ToTensor(), ])
@@ -377,13 +383,8 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
                 # always set label values to integers starting from zero
                 unique_values_mock = np.arange(len(unique_values))
                 class_values.append(unique_values_mock)
-#            print("the npz is of size", np.size(npz['latents_values']))
             label_weights = np.array(label_weights)#, dtype=np.float32)
-        #print("Labels is size: ", np.shape(labels))
 
-        #max_capacity = 10000
- #       print("labels are of size", np.size(labels))
-  #      print("the npz is of size", np.size(npz['latents_values']))
         data_kwargs = {'data_images': npz['imgs']}
         data_kwargs.update({'labels': labels_one_hot,
                        'label_weights': label_weights,
@@ -393,9 +394,8 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
         #print("The r plane:",[random_plane(label_idx, ranges)])
         if labels is not None:
             ### NOW CREATE A PARTICULAR TYPE THAT PREDICTS ONLY WITH TWO COMPONENTS
-            target_set = np.asarray(
-                        target_cast(labels, r_plane=random_plane(label_idx, labels,  _plot=False), irrelevant_components=[0], _plot=False), dtype=np.int
-                        )
+            target_set = np.asarray(target_cast(label_idx, labels, r_plane=random_plane(label_idx, labels,  _plot=False),
+                                    irrelevant_components=[0], _plot=True, noise_fact=noise_class), dtype=np.int)
             print("target", np.shape(target_set))
             data_kwargs.update({'y_target': target_set})
 
@@ -443,15 +443,20 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
             accuracy = Accuracy_Loss()((torch.tensor(y_pred, dtype=torch.float)), torch.tensor(y_target1, dtype=torch.float))
             print("ACCURACY for logreg: ", accuracy)
 
-
-
-
     else:
         raise NotImplementedError
 
     data_kwargs.update({'seed': seed,
                         'name': name,
                         'transform': transform})
+    ## PUT THE LABELED Z
+    random_entries = np.random.uniform(0,1, size=(len(labels), ))
+    examples = np.ones(len(labels))
+
+    examples[~(random_entries <= (masking_fact/100) )] = 0
+
+    data_kwargs.update({'examples': examples })
+
     dataset = dset(**data_kwargs)
 
     # Setting the Graybox here
@@ -556,7 +561,7 @@ def _get_dataloader(name, batch_size, seed, num_workers, pin_memory, shuffle, dr
 
 
 def get_dataloader(dset_name, dset_dir, batch_size, seed, num_workers, image_size, include_labels, pin_memory,
-                   shuffle, droplast, d_version="full"):
+                   shuffle, droplast, d_version="full", masking_fact=100):
     locally_supported_datasets = c.DATASETS[0:2]
     dset_name = get_dataset_name(dset_name)
     dsets_dir = get_datasets_dir(dset_dir)
@@ -566,7 +571,7 @@ def get_dataloader(dset_name, dset_dir, batch_size, seed, num_workers, image_siz
 
     if dset_name in locally_supported_datasets:
         return _get_dataloader_with_labels(dset_name, dsets_dir, batch_size, seed, num_workers, image_size,
-                                           include_labels, pin_memory, shuffle, droplast, d_version=d_version)
+                                           include_labels, pin_memory, shuffle, droplast, d_version=d_version, masking_fact=masking_fact, noise_class=0.1)
     else:
         # use the dataloader of Google's disentanglement_lib
         return _get_dataloader(dset_name, batch_size, seed, num_workers, pin_memory, shuffle, droplast)

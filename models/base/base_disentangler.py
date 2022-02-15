@@ -6,7 +6,8 @@ import torch
 import torchvision.utils
 
 from common.utils import grid2gif, get_data_for_visualization, prepare_data_for_visualization, get_lr, is_time_for
-from common.data_loader import _get_dataloader_with_labels
+from common.data_loader import get_dataloader
+
 import common.constants as c
 from aicrowd.aicrowd_utils import is_on_aicrowd_server, evaluate_disentanglement_metric
 from common.utils import get_scheduler
@@ -64,10 +65,9 @@ class BaseDisentangler(object):
         self.aicrowd_challenge = args.aicrowd_challenge
 
 
-        from common.data_loader import get_dataloader
         self.data_loader, self.test_loader  = get_dataloader(args.dset_name, args.dset_dir, args.batch_size, args.seed, args.num_workers,
                                                 args.image_size, args.include_labels, args.pin_memory, not args.test,
-                                                not args.test, args.d_version) # included dsprite version
+                                                not args.test, d_version=args.d_version, masking_fact=args.masking_fact) # included dsprite version
 
         # only used if some supervision was imposed such as in Conditional VAE
         if self.data_loader.dataset.has_labels():

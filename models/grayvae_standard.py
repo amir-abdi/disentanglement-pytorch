@@ -65,6 +65,7 @@ class GrayVAE_Standard(VAE):
 
         self.label_weight = args.label_weight
         self.masking_fact = args.masking_fact
+        self.show_loss = args.show_loss
 
         self.dataframe_test = pd.DataFrame()
         self.dataframe_eval = pd.DataFrame()
@@ -79,7 +80,7 @@ class GrayVAE_Standard(VAE):
         pred = nn.Softmax(dim=1)(pred_raw)
         return  pred_raw, pred.to(self.device, dtype=torch.float32) #nn.Sigmoid()(self.classification(input_x).resize(len(input_x)))
 
-    def vae_classification(self, losses, x_true1, label1, y_true1, classification=False):
+    def vae_classification(self, losses, x_true1, label1, y_true1, examples, classification=False):
 
         mu, logvar = self.model.encode(x=x_true1,)
 
@@ -93,8 +94,8 @@ class GrayVAE_Standard(VAE):
   #      z_prediction[:, label1.size(1):] = mu[:, label1.size(1):].detach()
 
         prediction, _ = self.predict(latent=z)
-        rn_mask = (torch.rand(size=(self.batch_size,)) < self.masking_fact / 100)
-        n_passed = len(z[rn_mask])
+        rn_mask = (examples==1)
+        n_passed = len(examples[rn_mask])
 
         if not classification:
             loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar, z=z)
@@ -105,6 +106,7 @@ class GrayVAE_Standard(VAE):
             del loss_dict
 
             if n_passed > 0: # added the presence of only small labelled generative factors
+
                 ## loss of categorical variables
 
                 ## loss of continuous variables
@@ -159,10 +161,8 @@ class GrayVAE_Standard(VAE):
 
             #TODO: insert the regression on the latents factor matching
 
-            if n_passed > 0:
-                losses.update(prediction=nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long)))
-            else:
-                losses.update(prediction=torch.tensor(-1))
+            losses.update(prediction=nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long)))
+
             #losses[c.TOTAL_VAE] += nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long))
             #losses.update(prediction=nn.BCEWithLogitsLoss()(prediction, y_true1.to(self.device, dtype=torch.float)))
             #losses[c.TOTAL_VAE] = nn.BCEWithLogitsLoss()(prediction,y_true1.to(self.device, dtype= torch.float))
@@ -185,9 +185,9 @@ class GrayVAE_Standard(VAE):
             print("## Initializing Train indexes")
             print("::path chosen ->",out_path+"/train_runs")
 
-        print("The model we are using")
-        print(self.model)
-        print('Total parameters:', sum(p.numel() for p in self.model.parameters()))
+        #print("The model we are using")
+        #print(self.model)
+        #print('Total parameters:', sum(p.numel() for p in self.model.parameters()))
 
 #        Iter_t, Rec_t, KLD_t, Latent_t, BCE_t, Acc_t = [], [], [], [], [], []
         Iterations, Epochs, Reconstructions, KLDs, True_Values, Accuracies, F1_scores = [], [], [], [], [], [], []  ## JUST HERE FOR NOW
@@ -203,15 +203,15 @@ class GrayVAE_Standard(VAE):
                 start_classification = True
             else: start_classification = False
 
-            for internal_iter, (x_true1, label1, y_true1) in enumerate(self.data_loader):
+            for internal_iter, (x_true1, label1, y_true1, examples) in enumerate(self.data_loader):
 
                 if internal_iter > 1 and is_time_for(self.iter, self.evaluate_iter+1):
-                    self.dataframe_eval = self.dataframe_eval.append(self.evaluate_results,  ignore_index=True)
 
+#                    self.dataframe_eval = self.dataframe_eval.append(self.evaluate_results,  ignore_index=True)
                     # test the behaviour on other losses
                     trec, tkld, tlat, tbce, tacc = self.test(end_of_epoch=False)
-                    self.dataframe_eval = self.dataframe_eval.append({'iter': self.iter, 'rec': trec, 'kld': tkld, 'latent': tlat,'BCE': tbce, 'Acc':tacc},
-                                                                     ignore_index=True)
+                    factors = {'iter': self.iter, 'rec': trec, 'kld': tkld, 'latent': tlat, 'BCE': tbce, 'Acc': tacc}
+                    self.dataframe_eval = self.dataframe_eval.append(factors.update(self.evaluate_results), ignore_index=True)
                     self.net_mode(train=True)
                     if track_changes: self.dataframe_eval.to_csv(os.path.join(out_path, 'dis_metrics.csv'), index=False)
 
@@ -225,14 +225,14 @@ class GrayVAE_Standard(VAE):
 
                 ###configuration for dsprites
 
-                losses, params = self.vae_classification(losses, x_true1, label1, y_true1,
+                losses, params = self.vae_classification(losses, x_true1, label1, y_true1, examples,
                                                          classification=start_classification)
 
                 self.optim_G.zero_grad()
                 self.optim_G_mse.zero_grad()
                 self.class_G.zero_grad()
 
-                if (internal_iter%250)==0: print("Losses:", losses)
+                if (internal_iter%self.show_loss)==0: print("Losses:", losses)
 
                 if not start_classification:
                     losses[c.TOTAL_VAE].backward(retain_graph=False)
@@ -301,7 +301,7 @@ class GrayVAE_Standard(VAE):
 
             mu, logvar = self.model.encode(x=x_true, )
             z = torch.tanh(2*reparametrize(mu, logvar))
-            prediction = self.predict(latent=z)
+            prediction, _ = self.predict(latent=z)
             x_recon = self.model.decode(z=z,)
 
             if end_of_epoch:
@@ -314,7 +314,7 @@ class GrayVAE_Standard(VAE):
             kld+=(self._kld_loss_fn(mu, logvar).detach().item())
 
             if self.latent_loss == 'MSE':
-                loss_bin = nn.MSELoss(reduction='mean')(z[:, :label.size(1)], 2 * label - 1)
+                loss_bin = nn.MSELoss(reduction='mean')(z[:, :label.size(1)], 2 * label.to(dtype=torch.float32) - 1)
             elif self.latent_loss == 'BCE':
                 loss_bin = nn.BCELoss(reduction='mean')((1+z[:, :label.size(1)])/2, label )
             else:
@@ -323,9 +323,9 @@ class GrayVAE_Standard(VAE):
             del loss_bin
 
             BCE+=(nn.CrossEntropyLoss(reduction='mean')(prediction,
-                                                        y_true.to(self.device, dtype=torch.long)).detach().item)
+                                                        y_true.to(self.device, dtype=torch.long)).detach().item())
             Acc+=(Accuracy_Loss()(prediction,
-                                   y_true.to(self.device, dtype=torch.long)).detach().item )
+                                   y_true.to(self.device, dtype=torch.long)).detach().item() )
 
             #self.iter += 1
             #self.pbar.update(1)
