@@ -97,9 +97,6 @@ class GrayVAE_Standard(VAE):
         rn_mask = (examples==1)
         n_passed = len(examples[rn_mask])
 
-        print('Prediction', forecast)
-        quit()
-
         if not classification:
             loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar, z=z)
             loss_dict = self.loss_fn(losses, reduce_rec=False, **loss_fn_args)
@@ -298,7 +295,7 @@ class GrayVAE_Standard(VAE):
     def test(self, end_of_epoch=True):
         self.net_mode(train=False)
         rec, kld, latent, BCE, Acc = 0, 0, 0, 0, 0
-        for internal_iter, (x_true, label, y_true) in enumerate(self.test_loader):
+        for internal_iter, (x_true, label, y_true, _) in enumerate(self.test_loader):
             x_true = x_true.to(self.device)
             label = label[:,1:].to(self.device, dtype=torch.long)
 
