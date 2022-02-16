@@ -67,7 +67,7 @@ class GrayVAE_Standard(VAE):
         self.masking_fact = args.masking_fact
         self.show_loss = args.show_loss
 
-        self.dataframe_dis = pd.DataFrame(columns=self.evaluation_metric)
+        self.dataframe_dis = pd.DataFrame() #columns=self.evaluation_metric)
         self.dataframe_eval = pd.DataFrame(columns=['iter','rec','kld','latent','BCE','Acc'])
 
         self.latent_loss = args.latent_loss
