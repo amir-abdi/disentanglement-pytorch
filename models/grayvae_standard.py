@@ -216,6 +216,7 @@ class GrayVAE_Standard(VAE):
 
                     if track_changes and not self.dataframe_eval.empty:
                         self.dataframe_eval.to_csv(os.path.join(out_path, 'dis_metrics.csv'), index=False)
+                        print('Saved dis_metrics')
 
                 Iterations.append(internal_iter+1)
                 Epochs.append(epoch)
