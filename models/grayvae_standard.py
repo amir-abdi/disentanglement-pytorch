@@ -213,7 +213,9 @@ class GrayVAE_Standard(VAE):
                     factors = {'iter': self.iter, 'rec': trec, 'kld': tkld, 'latent': tlat, 'BCE': tbce, 'Acc': tacc}
                     self.dataframe_eval = self.dataframe_eval.append(factors.update(self.evaluate_results), ignore_index=True)
                     self.net_mode(train=True)
-                    if track_changes: self.dataframe_eval.to_csv(os.path.join(out_path, 'dis_metrics.csv'), index=False)
+
+                    if track_changes and not self.dataframe_eval.empty:
+                        self.dataframe_eval.to_csv(os.path.join(out_path, 'dis_metrics.csv'), index=False)
 
                 Iterations.append(internal_iter+1)
                 Epochs.append(epoch)
