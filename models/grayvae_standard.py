@@ -93,9 +93,12 @@ class GrayVAE_Standard(VAE):
  #       z_prediction[:, :label1.size(1)] = label1.detach()
   #      z_prediction[:, label1.size(1):] = mu[:, label1.size(1):].detach()
 
-        prediction, _ = self.predict(latent=z)
+        prediction, forecast = self.predict(latent=z)
         rn_mask = (examples==1)
         n_passed = len(examples[rn_mask])
+
+        print('Prediction', forecast)
+        quit()
 
         if not classification:
             loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar, z=z)
@@ -301,7 +304,7 @@ class GrayVAE_Standard(VAE):
 
             mu, logvar = self.model.encode(x=x_true, )
             z = torch.tanh(2*reparametrize(mu, logvar))
-            prediction, _ = self.predict(latent=z)
+            prediction, forecast = self.predict(latent=z)
             x_recon = self.model.decode(z=z,)
 
             if end_of_epoch:
@@ -324,7 +327,9 @@ class GrayVAE_Standard(VAE):
 
             BCE+=(nn.CrossEntropyLoss(reduction='mean')(prediction,
                                                         y_true.to(self.device, dtype=torch.long)).detach().item())
-            Acc+=(Accuracy_Loss()(prediction,
+
+
+            Acc+=(Accuracy_Loss()(forecast,
                                    y_true.to(self.device, dtype=torch.long)).detach().item() )
 
             #self.iter += 1
