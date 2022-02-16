@@ -53,6 +53,11 @@ def evaluate_disentanglement_metric(model, metric_names=['mig'], dataset_name='m
         os.makedirs(os.path.join(model.ckpt_dir, 'results'), exist_ok=True)
 
         results_dict = evaluate(model.ckpt_dir, output_dir, True)
+
+        if model.out_path is not None:
+            os.makedirs(os.path.join(model.out_path, 'eval_results'), exist_ok=True)
+            evaluate(model.out_path, output_dir, True)
+
         gin.clear_config()
         results = 0
         for key, value in results_dict.items():

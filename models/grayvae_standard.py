@@ -67,8 +67,8 @@ class GrayVAE_Standard(VAE):
         self.masking_fact = args.masking_fact
         self.show_loss = args.show_loss
 
-#        self.dataframe_test = pd.DataFrame()
-        self.dataframe_eval = pd.DataFrame(columns=['iter','rec','kld','latent','BCE','Acc']+self.evaluation_metric)
+        self.dataframe_dis = pd.DataFrame(columns=self.evaluation_metric)
+        self.dataframe_eval = pd.DataFrame(columns=['iter','rec','kld','latent','BCE','Acc'])
 
         self.latent_loss = args.latent_loss
 
@@ -179,6 +179,7 @@ class GrayVAE_Standard(VAE):
         if 'output'  in kwargs.keys():
             out_path = kwargs['output']
             track_changes=True
+            self.out_path = out_path #TODO: Not happy with this thing
 
         else: track_changes=False;
 
@@ -206,19 +207,27 @@ class GrayVAE_Standard(VAE):
 
             for internal_iter, (x_true1, label1, y_true1, examples) in enumerate(self.data_loader):
 
-                if internal_iter > 1 and is_time_for(self.iter, self.evaluate_iter+1):
+                if internal_iter > 1 and is_time_for(self.iter, self.evaluate_iter):
 
 #                    self.dataframe_eval = self.dataframe_eval.append(self.evaluate_results,  ignore_index=True)
                     # test the behaviour on other losses
                     trec, tkld, tlat, tbce, tacc = self.test(end_of_epoch=False)
-                    factors = {'iter': self.iter, 'rec': trec, 'kld': tkld, 'latent': tlat, 'BCE': tbce, 'Acc': tacc}
-                    pd_factors = pd.DataFrame(factors.update(self.evaluate_results), index=[0])
+                    factors = pd.DataFrame(
+                        {'iter': self.iter, 'rec': trec, 'kld': tkld, 'latent': tlat, 'BCE': tbce, 'Acc': tacc}, index=[0])
 
-                    self.dataframe_eval = self.dataframe_eval.append(pd_factors, ignore_index=True)
+                    self.dataframe_eval = self.dataframe_eval.append(factors, ignore_index=True)
                     self.net_mode(train=True)
 
                     if track_changes and not self.dataframe_eval.empty:
-                        self.dataframe_eval.to_csv(os.path.join(out_path, 'dis_metrics.csv'), index=False)
+                        self.dataframe_eval.to_csv(os.path.join(out_path, 'eval_results/test_metrics.csv'), index=False)
+                        print('Saved test_metrics')
+
+                    # include disentanglement metrics
+                    dis_metrics = pd.DataFrame(self.evaluate_results, index=[0])
+                    self.dataframe_dis = self.dataframe_dis.append(dis_metrics)
+
+                    if track_changes and not self.dataframe_dis.empty:
+                        self.dataframe_dis.to_csv(os.path.join(out_path, 'eval_results/dis_metrics.csv'), index=False)
                         print('Saved dis_metrics')
 
                 Iterations.append(internal_iter+1)
@@ -286,7 +295,7 @@ class GrayVAE_Standard(VAE):
                         for i in range(label1.size(1)):
                             sofar['latent%i'%i] = np.asarray(latent_errors)[:,i]
 
-                        sofar.to_csv(os.path.join(out_path, 'metrics.csv'), index=False)
+                        sofar.to_csv(os.path.join(out_path+'/train_runs', 'metrics.csv'), index=False)
                         del sofar
 
 #                        if not self.dataframe_eval.empty:

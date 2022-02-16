@@ -64,6 +64,9 @@ class BaseDisentangler(object):
         self.image_size = args.image_size
         self.aicrowd_challenge = args.aicrowd_challenge
 
+        #EMANUELE
+        self.out_path = None
+
 
         self.data_loader, self.test_loader  = get_dataloader(args.dset_name, args.dset_dir, args.batch_size, args.seed, args.num_workers,
                                                 args.image_size, args.include_labels, args.pin_memory, not args.test,
