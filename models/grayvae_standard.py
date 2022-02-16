@@ -67,8 +67,9 @@ class GrayVAE_Standard(VAE):
         self.masking_fact = args.masking_fact
         self.show_loss = args.show_loss
 
-        self.dataframe_test = pd.DataFrame()
-        self.dataframe_eval = pd.DataFrame()
+#        self.dataframe_test = pd.DataFrame()
+        self.dataframe_eval = pd.DataFrame(columns=['iter','rec','kld','latent','BCE','Acc']+self.evaluation_metric)
+
         self.latent_loss = args.latent_loss
 
     def predict(self, **kwargs):
@@ -211,7 +212,9 @@ class GrayVAE_Standard(VAE):
                     # test the behaviour on other losses
                     trec, tkld, tlat, tbce, tacc = self.test(end_of_epoch=False)
                     factors = {'iter': self.iter, 'rec': trec, 'kld': tkld, 'latent': tlat, 'BCE': tbce, 'Acc': tacc}
-                    self.dataframe_eval = self.dataframe_eval.append(factors.update(self.evaluate_results), ignore_index=True)
+                    pd_factors = pd.DataFrame(factors.update(self.evaluate_results), index=[0])
+
+                    self.dataframe_eval = self.dataframe_eval.append(pd_factors, ignore_index=True)
                     self.net_mode(train=True)
 
                     if track_changes and not self.dataframe_eval.empty:
