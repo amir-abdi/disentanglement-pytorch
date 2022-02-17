@@ -5,6 +5,7 @@ from .cvae import CVAE
 from .ifcvae import IFCVAE
 from .grayvae import GRAYVAE
 from .grayvae_standard import GrayVAE_Standard
+from .grayvae_join import GrayVAE_Join
 
 # TODO: add author and license info to all files.
 # TODO: 3 different divergences in the InfoVAE paper https://arxiv.org/pdf/1706.02262.pdf
