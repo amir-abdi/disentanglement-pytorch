@@ -86,7 +86,7 @@ class GrayVAE_Standard(VAE):
         mu, logvar = self.model.encode(x=x_true1,)
 
         z = reparametrize(mu, logvar)
-        z = torch.tanh(2*z)
+        mu_processed = torch.tanh(2*mu)
         x_recon = self.model.decode(z=z,)
 
         # CHECKING THE CONSISTENCY
@@ -113,24 +113,24 @@ class GrayVAE_Standard(VAE):
                 ## loss of continuous variables
                 if self.latent_loss == 'MSE':
                     #TODO: PLACE ONEHOT ENCODING
-                    loss_bin = nn.MSELoss(reduction='mean')( z[rn_mask][:, :label1.size(1)], 2*label1[rn_mask]-1  )
+                    loss_bin = nn.MSELoss(reduction='mean')( mu_processed[rn_mask][:, :label1.size(1)], 2*label1[rn_mask]-1  )
                     ## track losses
                     err_latent = []
                     for i in range(label1.size(1)):
-                        err_latent.append(nn.MSELoss(reduction='mean')(z[rn_mask][:, i], 2 * label1[rn_mask][:,i] - 1).detach().item() )
+                        err_latent.append(nn.MSELoss(reduction='mean')(mu_processed[rn_mask][:, i], 2 * label1[rn_mask][:,i] - 1).detach().item() )
 
                     losses.update(true_values=self.label_weight * loss_bin)
                     losses[c.TOTAL_VAE] += self.label_weight * loss_bin
 
                 elif self.latent_loss == 'BCE':
 
-                    loss_bin = nn.BCELoss(reduction='mean')((1+z[rn_mask][:, :label1.size(1)])/2,
+                    loss_bin = nn.BCELoss(reduction='mean')((1+mu_processed[rn_mask][:, :label1.size(1)])/2,
                                                              label1[rn_mask] )
 
                     ## track losses
                     err_latent = []
                     for i in range(label1.size(1)):
-                        err_latent.append(nn.BCELoss(reduction='mean')((1+z[rn_mask][:, i])/2,
+                        err_latent.append(nn.BCELoss(reduction='mean')((1+mu_processed[rn_mask][:, i])/2,
                                                                         label1[rn_mask][:, i] ).detach().item())
                     losses.update(true_values=self.label_weight * loss_bin)
                     losses[c.TOTAL_VAE] += self.label_weight * loss_bin
@@ -149,10 +149,10 @@ class GrayVAE_Standard(VAE):
 
             loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar, z=z)
             loss_dict = self.loss_fn(losses, reduce_rec=True, **loss_fn_args)
-            loss_dict.update(true_values=nn.BCELoss(reduction='mean')((1+z[:,:label1.size(1)])/2, label1))
-            loss_dict[c.TOTAL_VAE] += nn.BCELoss(reduction='mean')((1+z[:, :label1.size(1)])/2, label1)
+            loss_dict.update(true_values=-1) # nn.BCELoss(reduction='mean')((1+mu_processed[:,:label1.size(1)])/2, label1))
+            loss_dict[c.TOTAL_VAE] += -1 #nn.BCELoss(reduction='mean')((1+z[:, :label1.size(1)])/2, label1)
             losses.update({'total_vae': loss_dict['total_vae'].detach(), 'recon': loss_dict['recon'].detach(),
-                           'kld': loss_dict['kld'].detach(), 'true_values': loss_dict['true_values'].detach()})
+                           'kld': loss_dict['kld'].detach(), 'true_values': loss_dict['true_values']})
 
             del loss_dict
 

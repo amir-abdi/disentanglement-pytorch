@@ -252,13 +252,14 @@ class GrayVAE_Join(VAE):
                 self.optim_G.zero_grad()
                 self.optim_G_mse.zero_grad()
                 self.class_G.zero_grad()
+                self.class_G_all.zero_grad()
 
                 if (internal_iter%self.show_loss)==0: print("Losses:", losses)
 
                 if not start_classification:
                     losses[c.TOTAL_VAE].backward(retain_graph=False)
                     #losses['true_values'].backward(retain_graph=False)
-                    self.optim_G.step()
+                    self.class_G_all.step()
 
                 if start_classification and (params['n_passed']>0):
                     losses['prediction'].backward(retain_graph=False)
