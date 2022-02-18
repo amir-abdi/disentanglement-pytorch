@@ -62,7 +62,7 @@ class GrayVAE_Join(VAE):
         self.reduce_rec = args.reduce_recon
 
         self.class_G = optim.SGD(self.classification.parameters(), lr=0.01, momentum=0.9)
-        self.class_G_all = optim.Adam({'encoder':self.model.encoder.parameters(), 'classifier': self.classification.parameters()},
+        self.class_G_all = optim.Adam([*self.model.encoder.parameters(), *self.classification.parameters()],
                                       lr=self.lr_G, betas=(self.beta1, self.beta2))
 
         self.label_weight = args.label_weight

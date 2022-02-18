@@ -135,6 +135,27 @@ class GrayVAE_Standard(VAE):
                     losses.update(true_values=self.label_weight * loss_bin)
                     losses[c.TOTAL_VAE] += self.label_weight * loss_bin
 
+                elif self.latent_loss == '1st_BCE':
+                    # L = BCE + sigma^2*s(mu)s(-mu)
+                    # where s(z) = 1/(1+e^-z)
+                    loss_bin = nn.BCELoss(reduction='mean')((1 + mu_processed[rn_mask][:, :label1.size(1)]) / 2,
+                                                            label1[rn_mask])
+                    loss_bin += torch.mean(torch.exp(logvar[rn_mask])**2*( (1+mu_processed[rn_mask])/2*(1-mu_processed[rn_mask])/2))
+
+                    ## track losses
+                    err_latent = []
+                    for i in range(label1.size(1)):
+                        err_latent.append(-1)
+
+                    losses.update(true_values=self.label_weight * loss_bin)
+                    losses[c.TOTAL_VAE] += self.label_weight * loss_bin
+
+                elif self.latent_loss == '1st_MSE':
+                    # L = MSE +
+                    # where
+                    pass
+
+
                 else:
                     raise NotImplementedError('Not implemented loss.')
 
