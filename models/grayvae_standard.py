@@ -68,7 +68,7 @@ class GrayVAE_Standard(VAE):
         self.show_loss = args.show_loss
 
         self.dataframe_dis = pd.DataFrame() #columns=self.evaluation_metric)
-        self.dataframe_eval = pd.DataFrame(columns=['iter','rec','kld','latent','BCE','Acc'])
+        self.dataframe_eval = pd.DataFrame()
 
         self.latent_loss = args.latent_loss
 
@@ -170,7 +170,7 @@ class GrayVAE_Standard(VAE):
 
             loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar, z=z)
             loss_dict = self.loss_fn(losses, reduce_rec=True, **loss_fn_args)
-            loss_dict.update(true_values=-1) # nn.BCELoss(reduction='mean')((1+mu_processed[:,:label1.size(1)])/2, label1))
+            loss_dict.update(true_values=torch.tensor(-1)) # nn.BCELoss(reduction='mean')((1+mu_processed[:,:label1.size(1)])/2, label1))
             loss_dict[c.TOTAL_VAE] += -1 #nn.BCELoss(reduction='mean')((1+z[:, :label1.size(1)])/2, label1)
             losses.update({'total_vae': loss_dict['total_vae'].detach(), 'recon': loss_dict['recon'].detach(),
                            'kld': loss_dict['kld'].detach(), 'true_values': loss_dict['true_values']})
@@ -352,7 +352,7 @@ class GrayVAE_Standard(VAE):
             if self.latent_loss == 'MSE':
                 loss_bin = nn.MSELoss(reduction='mean')(z[:, :label.size(1)], 2 * label.to(dtype=torch.float32) - 1)
             elif self.latent_loss == 'BCE':
-                loss_bin = nn.BCELoss(reduction='mean')((1+z[:, :label.size(1)])/2, label )
+                loss_bin = nn.BCELoss(reduction='mean')((1+z[:, :label.size(1)])/2, label.to(dtype=torch.float32) )
             else:
                 NotImplementedError('Wrong argument for latent loss.')
             latent+=(loss_bin.detach().item())
