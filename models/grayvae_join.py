@@ -98,7 +98,10 @@ class GrayVAE_Join(VAE):
 
         prediction, forecast = self.predict(latent=z)
         rn_mask = (examples==1)
-        n_passed = len(examples[rn_mask])
+        if examples[rn_mask] is None:
+            n_passed = 0
+        else:
+            n_passed = len(examples[rn_mask])
 
         loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar, z=z)
         loss_dict = self.loss_fn(losses, reduce_rec=False, **loss_fn_args)
@@ -140,8 +143,12 @@ class GrayVAE_Join(VAE):
             else:
                 raise NotImplementedError('Not implemented loss.')
 
-            return losses, {'x_recon': x_recon, 'mu': mu, 'z': z, 'logvar': logvar, "prediction": prediction,
-                        'latents': err_latent, 'n_passed': n_passed}
+        else:
+            err_latent = [-1]*label1.size(1)
+            losses.update(true_values=torch.tensor(-1))
+
+        return losses, {'x_recon': x_recon, 'mu': mu, 'z': z, 'logvar': logvar, "prediction": prediction,
+                    'latents': err_latent, 'n_passed': n_passed}
 
     def train(self, **kwargs):
 
