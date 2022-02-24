@@ -98,6 +98,7 @@ class GrayVAE_Join(VAE):
 
         prediction, forecast = self.predict(latent=z)
         rn_mask = (examples==1)
+
         if examples[rn_mask] is None:
             n_passed = 0
         else:
@@ -107,7 +108,7 @@ class GrayVAE_Join(VAE):
         loss_dict = self.loss_fn(losses, reduce_rec=False, **loss_fn_args)
         losses.update(loss_dict)
 
-        losses.update(prediction=nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long)))
+        losses.update(prediction=nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long))*self.label_weight)
         losses[c.TOTAL_VAE] += nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long))*self.label_weight
 
         #            losses.update({'total_vae': loss_dict['total_vae'].detach(), 'recon': loss_dict['recon'].detach(),
