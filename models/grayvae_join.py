@@ -88,7 +88,7 @@ class GrayVAE_Join(VAE):
         mu, logvar = self.model.encode(x=x_true1,)
 
         z = reparametrize(mu, logvar)
-        z = torch.tanh(2*z)
+        z = torch.tanh(z/2)
         x_recon = self.model.decode(z=z,)
 
         # CHECKING THE CONSISTENCY
@@ -268,7 +268,8 @@ class GrayVAE_Join(VAE):
             label = label[:,1:].to(self.device, dtype=torch.long)
 
             mu, logvar = self.model.encode(x=x_true, )
-            z = torch.tanh(2*reparametrize(mu, logvar))
+            z = reparametrize(mu, logvar)
+            z = torch.tanh(z/2)
             prediction, forecast = self.predict(latent=z)
             x_recon = self.model.decode(z=z,)
 

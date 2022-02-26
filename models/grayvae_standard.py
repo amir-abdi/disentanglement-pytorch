@@ -86,7 +86,7 @@ class GrayVAE_Standard(VAE):
         mu, logvar = self.model.encode(x=x_true1,)
 
         z = reparametrize(mu, logvar)
-        mu_processed = torch.tanh(2*mu)
+        mu_processed = torch.tanh(mu/2)
         x_recon = self.model.decode(z=z,)
 
         # CHECKING THE CONSISTENCY
@@ -94,7 +94,7 @@ class GrayVAE_Standard(VAE):
  #       z_prediction[:, :label1.size(1)] = label1.detach()
   #      z_prediction[:, label1.size(1):] = mu[:, label1.size(1):].detach()
 
-        prediction, forecast = self.predict(latent=z)
+        prediction, forecast = self.predict(latent=mu_processed)
         rn_mask = (examples==1)
         n_passed = len(examples[rn_mask])
 
@@ -135,25 +135,10 @@ class GrayVAE_Standard(VAE):
                     losses.update(true_values=self.label_weight * loss_bin)
                     losses[c.TOTAL_VAE] += self.label_weight * loss_bin
 
-                elif self.latent_loss == '1st_BCE':
-                    # L = BCE + sigma^2*s(mu)s(-mu)
-                    # where s(z) = 1/(1+e^-z)
-                    loss_bin = nn.BCELoss(reduction='mean')((1 + mu_processed[rn_mask][:, :label1.size(1)]) / 2,
-                                                            label1[rn_mask])
-                    loss_bin += torch.mean(torch.exp(logvar[rn_mask])**2*( (1+mu_processed[rn_mask])/2*(1-mu_processed[rn_mask])/2))
+                elif self.latent_loss == 'exact_BCE':
+                    mu_processed = nn.Sigmoid(mu/ 1)
+                    loss_bin = nn.BCELoss(reduction='mean')(  )
 
-                    ## track losses
-                    err_latent = []
-                    for i in range(label1.size(1)):
-                        err_latent.append(-1)
-
-                    losses.update(true_values=self.label_weight * loss_bin)
-                    losses[c.TOTAL_VAE] += self.label_weight * loss_bin
-
-                elif self.latent_loss == '1st_MSE':
-                    # L = MSE +
-                    # where
-                    pass
 
 
                 else:
@@ -183,7 +168,7 @@ class GrayVAE_Standard(VAE):
 
             #TODO: insert the regression on the latents factor matching
 
-            losses.update(prediction=nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long)))
+            losses.update(prediction=nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1) )
 
             #losses[c.TOTAL_VAE] += nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long))
             #losses.update(prediction=nn.BCEWithLogitsLoss()(prediction, y_true1.to(self.device, dtype=torch.float)))
@@ -257,7 +242,7 @@ class GrayVAE_Standard(VAE):
 
                 x_true1 = x_true1.to(self.device)
                 label1 = label1[:, 1:].to(self.device)
-                y_true1 = y_true1.to(self.device)
+                y_true1 = y_true1.to(self.device, dtype=torch.long)
 
                 ###configuration for dsprites
 
@@ -306,7 +291,7 @@ class GrayVAE_Standard(VAE):
                     else: #CLASSIFICATION
 
                         Accuracies.append(losses['prediction'].item())
-                        f1_class = Accuracy_Loss().to(self.device)
+                        f1_class = Accuracy_Loss()
                         F1_scores.append(f1_class(params['prediction'], y_true1).item())
                         del f1_class
 
@@ -334,10 +319,13 @@ class GrayVAE_Standard(VAE):
         for internal_iter, (x_true, label, y_true, _) in enumerate(self.test_loader):
             x_true = x_true.to(self.device)
             label = label[:,1:].to(self.device, dtype=torch.long)
+            y_true =  y_true.to(self.device, dtype=torch.long)
 
             mu, logvar = self.model.encode(x=x_true, )
-            z = torch.tanh(2*reparametrize(mu, logvar))
-            prediction, forecast = self.predict(latent=z)
+            z = reparametrize(mu, logvar)
+
+            mu_processed = torch.tanh(mu / 2)
+            prediction, forecast = self.predict(latent=mu_processed)
             x_recon = self.model.decode(z=z,)
 
             if end_of_epoch:
@@ -350,20 +338,20 @@ class GrayVAE_Standard(VAE):
             kld+=(self._kld_loss_fn(mu, logvar).detach().item())
 
             if self.latent_loss == 'MSE':
-                loss_bin = nn.MSELoss(reduction='mean')(z[:, :label.size(1)], 2 * label.to(dtype=torch.float32) - 1)
+                loss_bin = nn.MSELoss(reduction='mean')(mu_processed[:, :label.size(1)], 2 * label.to(dtype=torch.float32) - 1)
             elif self.latent_loss == 'BCE':
-                loss_bin = nn.BCELoss(reduction='mean')((1+z[:, :label.size(1)])/2, label.to(dtype=torch.float32) )
+                loss_bin = nn.BCELoss(reduction='mean')((1+mu_processed[:, :label.size(1)])/2, label.to(dtype=torch.float32) )
             else:
                 NotImplementedError('Wrong argument for latent loss.')
             latent+=(loss_bin.detach().item())
             del loss_bin
 
             BCE+=(nn.CrossEntropyLoss(reduction='mean')(prediction,
-                                                        y_true.to(self.device, dtype=torch.long)).detach().item())
+                                                        y_true).detach().item())
 
 
             Acc+=(Accuracy_Loss()(forecast,
-                                   y_true.to(self.device, dtype=torch.long)).detach().item() )
+                                   y_true).detach().item() )
 
             #self.iter += 1
             #self.pbar.update(1)
