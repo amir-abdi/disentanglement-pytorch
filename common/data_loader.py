@@ -270,7 +270,7 @@ class DisentanglementLibDataset(Dataset):
 
 
 def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, image_size, include_labels, pin_memory,
-                                shuffle, droplast, masking_fact=100, d_version="full", noise_class=0.01):
+                                shuffle, droplast, masking_fact=100, d_version="full", noise_class=0):
     transform = transforms.Compose([
         transforms.Resize((image_size, image_size)),
         transforms.ToTensor(), ])
@@ -571,7 +571,7 @@ def get_dataloader(dset_name, dset_dir, batch_size, seed, num_workers, image_siz
 
     if dset_name in locally_supported_datasets:
         return _get_dataloader_with_labels(dset_name, dsets_dir, batch_size, seed, num_workers, image_size,
-                                           include_labels, pin_memory, shuffle, droplast, d_version=d_version, masking_fact=masking_fact, noise_class=0.1)
+                                           include_labels, pin_memory, shuffle, droplast, d_version=d_version, masking_fact=masking_fact, noise_class=0)
     else:
         # use the dataloader of Google's disentanglement_lib
         return _get_dataloader(dset_name, batch_size, seed, num_workers, pin_memory, shuffle, droplast)

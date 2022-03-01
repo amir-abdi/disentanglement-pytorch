@@ -260,7 +260,7 @@ class GrayVAE_Standard(VAE):
                     #losses['true_values'].backward(retain_graph=False)
                     self.optim_G.step()
 
-                if start_classification and (params['n_passed']>0):
+                if start_classification:   # and (params['n_passed']>0):
                     losses['prediction'].backward(retain_graph=False)
                     self.class_G.step()
 
@@ -274,7 +274,6 @@ class GrayVAE_Standard(VAE):
                     self.dataframe_test.append()
                     self.net_mode(train=True)
                 '''
-
                 ## Insert losses -- only in training set
                 if track_changes:
                     #TODO: set the tracking at a given iter_number/epoch
@@ -284,7 +283,6 @@ class GrayVAE_Standard(VAE):
                     KLDs.append(losses['kld'].item())
                     True_Values.append(losses['true_values'].item())
                     latent_errors.append(params['latents'])
-
                     if not start_classification: #RECONSTRUCTION ERROR + KLD + MSE on Z
                         Accuracies, F1_scores = [-1] * len(Iterations), [-1] * len(Iterations)
 
@@ -337,12 +335,14 @@ class GrayVAE_Standard(VAE):
             rec+=(F.binary_cross_entropy(input=x_recon, target=x_true,reduction='sum').detach().item()/self.batch_size )
             kld+=(self._kld_loss_fn(mu, logvar).detach().item())
 
+
             if self.latent_loss == 'MSE':
                 loss_bin = nn.MSELoss(reduction='mean')(mu_processed[:, :label.size(1)], 2 * label.to(dtype=torch.float32) - 1)
             elif self.latent_loss == 'BCE':
                 loss_bin = nn.BCELoss(reduction='mean')((1+mu_processed[:, :label.size(1)])/2, label.to(dtype=torch.float32) )
             else:
                 NotImplementedError('Wrong argument for latent loss.')
+
             latent+=(loss_bin.detach().item())
             del loss_bin
 
