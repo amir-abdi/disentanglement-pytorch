@@ -23,14 +23,15 @@ INFOVAE = 'InfoVAE'
 GRAYVAE = "grayvae"
 GRAYVAE_STANDARD = 'grayvae_standard'
 GRAYVAE_JOIN = 'grayvae_join'
+CBM_JOIN ='cbm_join'
 
 TOTAL_VAE = 'total_vae'
 TOTAL_VAE_EPOCH = 'total_vae_epoch'
 LEARNING_RATE = 'learning_rate'
 
 # Algorithms
-ALGS = ('AE', 'VAE', 'BetaVAE', 'CVAE', 'IFCVAE', "GRAYVAE", 'GrayVAE_Standard', 'GrayVAE_Join')
-LOSS_TERMS = (FACTORVAE, DIPVAEI, DIPVAEII, BetaTCVAE, INFOVAE, GRAYVAE, GRAYVAE_STANDARD, GRAYVAE_JOIN) #uncertain here
+ALGS = ('AE', 'VAE', 'BetaVAE', 'CVAE', 'IFCVAE', "GRAYVAE", 'GrayVAE_Standard', 'GrayVAE_Join', 'CBM_Join')
+LOSS_TERMS = (FACTORVAE, DIPVAEI, DIPVAEII, BetaTCVAE, INFOVAE, GRAYVAE, GRAYVAE_STANDARD, GRAYVAE_JOIN, CBM_JOIN) #uncertain here
 
 # Datasets
 DATASETS = ('celebA', 'dsprites_full', 'dsprites_noshape', 'color_dsprites', 'noisy_dsprites', 'scream_dsprites',
