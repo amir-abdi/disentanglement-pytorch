@@ -136,10 +136,15 @@ class GrayVAE_Standard(VAE):
                     losses[c.TOTAL_VAE] += self.label_weight * loss_bin
 
                 elif self.latent_loss == 'exact_BCE':
-                    mu_processed = nn.Sigmoid(mu/ 1)
-                    loss_bin = nn.BCELoss(reduction='mean')(  )
+                    mu_processed = nn.Sigmoid()( mu/torch.sqrt(1+ torch.exp(logvar)) )
+                    loss_bin = nn.BCELoss(reduction='mean')( mu_processed[rn_mask], label1[rn_mask] )
 
+                    err_latent = []
+                    for i in range(label1.size(1)):
+                        err_latent.append( nn.BCELoss(reduction='mean')( mu_processed[rn_mask], label1[rn_mask] ) )
 
+                    losses.update(true_values=self.label_weight * loss_bin)
+                    losses[c.TOTAL_VAE] += self.label_weight * loss_bin
 
                 else:
                     raise NotImplementedError('Not implemented loss.')
@@ -169,10 +174,6 @@ class GrayVAE_Standard(VAE):
             #TODO: insert the regression on the latents factor matching
 
             losses.update(prediction=nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1) )
-
-            #losses[c.TOTAL_VAE] += nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long))
-            #losses.update(prediction=nn.BCEWithLogitsLoss()(prediction, y_true1.to(self.device, dtype=torch.float)))
-            #losses[c.TOTAL_VAE] = nn.BCEWithLogitsLoss()(prediction,y_true1.to(self.device, dtype= torch.float))
 
             ## INSERT DEVICE IN THE CREATION OF EACH TENSOR
             ### AVOID COPYING FROM CPU TO GPU AS MUCH AS POSSIBLE

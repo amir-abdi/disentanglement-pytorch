@@ -82,7 +82,7 @@ class CBM_Join(VAE):
 
     def loss_fn(self, input_losses, reduce_rec=False, **kwargs):
         output_losses = dict()
-        output_losses[c.TOTAL_VAE] = input_losses.get(c.TOTAL_VAE, 0)
+        output_losses['total'] = input_losses.get('total', 0)
         return output_losses
 
     def cbm_classification(self, losses, x_true1, label1, y_true1, examples):
@@ -256,11 +256,6 @@ class CBM_Join(VAE):
             z = torch.tanh(mu/2)
             prediction, forecast = self.predict(latent=z)
 
-            if end_of_epoch:
-                self.visualize_recon(x_true, x_recon, test=True)
-                self.visualize_traverse(limit=(self.traverse_min, self.traverse_max),
-                                        spacing=self.traverse_spacing,
-                                        data=(x_true, label), test=True)
             # label \in [0,1]
             # z \in [-1,,1]
             if self.latent_loss == 'MSE':
