@@ -144,7 +144,7 @@ class CBM_Join(VAE):
             err_latent = [-1]*label1.size(1)
             losses.update(true_values=torch.tensor(-1))
 
-        return losses, {'mu': mu, 'z': z, "prediction": prediction,
+        return losses, {'mu': mu, 'z': z, "prediction": prediction, 'forecast': forecast,
                     'latents': err_latent, 'n_passed': n_passed}
 
     def train(self, **kwargs):
@@ -162,7 +162,7 @@ class CBM_Join(VAE):
             print("## Initializing Train indexes")
             print("::path chosen ->",out_path+"/train_runs")
 
-        Iterations, Epochs, True_Values, Accuracies, F1_scores = [], [], [], [], []  ## JUST HERE FOR NOW
+        Iterations, Epochs, True_Values, Accuracies, CE_class = [], [], [], [], []  ## JUST HERE FOR NOW
         latent_errors = []
         epoch = 0
         while not self.training_complete():
@@ -224,14 +224,14 @@ class CBM_Join(VAE):
 
                     True_Values.append(losses['true_values'].item())
                     latent_errors.append(params['latents'])
-                    Accuracies.append(losses['prediction'].item())
+                    CE_class.append(losses['prediction'].item())
                     f1_class = Accuracy_Loss().to(self.device)
-                    F1_scores.append(f1_class(params['prediction'], y_true1).item())
+                    Accuracies.append(f1_class(params['forecast'], y_true1).item())
 
                     del f1_class
 
                     if (internal_iter%500)==0:
-                        sofar = pd.DataFrame(data=np.array([Iterations, Epochs,  True_Values, Accuracies, F1_scores]).T,
+                        sofar = pd.DataFrame(data=np.array([Iterations, Epochs,  True_Values, CE_class, Accuracies]).T,
                                              columns=['iter', 'epoch', 'latent_error', 'classification_error', 'accuracy'], )
                         for i in range(label1.size(1)):
                             sofar['latent%i'%i] = np.asarray(latent_errors)[:,i]

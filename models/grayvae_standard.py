@@ -179,7 +179,7 @@ class GrayVAE_Standard(VAE):
             ### AVOID COPYING FROM CPU TO GPU AS MUCH AS POSSIBLE
 
         return losses, {'x_recon': x_recon, 'mu': mu, 'z': z, 'logvar': logvar, "prediction": prediction,
-                        'latents': err_latent, 'n_passed': n_passed}
+                        'forecast': forecast, 'latents': err_latent, 'n_passed': n_passed}
 
     def train(self, **kwargs):
 
@@ -306,7 +306,7 @@ class GrayVAE_Standard(VAE):
 #                        if not self.dataframe_eval.empty:
  #                           self.dataframe_eval.to_csv(os.path.join(out_path, 'dis_metrics.csv'), index=False)
 
-                self.log_save(input_image=x_true1, recon_image=params['x_recon'], loss=losses)
+            self.log_save(input_image=x_true1, recon_image=params['x_recon'], loss=losses)
             # end of epoch
 
         self.pbar.close()
