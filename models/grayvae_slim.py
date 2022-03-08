@@ -59,7 +59,6 @@ class GrayVAE_Standard(VAE):
 #        self.classification = nn.Linear(self.z_dim, 1, bias=False).to(self.device)
         self.classification = nn.Linear(self.z_dim, 2, bias=False).to(self.device) ### CHANGED OUT DIMENSION
         self.classification_epoch = args.classification_epoch
-        self.reduce_rec = args.reduce_recon
 
         self.class_G = optim.SGD(self.classification.parameters(), lr=0.01, momentum=0.9)
 
@@ -155,9 +154,6 @@ class GrayVAE_Standard(VAE):
             del loss_dict
 
             #TODO insert MSE Classification
-
-            err_latent = [-1] * label1.size(1)
-
             #TODO: insert the regression on the latents factor matching
 
             losses.update(prediction=nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1) )
@@ -167,6 +163,100 @@ class GrayVAE_Standard(VAE):
 
         return losses, {'x_recon': x_recon, 'mu': mu, 'z': z, 'logvar': logvar, "prediction": prediction,
                         'forecast': forecast, 'n_passed': n_passed}
+
+    def loss_fn(self, input_losses, classification=False, **kwargs):
+        x_recon = kwargs['x_recon']
+        x_true = kwargs['x_true']
+        mu = kwargs['mu']
+        logvar = kwargs['logvar']
+        labels = kwargs['labels']
+        y = kwargs['y']
+        pred = kwargs['pred']
+        examples = kwargs['examples']
+
+        #        prediction z= kwargs["prediction"]
+
+        bs = self.batch_size
+        output_losses = dict()
+        output_losses[c.TOTAL_VAE] = input_losses.get(c.TOTAL_VAE, 0)
+        output_losses[c.RECON] = F.binary_cross_entropy(input=x_recon, target=x_true,
+                                                            reduction='sum') / bs * self.w_recon
+        output_losses[c.TOTAL_VAE] += output_losses[c.RECON]
+
+        output_losses['kld'] = self._kld_loss_fn(mu, logvar)
+        output_losses[c.TOTAL_VAE] += output_losses['kld']
+
+        rn_mask = (examples == 1)
+        n_passed = len(examples[rn_mask])
+
+        if not classification and n_passed > 0:
+            if self.latent_loss == 'MSE':
+                mu_processed = torch.tanh(mu/2)
+                loss_bin = nn.MSELoss(reduction='mean')(mu_processed[rn_mask][:, :labels.size(1)],
+                                                        2 * labels[rn_mask] - 1)
+
+                output_losses['true_values']=self.label_weight * loss_bin
+                output_losses[c.TOTAL_VAE] += output_losses['true_values']
+
+            elif self.latent_loss == 'BCE':
+                mu_processed = torch.tanh(mu/2)
+                loss_bin = nn.BCELoss(reduction='mean')((1 + mu_processed[rn_mask][:, :labels.size(1)]) / 2,
+                                                        labels[rn_mask])
+
+                output_losses['true_values'] =self.label_weight * loss_bin
+                output_losses[c.TOTAL_VAE] += output_losses['true_values']
+
+            elif self.latent_loss == 'exact_BCE':
+                mu_processed = nn.Sigmoid()(mu / torch.sqrt(1 + torch.exp(logvar)))
+                loss_bin = nn.BCELoss(reduction='mean')(mu_processed[rn_mask], labels[rn_mask])
+
+                output_losses['true_values'] = self.label_weight * loss_bin
+                output_losses[c.TOTAL_VAE] += output_losses['true_values']
+
+            else:
+                raise NotImplementedError('Not implemented loss.')
+
+        elif classification:
+            output_losses['true_values']=torch.tensor(-1)  # nn.BCELoss(reduction='mean')((1+mu_processed[:,:label1.size(1)])/2, label1))
+
+            output_losses['prediction']=nn.CrossEntropyLoss(reduction='mean')(pred, y)
+            output_losses[c.TOTAL_VAE] += output_losses['prediction']
+
+        else:
+            output_losses['true_values']=torch.tensor(-1)
+
+
+        if c.FACTORVAE in self.loss_terms:
+            from models.factorvae import factorvae_loss_fn
+            output_losses['vae_tc_factor'], output_losses['discriminator_tc'] = factorvae_loss_fn(
+                self.w_tc, self.model, self.PermD, self.optim_PermD, self.ones, self.zeros, **kwargs)
+            output_losses[c.TOTAL_VAE] += output_losses['vae_tc_factor']
+
+        if c.DIPVAEI in self.loss_terms:
+            from models.dipvae import dipvaei_loss_fn
+            output_losses['vae_dipi'] = dipvaei_loss_fn(self.w_dipvae, self.lambda_od, self.lambda_d, **kwargs)
+            output_losses[c.TOTAL_VAE] += output_losses['vae_dipi']
+
+        if c.DIPVAEII in self.loss_terms:
+            from models.dipvae import dipvaeii_loss_fn
+            output_losses['vae_dipii'] = dipvaeii_loss_fn(self.w_dipvae, self.lambda_od, self.lambda_d, **kwargs)
+            output_losses[c.TOTAL_VAE] += output_losses['vae_dipii']
+
+        if c.BetaTCVAE in self.loss_terms:
+            from models.betatcvae import betatcvae_loss_fn
+            output_losses['vae_betatc'] = betatcvae_loss_fn(self.w_tc, **kwargs)
+            output_losses[c.TOTAL_VAE] += output_losses['vae_betatc']
+
+        if c.INFOVAE in self.loss_terms:
+            from models.infovae import infovae_loss_fn
+            output_losses['vae_mmd'] = infovae_loss_fn(self.w_infovae, self.z_dim, self.device, **kwargs)
+            output_losses[c.TOTAL_VAE] += output_losses['vae_mmd']
+
+        # if "classification" in self.loss_terms:
+        #   pass
+        #   pass
+
+        return output_losses
 
     def train(self, **kwargs):
 
@@ -181,8 +271,7 @@ class GrayVAE_Standard(VAE):
             print("## Initializing Train indexes")
             print("::path chosen ->",out_path+"/train_runs")
 
-        Iterations, Epochs, Reconstructions, KLDs, True_Values, Accuracies, F1_scores = [], [], [], [], [], [], []  ## JUST HERE FOR NOW
-        latent_errors = []
+
         epoch = 0
         while not self.training_complete():
             epoch += 1
@@ -247,30 +336,6 @@ class GrayVAE_Standard(VAE):
                 losses[c.TOTAL_VAE_EPOCH] = vae_loss_sum /( internal_iter+1) ## ADDED +1 HERE IDK WHY NOT BEFORE!!!!!
 
                 ## Insert losses -- only in training set
-                if track_changes and (internal_iter % 1000 == 0):
-                    #TODO: set the tracking at a given iter_number/epoch
-
-                    Iterations.append(internal_iter + 1)
-                    Epochs.append(epoch)
-                    Reconstructions.append(losses['recon'].item())
-                    KLDs.append(losses['kld'].item())
-                    True_Values.append(losses['true_values'].item())
-                    if not start_classification: #RECONSTRUCTION ERROR + KLD + MSE on Z
-                        Accuracies, F1_scores = [-1] * len(Iterations), [-1] * len(Iterations)
-
-                    else: #CLASSIFICATION
-
-                        Accuracies.append(losses['prediction'].item())
-                        f1_class = Accuracy_Loss()
-                        F1_scores.append(f1_class(params['prediction'], y_true1).item())
-                        del f1_class
-
-                    if (internal_iter%10000)==0:
-                        sofar = pd.DataFrame(data=np.array([Iterations, Epochs, Reconstructions, KLDs, True_Values, Accuracies, F1_scores]).T,
-                                             columns=['iter', 'epoch', 'reconstruction_error', 'kld', 'latent_error', 'classification_error', 'accuracy'], )
-
-                        sofar.to_csv(os.path.join(out_path+'/train_runs', 'metrics.csv'), index=False)
-                        del sofar
 
             self.log_save(input_image=x_true1, recon_image=params['x_recon'], loss=losses)
             # end of epoch
