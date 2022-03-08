@@ -334,6 +334,7 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
                        'class_values': class_values,
                        'num_channels': 3}
         dset = CustomImageFolder
+
     elif name.lower() == 'dsprites_full':
         #print(name)
         if d_version == "full":
@@ -464,24 +465,6 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
 
     # CREATING DATA LOADER + TEST LOADER
 
-#    train_size = round( 0.8 * len(dataset), 0)
-#    test_size = len(dataset) - train_size
-
-#    train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
-
-#    data_loader = DataLoader(train_dataset, #dataset,
-#                             batch_size=batch_size,
- #                            shuffle=shuffle,
-  #                           num_workers=num_workers,
-   #                          pin_memory=pin_memory,
-    #                         drop_last=droplast)
-
-#    test_loader = DataLoader(test_dataset,
-     #                        batch_size=batch_size,
-      #                       shuffle=shuffle,
-       #                      num_workers=num_workers,
-        #                     pin_memory=pin_memory,
-         #                    drop_last=droplast) #
     validation_split = .2
 
     # Creating data indices for training and validation splits:
@@ -513,23 +496,6 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
     if include_labels is not None:
         logging.info('num_classes: {}'.format(dataset.num_classes(False)))
         logging.info('class_values: {}'.format(class_values))
-    """ 
-    if make_yset and labels is not None:
-        target_loader = DataLoader(target_set,
-                                   batch_size=batch_size,
-                                   shuffle=shuffle,
-                                   num_workers=num_workers,
-                                   pin_memory=pin_memory,
-                                   drop_last=droplast
-                                    )
-        print("Made target_loader")
-
-#        quit()
-        return data_loader, target_loader
-    
-
-    else:
-    """
 
     return data_loader, test_loader
 

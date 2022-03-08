@@ -1,6 +1,7 @@
 import logging
 import argparse
 import subprocess
+from sklearn.linear_model import LinearRegression
 import scipy.linalg as linalg
 import numpy as np
 import random
@@ -428,3 +429,39 @@ class Accuracy_Loss(torch.nn.Module):
 #        acc = acc.clamp(min=self.epsilon, max=1 - self.epsilon)
 
         return acc.mean()
+
+
+def Interpretability(z, g, rel_factors=10 ** 4):
+    '''
+    Compute the interpretability score of the latent factors given the generative ones.
+    It can be done on a restricted number of entries.
+    '''
+
+    D = len(z[0])
+    K = len(g[0])
+
+    z = z[:rel_factors]
+    g = g[:rel_factors]
+
+    model = LinearRegression()
+    model.fit(z, g)
+
+    R = np.abs(model.coef_) # R \in R^K*D
+    R_g = np.sum(R, axis=0) # R_g \in R^D
+
+    P = np.zeros(np.shape(R))
+    for i in range(K):
+        for j in range(D):
+            P[i, j] = R[i, j] / (R_g[j] + 10 ** -6)
+
+    H_D = np.zeros(K)
+    for j in range(K):
+        H_D[j] = - np.sum(P[:, j] * np.log(P[:, j] + 10 ** -6))
+
+    I = 1 - H_D / np.log(D)
+
+    rho = np.sum(R, axis=1) / np.sum(R)
+
+    I_tot = np.sum(rho * I)
+
+    return I, I_tot

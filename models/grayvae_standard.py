@@ -6,7 +6,7 @@ from models.vae import VAE
 from models.vae import VAEModel
 from architectures import encoders, decoders
 from common.ops import reparametrize
-from common.utils import Accuracy_Loss
+from common.utils import Accuracy_Loss, Interpretability
 from common import constants as c
 import torch.nn.functional as F
 from common.utils import is_time_for
@@ -192,13 +192,8 @@ class GrayVAE_Standard(VAE):
 
         if track_changes:
             print("## Initializing Train indexes")
-            print("::path chosen ->",out_path+"/train_runs")
+            print("->path chosen::",out_path+"/train_runs")
 
-        #print("The model we are using")
-        #print(self.model)
-        #print('Total parameters:', sum(p.numel() for p in self.model.parameters()))
-
-#        Iter_t, Rec_t, KLD_t, Latent_t, BCE_t, Acc_t = [], [], [], [], [], []
         Iterations, Epochs, Reconstructions, KLDs, True_Values, Accuracies, F1_scores = [], [], [], [], [], [], []  ## JUST HERE FOR NOW
         latent_errors = []
         epoch = 0
@@ -214,31 +209,6 @@ class GrayVAE_Standard(VAE):
 
             for internal_iter, (x_true1, label1, y_true1, examples) in enumerate(self.data_loader):
 
-                if internal_iter > 1 and is_time_for(self.iter, self.evaluate_iter):
-
-#                    self.dataframe_eval = self.dataframe_eval.append(self.evaluate_results,  ignore_index=True)
-                    # test the behaviour on other losses
-                    trec, tkld, tlat, tbce, tacc = self.test(end_of_epoch=False)
-                    factors = pd.DataFrame(
-                        {'iter': self.iter, 'rec': trec, 'kld': tkld, 'latent': tlat, 'BCE': tbce, 'Acc': tacc}, index=[0])
-
-                    self.dataframe_eval = self.dataframe_eval.append(factors, ignore_index=True)
-                    self.net_mode(train=True)
-
-                    if track_changes and not self.dataframe_eval.empty:
-                        self.dataframe_eval.to_csv(os.path.join(out_path, 'eval_results/test_metrics.csv'), index=False)
-                        print('Saved test_metrics')
-
-                    # include disentanglement metrics
-                    dis_metrics = pd.DataFrame(self.evaluate_results, index=[0])
-                    self.dataframe_dis = self.dataframe_dis.append(dis_metrics)
-
-                    if track_changes and not self.dataframe_dis.empty:
-                        self.dataframe_dis.to_csv(os.path.join(out_path, 'eval_results/dis_metrics.csv'), index=False)
-                        print('Saved dis_metrics')
-
-                Iterations.append(internal_iter+1)
-                Epochs.append(epoch)
                 losses = {'total_vae':0}
 
                 x_true1 = x_true1.to(self.device)
@@ -267,23 +237,18 @@ class GrayVAE_Standard(VAE):
 
                 vae_loss_sum += losses[c.TOTAL_VAE]
                 losses[c.TOTAL_VAE_EPOCH] = vae_loss_sum /( internal_iter+1) ## ADDED +1 HERE IDK WHY NOT BEFORE!!!!!
-                ''' 
-                if is_time_for(self.iter, self.evaluate_iter):
-                    trec, tkld, tlat, tbce, tacc = self.test(end_of_epoch=False)
-                    Iter_t.append(self.iter); Rec_t.append(trec); KLD_t.append(tkld)
-                    Latent_t.append(tlat);  BCE_t.append(tbce); Acc_t.append(tacc)
-                    self.dataframe_test.append()
-                    self.net_mode(train=True)
-                '''
+
                 ## Insert losses -- only in training set
-                if track_changes:
+                if track_changes and (internal_iter%2500)==0:
                     #TODO: set the tracking at a given iter_number/epoch
 
+                    Iterations.append(internal_iter + 1)
+                    Epochs.append(epoch)
                     Reconstructions.append(losses['recon'].item())
-
                     KLDs.append(losses['kld'].item())
                     True_Values.append(losses['true_values'].item())
                     latent_errors.append(params['latents'])
+
                     if not start_classification: #RECONSTRUCTION ERROR + KLD + MSE on Z
                         Accuracies, F1_scores = [-1] * len(Iterations), [-1] * len(Iterations)
 
@@ -294,7 +259,7 @@ class GrayVAE_Standard(VAE):
                         F1_scores.append(f1_class(params['prediction'], y_true1).item())
                         del f1_class
 
-                    if (internal_iter%500)==0:
+                    if (internal_iter%2500)==0:
                         sofar = pd.DataFrame(data=np.array([Iterations, Epochs, Reconstructions, KLDs, True_Values, Accuracies, F1_scores]).T,
                                              columns=['iter', 'epoch', 'reconstruction_error', 'kld', 'latent_error', 'classification_error', 'accuracy'], )
                         for i in range(label1.size(1)):
@@ -306,7 +271,35 @@ class GrayVAE_Standard(VAE):
 #                        if not self.dataframe_eval.empty:
  #                           self.dataframe_eval.to_csv(os.path.join(out_path, 'dis_metrics.csv'), index=False)
 
-            self.log_save(input_image=x_true1, recon_image=params['x_recon'], loss=losses)
+                # TESTSET LOSSES
+                if internal_iter > 1 and is_time_for(self.iter, self.evaluate_iter):
+
+                    #                    self.dataframe_eval = self.dataframe_eval.append(self.evaluate_results,  ignore_index=True)
+                    # test the behaviour on other losses
+                    trec, tkld, tlat, tbce, tacc, I, I_tot = self.test(end_of_epoch=False)
+                    factors = pd.DataFrame(
+                        {'iter': self.iter, 'rec': trec, 'kld': tkld, 'latent': tlat, 'BCE': tbce, 'Acc': tacc,
+                         'I': I_tot}, index=[0])
+
+                    self.dataframe_eval = self.dataframe_eval.append(factors, ignore_index=True)
+                    self.net_mode(train=True)
+
+                    if track_changes and not self.dataframe_eval.empty:
+                        self.dataframe_eval.to_csv(os.path.join(out_path, 'eval_results/test_metrics.csv'),
+                                                   index=False)
+                        print('Saved test_metrics')
+
+                    # include disentanglement metrics
+                    dis_metrics = pd.DataFrame(self.evaluate_results, index=[0])
+                    self.dataframe_dis = self.dataframe_dis.append(dis_metrics)
+
+                    if track_changes and not self.dataframe_dis.empty:
+                        self.dataframe_dis.to_csv(os.path.join(out_path, 'eval_results/dis_metrics.csv'),
+                                                  index=False)
+                        print('Saved dis_metrics')
+
+                self.log_save(input_image=x_true1, recon_image=params['x_recon'], loss=losses)
+
             # end of epoch
 
         self.pbar.close()
@@ -315,6 +308,8 @@ class GrayVAE_Standard(VAE):
     def test(self, end_of_epoch=True):
         self.net_mode(train=False)
         rec, kld, latent, BCE, Acc = 0, 0, 0, 0, 0
+        I = np.zeros(self.z_dim)
+        I_tot = 0
         for internal_iter, (x_true, label, y_true, _) in enumerate(self.test_loader):
             x_true = x_true.to(self.device)
             label = label[:,1:].to(self.device, dtype=torch.long)
@@ -327,20 +322,22 @@ class GrayVAE_Standard(VAE):
             prediction, forecast = self.predict(latent=mu_processed)
             x_recon = self.model.decode(z=z,)
 
-            if end_of_epoch:
-                self.visualize_recon(x_true, x_recon, test=True)
-                self.visualize_traverse(limit=(self.traverse_min, self.traverse_max),
-                                        spacing=self.traverse_spacing,
-                                        data=(x_true, label), test=True)
+            z = np.asarray(nn.Sigmoid()(z))
+            g = np.asarray(label)
+
+            I_batch , I_TOT = Interpretability(z, label)
+            I += I_batch; I_tot += I_TOT
 
             rec+=(F.binary_cross_entropy(input=x_recon, target=x_true,reduction='sum').detach().item()/self.batch_size )
             kld+=(self._kld_loss_fn(mu, logvar).detach().item())
-
 
             if self.latent_loss == 'MSE':
                 loss_bin = nn.MSELoss(reduction='mean')(mu_processed[:, :label.size(1)], 2 * label.to(dtype=torch.float32) - 1)
             elif self.latent_loss == 'BCE':
                 loss_bin = nn.BCELoss(reduction='mean')((1+mu_processed[:, :label.size(1)])/2, label.to(dtype=torch.float32) )
+            elif self.latent_loss == 'exact_MSE':
+                mu_proessed = nn.Sigmoid()(mu/torch.sqrt( 1+ torch.exp(logvar)))
+                loss_bin = nn.MSELoss(reduction='mean')(mu_proessed[:,:label.size(1)], label.to(dtype=torch.float32) )
             else:
                 NotImplementedError('Wrong argument for latent loss.')
 
@@ -354,9 +351,15 @@ class GrayVAE_Standard(VAE):
             Acc+=(Accuracy_Loss()(forecast,
                                    y_true).detach().item() )
 
+        if end_of_epoch:
+            self.visualize_recon(x_true, x_recon, test=True)
+            self.visualize_traverse(limit=(self.traverse_min, self.traverse_max),
+                                    spacing=self.traverse_spacing,
+                                    data=(x_true, label), test=True)
+
             #self.iter += 1
             #self.pbar.update(1)
 
         print('Done testing')
         nrm = internal_iter + 1
-        return rec/nrm, kld/nrm, latent/nrm, BCE/nrm, Acc/nrm
+        return rec/nrm, kld/nrm, latent/nrm, BCE/nrm, Acc/nrm, I/nrm, I_tot/nrm
