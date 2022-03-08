@@ -316,10 +316,10 @@ class GrayVAE_Standard(VAE):
             prediction, forecast = self.predict(latent=mu_processed)
             x_recon = self.model.decode(z=z,)
 
-            z = np.asarray(nn.Sigmoid()(z).detach())
-            g = np.asarray(label.detach() )
+            z = np.asarray(nn.Sigmoid()(z).detach().cpu())
+            g = np.asarray(label.detach().cpu())
 
-            I_batch , I_TOT = Interpretability(z, label)
+            I_batch , I_TOT = Interpretability(z, g)
             I += I_batch; I_tot += I_TOT
 
             rec+=(F.binary_cross_entropy(input=x_recon, target=x_true,reduction='sum').detach().item()/self.batch_size )
