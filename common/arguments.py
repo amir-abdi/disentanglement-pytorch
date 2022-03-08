@@ -154,7 +154,7 @@ def get_args(sys_args):
     parser.add_argument('--save_iter', default=2500, type=int, help='Save on .csv on the chosen iter.') #todo
 
     # Methodology on Latents
-    parser.add_argument('--latent_loss', default='MSE', type=str, choices=['BCE', 'MSE', '1st_BCE', '1st_MSE','Hybrid'], help='Select the error function on the latent variables')
+    parser.add_argument('--latent_loss', default='MSE', type=str, choices=['BCE', 'MSE', '1st_BCE', '1st_MSE', 'exact_MSE', 'exact_BCE', 'Hybrid'], help='Select the error function on the latent variables')
     parser.add_argument('--label_weight', default=5, type=float, help='Constant increasing the effect of predicting right generative factors.')
     parser.add_argument('--masking_fact', default=100, type=float, help='Percent of generative factors seen.')
     parser.add_argument('--show_loss', default=500, type=float, help='Choose iter when to show behaviour of the model')
