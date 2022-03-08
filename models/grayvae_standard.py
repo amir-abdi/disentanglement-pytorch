@@ -89,11 +89,6 @@ class GrayVAE_Standard(VAE):
         mu_processed = torch.tanh(mu/2)
         x_recon = self.model.decode(z=z,)
 
-        # CHECKING THE CONSISTENCY
-#        z_prediction = torch.zeros(size=(len(mu), self.z_dim))
- #       z_prediction[:, :label1.size(1)] = label1.detach()
-  #      z_prediction[:, label1.size(1):] = mu[:, label1.size(1):].detach()
-
         prediction, forecast = self.predict(latent=mu_processed)
         rn_mask = (examples==1)
         n_passed = len(examples[rn_mask])
@@ -221,7 +216,6 @@ class GrayVAE_Standard(VAE):
                                                          classification=start_classification)
 
                 self.optim_G.zero_grad()
-                self.optim_G_mse.zero_grad()
                 self.class_G.zero_grad()
 
                 if (internal_iter%self.show_loss)==0: print("Losses:", losses)
@@ -322,8 +316,8 @@ class GrayVAE_Standard(VAE):
             prediction, forecast = self.predict(latent=mu_processed)
             x_recon = self.model.decode(z=z,)
 
-            z = np.asarray(nn.Sigmoid()(z))
-            g = np.asarray(label)
+            z = np.asarray(nn.Sigmoid()(z).detach())
+            g = np.asarray(label.detach() )
 
             I_batch , I_TOT = Interpretability(z, label)
             I += I_batch; I_tot += I_TOT
