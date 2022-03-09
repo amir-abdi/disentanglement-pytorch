@@ -6,7 +6,7 @@ from models.vae import VAE
 from models.vae import VAEModel
 from architectures import encoders, decoders
 from common.ops import reparametrize
-from common.utils import Accuracy_Loss
+from common.utils import Accuracy_Loss, Interpretability
 from common import constants as c
 import torch.nn.functional as F
 from common.utils import is_time_for
@@ -251,35 +251,41 @@ class CBM_Join(VAE):
 
     def test(self, end_of_epoch=True):
         self.net_mode(train=False)
-        latent, BCE, Acc = 0, 0, 0
+        rec, kld, latent, BCE, Acc = 0, 0, 0, 0, 0
+        I = np.zeros(self.z_dim)
+        I_tot = 0
         for internal_iter, (x_true, label, y_true, _) in enumerate(self.test_loader):
             x_true = x_true.to(self.device)
             label = label[:,1:].to(self.device, dtype=torch.long)
+            y_true =  y_true.to(self.device, dtype=torch.long)
 
             mu, _ = self.model.encode(x=x_true, )
-            z = torch.tanh(mu/2)
-            prediction, forecast = self.predict(latent=z)
 
-            # label \in [0,1]
-            # z \in [-1,,1]
+            mu_processed = torch.tanh(mu / 2)
+            prediction, forecast = self.predict(latent=mu_processed)
+            z = np.asarray(nn.Sigmoid()(mu).detach().cpu())
+            g = np.asarray(label.detach().cpu())
+
+            I_batch , I_TOT = Interpretability(z, g)
+            I += I_batch; I_tot += I_TOT
+
             if self.latent_loss == 'MSE':
-                loss_bin = nn.MSELoss(reduction='mean')(z[:, :label.size(1)], 2 * label.to(dtype=torch.float32) - 1)
+                loss_bin = nn.MSELoss(reduction='mean')(mu_processed[:, :label.size(1)], 2 * label.to(dtype=torch.float32) - 1)
             elif self.latent_loss == 'BCE':
-                loss_bin = nn.BCELoss(reduction='mean')((1+z[:, :label.size(1)])/2, label.to(dtype=torch.float32) )
+                loss_bin = nn.BCELoss(reduction='mean')((1+mu_processed[:, :label.size(1)])/2, label.to(dtype=torch.float32) )
             else:
                 NotImplementedError('Wrong argument for latent loss.')
 
             latent+=(loss_bin.detach().item())
-
             del loss_bin
 
             BCE+=(nn.CrossEntropyLoss(reduction='mean')(prediction,
-                                                        y_true.to(self.device, dtype=torch.long)).detach().item())
+                                                        y_true).detach().item())
 
 
             Acc+=(Accuracy_Loss()(forecast,
-                                   y_true.to(self.device, dtype=torch.long)).detach().item() )
+                                   y_true).detach().item() )
 
         print('Done testing')
         nrm = internal_iter + 1
-        return latent/nrm, BCE/nrm, Acc/nrm
+        return rec/nrm, kld/nrm, latent/nrm, BCE/nrm, Acc/nrm, I/nrm, I_tot/nrm
