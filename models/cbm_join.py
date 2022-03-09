@@ -173,29 +173,6 @@ class CBM_Join(VAE):
 
             for internal_iter, (x_true1, label1, y_true1, examples) in enumerate(self.data_loader):
 
-                if internal_iter > 1 and is_time_for(self.iter, self.evaluate_iter):
-
-#                    self.dataframe_eval = self.dataframe_eval.append(self.evaluate_results,  ignore_index=True)
-                    # test the behaviour on other losses
-                    tlat, tbce, tacc = self.test(end_of_epoch=False)
-                    factors = pd.DataFrame(
-                        {'iter': self.iter,  'latent': tlat, 'BCE': tbce, 'Acc': tacc}, index=[0])
-
-                    self.dataframe_eval = self.dataframe_eval.append(factors, ignore_index=True)
-                    self.net_mode(train=True)
-
-                    if track_changes and not self.dataframe_eval.empty:
-                        self.dataframe_eval.to_csv(os.path.join(out_path, 'eval_results/test_metrics.csv'), index=False)
-                        print('Saved test_metrics')
-
-                    # include disentanglement metrics
-                    dis_metrics = pd.DataFrame(self.evaluate_results, index=[0])
-                    self.dataframe_dis = self.dataframe_dis.append(dis_metrics)
-
-                    if track_changes and not self.dataframe_dis.empty:
-                        self.dataframe_dis.to_csv(os.path.join(out_path, 'eval_results/dis_metrics.csv'), index=False)
-                        print('Saved dis_metrics')
-
                 Iterations.append(internal_iter+1)
                 Epochs.append(epoch)
                 losses = {'total_vae':0}
@@ -238,6 +215,33 @@ class CBM_Join(VAE):
 
                         sofar.to_csv(os.path.join(out_path+'/train_runs', 'metrics.csv'), index=False)
                         del sofar
+
+                if internal_iter > 1 and is_time_for(self.iter, self.evaluate_iter):
+
+                    #                    self.dataframe_eval = self.dataframe_eval.append(self.evaluate_results,  ignore_index=True)
+                    # test the behaviour on other losses
+                    trec, tkld, tlat, tbce, tacc, I, I_tot = self.test(end_of_epoch=False)
+                    factors = pd.DataFrame(
+                        {'iter': self.iter, 'rec': trec, 'kld': tkld, 'latent': tlat, 'BCE': tbce, 'Acc': tacc,
+                         'I': I_tot}, index=[0])
+
+                    self.dataframe_eval = self.dataframe_eval.append(factors, ignore_index=True)
+                    self.net_mode(train=True)
+
+                    if track_changes and not self.dataframe_eval.empty:
+                        self.dataframe_eval.to_csv(os.path.join(out_path, 'eval_results/test_metrics.csv'),
+                                                   index=False)
+                        print('Saved test_metrics')
+
+                    # include disentanglement metrics
+                    dis_metrics = pd.DataFrame(self.evaluate_results, index=[0])
+                    self.dataframe_dis = self.dataframe_dis.append(dis_metrics)
+
+                    if track_changes and not self.dataframe_dis.empty:
+                        self.dataframe_dis.to_csv(os.path.join(out_path, 'eval_results/dis_metrics.csv'),
+                                                  index=False)
+                        print('Saved dis_metrics')
+
 
                 self.log_save(input_image=x_true1, recon_image=x_true1, loss=losses)
             # end of epoch
