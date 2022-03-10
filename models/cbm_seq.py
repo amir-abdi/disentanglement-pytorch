@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 
 
-class CBM_Join(VAE):
+class CBM_Seq(VAE):
     """
     Graybox version of VAE, with standard implementation. The discussion on
     """
@@ -85,64 +85,74 @@ class CBM_Join(VAE):
         output_losses['total'] = input_losses.get('total', 0)
         return output_losses
 
-    def cbm_classification(self, losses, x_true1, label1, y_true1, examples):
+    def cbm_classification(self, losses, x_true1, label1, y_true1, examples, classification=False):
 
         # label_1 \in [0,1]
         mu, _ = self.model.encode(x=x_true1,)
 
         z = torch.tanh(mu/2)
+        prediction, forecast = self.predict(latent=z)
         #x_recon = self.model.decode(z=z,)
 
-        # CHECKING THE CONSISTENCY
-
-        prediction, forecast = self.predict(latent=z)
-        rn_mask = (examples==1)
+        rn_mask = (examples == 1)
 
         if examples[rn_mask] is None:
             n_passed = 0
         else:
             n_passed = len(examples[rn_mask])
 
-        losses.update(self.loss_fn(losses, reduce_rec=False,))
+        loss_dict = self.loss_fn(losses, reduce_rec=False,)
 
-        losses.update(prediction=nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long)) )
-        losses[c.TOTAL_VAE] += nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long))
+        if classification:
+            loss_true_vals = torch.tensor(-1)
+            losses.update({'total_vae': loss_dict['total_vae'].detach(), 'true_values': -1})
+            err_latent = [-1] * label1.size(1)
 
-        if n_passed > 0: # added the presence of only small labelled generative factors
-
-            ## loss of continuous variables
-            if self.latent_loss == 'MSE':
-
-                # z \in [-1,1]
-                loss_bin = nn.MSELoss(reduction='mean')( z[rn_mask][:, :label1.size(1)], 2*label1[rn_mask]-1  )
-
-                ## track losses
-                err_latent = []
-                for i in range(label1.size(1)):
-                    err_latent.append(nn.MSELoss(reduction='mean')(z[rn_mask][:, i], 2 * label1[rn_mask][:,i] - 1).detach().item() )
-
-                losses.update(true_values= loss_bin)
-                losses[c.TOTAL_VAE] += loss_bin
-
-            elif self.latent_loss == 'BCE':
-
-                # z \in [-1,1]
-                loss_bin = nn.BCELoss(reduction='mean')((1+z[rn_mask][:, :label1.size(1)])/2,
-                                                         label1[rn_mask] )
-                ## track losses
-                err_latent = []
-                for i in range(label1.size(1)):
-                    err_latent.append(nn.BCELoss(reduction='mean')((1+z[rn_mask][:, i])/2,
-                                                                    label1[rn_mask][:, i] ).detach().item())
-                losses.update(true_values= loss_bin)
-                losses[c.TOTAL_VAE] += loss_bin
-
-            else:
-                raise NotImplementedError('Not implemented loss.')
 
         else:
-            err_latent = [-1]*label1.size(1)
-            losses.update(true_values=torch.tensor(-1))
+
+            losses.update(loss_dict)
+
+            losses.update(prediction=nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long)) )
+            losses[c.TOTAL_VAE] += nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long))
+
+            if n_passed > 0: # added the presence of only small labelled generative factors
+
+                ## loss of continuous variables
+                if self.latent_loss == 'MSE':
+
+                    # z \in [-1,1]
+                    loss_bin = nn.MSELoss(reduction='mean')( z[rn_mask][:, :label1.size(1)], 2*label1[rn_mask]-1  )
+
+                    ## track losses
+                    err_latent = []
+                    for i in range(label1.size(1)):
+                        err_latent.append(nn.MSELoss(reduction='mean')(z[rn_mask][:, i], 2 * label1[rn_mask][:,i] - 1).detach().item() )
+
+                    losses.update(true_values= loss_bin)
+                    losses[c.TOTAL_VAE] += loss_bin
+
+                elif self.latent_loss == 'BCE':
+
+                    # z \in [-1,1]
+                    loss_bin = nn.BCELoss(reduction='mean')((1+z[rn_mask][:, :label1.size(1)])/2,
+                                                             label1[rn_mask] )
+                    ## track losses
+                    err_latent = []
+                    for i in range(label1.size(1)):
+                        err_latent.append(nn.BCELoss(reduction='mean')((1+z[rn_mask][:, i])/2,
+                                                                        label1[rn_mask][:, i] ).detach().item())
+                    losses.update(true_values= loss_bin)
+                    losses[c.TOTAL_VAE] += loss_bin
+
+                else:
+                    raise NotImplementedError('Not implemented loss.')
+
+            else:
+                err_latent = [-1]*label1.size(1)
+                losses.update(true_values=torch.tensor(-1))
+
+        del loss_dict
 
         return losses, {'mu': mu, 'z': z, "prediction": prediction, 'forecast': forecast,
                     'latents': err_latent, 'n_passed': n_passed}
@@ -174,8 +184,6 @@ class CBM_Join(VAE):
             for internal_iter, (x_true1, label1, y_true1, examples) in enumerate(self.data_loader):
 
                 if internal_iter > 1 and is_time_for(self.iter, self.evaluate_iter):
-
-#                    self.dataframe_eval = self.dataframe_eval.append(self.evaluate_results,  ignore_index=True)
                     # test the behaviour on other losses
                     tlat, tbce, tacc = self.test(end_of_epoch=False)
                     factors = pd.DataFrame(

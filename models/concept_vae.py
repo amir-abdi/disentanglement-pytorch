@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 
 
-class GrayVAE_Join(VAE):
+class ConceptVAE(VAE):
     """
     Graybox version of VAE, with standard implementation. The discussion on
     """
@@ -24,7 +24,7 @@ class GrayVAE_Join(VAE):
 
         super().__init__(args)
 
-        print('Initialized GrayVAE_Standard model')
+        print('Initialized Concept_VAE model')
 
         # checks
         assert self.num_classes is not None, 'please identify the number of classes for each label separated by comma'
@@ -82,105 +82,8 @@ class GrayVAE_Join(VAE):
         return  pred_raw, pred.to(self.device, dtype=torch.float32) #nn.Sigmoid()(self.classification(input_x).resize(len(input_x)))
 
     def vae_classification(self, losses, x_true1, label1, y_true1, examples, classification=False):
-
-        mu, logvar = self.model.encode(x=x_true1,)
-
-        z = reparametrize(mu, logvar)
-        mu_processed = torch.tanh(mu/2)
-        x_recon = self.model.decode(z=z,)
-
-        prediction, forecast = self.predict(latent=mu_processed)
-        rn_mask = (examples==1)
-        n_passed = len(examples[rn_mask])
-
-        if not classification:
-            loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar, z=z)
-            loss_dict = self.loss_fn(losses, reduce_rec=False, **loss_fn_args)
-            losses.update(loss_dict)
-
-            pred_loss = nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1)
-            losses.update(prediction=pred_loss)
-            losses[c.TOTAL_VAE] += pred_loss
-
-#            losses.update({'total_vae': loss_dict['total_vae'].detach(), 'recon': loss_dict['recon'].detach(),
- #                          'kld': loss_dict['kld'].detach()})
-            del loss_dict, pred_loss
-
-            if n_passed > 0: # added the presence of only small labelled generative factors
-
-                ## loss of categorical variables
-
-                ## loss of continuous variables
-                if self.latent_loss == 'MSE':
-                    #TODO: PLACE ONEHOT ENCODING
-                    loss_bin = nn.MSELoss(reduction='mean')( mu_processed[rn_mask][:, :label1.size(1)], 2*label1[rn_mask]-1  )
-                    ## track losses
-                    err_latent = []
-                    for i in range(label1.size(1)):
-                        err_latent.append(nn.MSELoss(reduction='mean')(mu_processed[rn_mask][:, i], 2 * label1[rn_mask][:,i] - 1).detach().item() )
-
-                    losses.update(true_values=self.label_weight * loss_bin)
-                    losses[c.TOTAL_VAE] += self.label_weight * loss_bin
-
-                elif self.latent_loss == 'BCE':
-
-                    loss_bin = nn.BCELoss(reduction='mean')((1+mu_processed[rn_mask][:, :label1.size(1)])/2,
-                                                             label1[rn_mask] )
-
-                    ## track losses
-                    err_latent = []
-                    for i in range(label1.size(1)):
-                        err_latent.append(nn.BCELoss(reduction='mean')((1+mu_processed[rn_mask][:, i])/2,
-                                                                        label1[rn_mask][:, i] ).detach().item())
-                    losses.update(true_values=self.label_weight * loss_bin)
-                    losses[c.TOTAL_VAE] += self.label_weight * loss_bin
-
-                elif self.latent_loss == 'exact_BCE':
-                    mu_processed = nn.Sigmoid()( mu/torch.sqrt(1+ torch.exp(logvar)) )
-                    loss_bin = nn.BCELoss(reduction='mean')( mu_processed[rn_mask], label1[rn_mask] )
-
-                    err_latent = []
-                    for i in range(label1.size(1)):
-                        err_latent.append( nn.BCELoss(reduction='mean')( mu_processed[rn_mask], label1[rn_mask] ) )
-
-                    losses.update(true_values=self.label_weight * loss_bin)
-                    losses[c.TOTAL_VAE] += self.label_weight * loss_bin
-
-                else:
-                    raise NotImplementedError('Not implemented loss.')
-
-            else:
-                losses.update(true_values=torch.tensor(-1))
-                err_latent =[-1]*label1.size(1)
-        #            losses[c.TOTAL_VAE] += nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1).detach()
-
-        if classification:
-            #TODO: INSERT MORE OPTIONS ON HOW TRAINING METRICS AFFECT
-            ## DISJOINT VERSION
-
-            loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar, z=z)
-            loss_dict = self.loss_fn(losses, reduce_rec=True, **loss_fn_args)
-            loss_dict.update(true_values=torch.tensor(-1)) # nn.BCELoss(reduction='mean')((1+mu_processed[:,:label1.size(1)])/2, label1))
-            loss_dict[c.TOTAL_VAE] += -1 #nn.BCELoss(reduction='mean')((1+z[:, :label1.size(1)])/2, label1)
-            losses.update({'total_vae': loss_dict['total_vae'].detach(), 'recon': loss_dict['recon'].detach(),
-                           'kld': loss_dict['kld'].detach(), 'true_values': loss_dict['true_values']})
-
-            del loss_dict
-
-            #TODO insert MSE Classification
-
-            err_latent = [-1] * label1.size(1)
-
-            #TODO: insert the regression on the latents factor matching
-
-            losses.update(prediction=nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1) )
-
-            ## INSERT DEVICE IN THE CREATION OF EACH TENSOR
-            ### AVOID COPYING FROM CPU TO GPU AS MUCH AS POSSIBLE
-
-        return losses, {'x_recon': x_recon, 'mu': mu, 'z': z, 'logvar': logvar, "prediction": prediction,
-                        'forecast': forecast, 'latents': err_latent, 'n_passed': n_passed}
-
+        pass
+    
     def train(self, **kwargs):
 
         if 'output'  in kwargs.keys():

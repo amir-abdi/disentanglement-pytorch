@@ -3,7 +3,7 @@ from .vae import VAE
 from .betavae import BetaVAE
 from .cvae import CVAE
 from .ifcvae import IFCVAE
-from .grayvae import GRAYVAE
+from .concept_vae import GRAYVAE
 from .grayvae_standard import GrayVAE_Standard
 from .grayvae_join import GrayVAE_Join
 from .cbm_join import CBM_Join
