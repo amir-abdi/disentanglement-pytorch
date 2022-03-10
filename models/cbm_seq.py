@@ -189,6 +189,9 @@ class CBM_Seq(VAE):
                     factors = pd.DataFrame(
                         {'iter': self.iter,  'latent': tlat, 'BCE': tbce, 'Acc': tacc}, index=[0])
 
+                    for i in range(label1.size(1)):
+                        factors['latent%i' % i] = np.asarray(I)[:, i]
+
                     self.dataframe_eval = self.dataframe_eval.append(factors, ignore_index=True)
                     self.net_mode(train=True)
 

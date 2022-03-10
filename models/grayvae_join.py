@@ -98,7 +98,7 @@ class GrayVAE_Join(VAE):
             loss_dict = self.loss_fn(losses, reduce_rec=False, **loss_fn_args)
             losses.update(loss_dict)
 
-            pred_loss = nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1)
+            pred_loss = nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1)*self.label_weight
             losses.update(prediction=pred_loss)
             losses[c.TOTAL_VAE] += pred_loss
 
@@ -279,6 +279,9 @@ class GrayVAE_Join(VAE):
                     factors = pd.DataFrame(
                         {'iter': self.iter, 'rec': trec, 'kld': tkld, 'latent': tlat, 'BCE': tbce, 'Acc': tacc,
                          'I': I_tot}, index=[0])
+
+                    for i in range(label1.size(1)):
+                        factors['latent%i' % i] = np.asarray(I)[:, i]
 
                     self.dataframe_eval = self.dataframe_eval.append(factors, ignore_index=True)
                     self.net_mode(train=True)

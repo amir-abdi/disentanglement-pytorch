@@ -82,8 +82,9 @@ class ConceptVAE(VAE):
         return  pred_raw, pred.to(self.device, dtype=torch.float32) #nn.Sigmoid()(self.classification(input_x).resize(len(input_x)))
 
     def vae_classification(self, losses, x_true1, label1, y_true1, examples, classification=False):
-        pass
-    
+        NotImplementedError('vae_classification is not implemented')
+        return losses, _
+
     def train(self, **kwargs):
 
         if 'output'  in kwargs.keys():
@@ -164,6 +165,7 @@ class ConceptVAE(VAE):
                     if (internal_iter%2500)==0:
                         sofar = pd.DataFrame(data=np.array([Iterations, Epochs, Reconstructions, KLDs, True_Values, Accuracies, F1_scores]).T,
                                              columns=['iter', 'epoch', 'reconstruction_error', 'kld', 'latent_error', 'classification_error', 'accuracy'], )
+
                         for i in range(label1.size(1)):
                             sofar['latent%i'%i] = np.asarray(latent_errors)[:,i]
 
