@@ -185,6 +185,9 @@ class ConceptVAE(VAE):
                         {'iter': self.iter, 'rec': trec, 'kld': tkld, 'latent': tlat, 'BCE': tbce, 'Acc': tacc,
                          'I': I_tot}, index=[0])
 
+                    for i in range(label1.size(1)):
+                        factors['I_%i' % i] = np.asarray(I)[i]
+
                     self.dataframe_eval = self.dataframe_eval.append(factors, ignore_index=True)
                     self.net_mode(train=True)
 
