@@ -312,8 +312,8 @@ class GrayVAE_Standard(VAE):
         l_dim = 7
         g_dim = 7
 
-        z_array = np.zeros( shape=(N, l_dim))
-        g_array = np.zeros( shape=(N, g_dim))
+        z_array = np.zeros( shape=(self.batch_size*len(self.test_loader), l_dim))
+        g_array = np.zeros( shape=(self.batch_size*len(self.test_loader), g_dim))
 
         for internal_iter, (x_true, label, y_true, _) in enumerate(self.test_loader):
             x_true = x_true.to(self.device)
