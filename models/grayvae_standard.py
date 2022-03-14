@@ -307,6 +307,14 @@ class GrayVAE_Standard(VAE):
         rec, kld, latent, BCE, Acc = 0, 0, 0, 0, 0
         I = np.zeros(self.z_dim)
         I_tot = 0
+
+        N = 10**4
+        l_dim = 7
+        g_dim = 7
+
+        z_array = np.zeros( shape=(N, l_dim))
+        g_array = np.zeros( shape=(N, g_dim))
+
         for internal_iter, (x_true, label, y_true, _) in enumerate(self.test_loader):
             x_true = x_true.to(self.device)
             label = label[:,1:].to(self.device, dtype=torch.long)
@@ -322,8 +330,11 @@ class GrayVAE_Standard(VAE):
             z = np.asarray(nn.Sigmoid()(z).detach().cpu())
             g = np.asarray(label.detach().cpu())
 
-            I_batch , I_TOT = Interpretability(z, g)
-            I += I_batch; I_tot += I_TOT
+            z_array[self.batch_size*internal_iter:self.batch_size*internal_iter+self.batch_size, :] = z
+            g_array[self.batch_size*internal_iter:self.batch_size*internal_iter+self.batch_size, :] = g
+
+#            I_batch , I_TOT = Interpretability(z, g)
+ #           I += I_batch; I_tot += I_TOT
 
             rec+=(F.binary_cross_entropy(input=x_recon, target=x_true,reduction='sum').detach().item()/self.batch_size )
             kld+=(self._kld_loss_fn(mu, logvar).detach().item())
@@ -358,5 +369,8 @@ class GrayVAE_Standard(VAE):
             #self.pbar.update(1)
 
         print('Done testing')
+
+        I, I_tot = Interpretability(z_array, g_array, rel_factors=N)
+
         nrm = internal_iter + 1
         return rec/nrm, kld/nrm, latent/nrm, BCE/nrm, Acc/nrm, I/nrm, I_tot/nrm

@@ -1,7 +1,7 @@
 import logging
 import argparse
 import subprocess
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, Lasso
 import scipy.linalg as linalg
 import numpy as np
 import random
@@ -443,8 +443,12 @@ def Interpretability(z, g, rel_factors=10 ** 4):
     z = z[:rel_factors]
     g = g[:rel_factors]
 
-    model = LinearRegression()
+    # lasso variant
+    model = Lasso()
     model.fit(z, g)
+#    print('Model weights', model.coef_)
+
+    print('Fitting the generative part with:', model.score(z, g,)*100,'% accuracy')
 
     R = np.abs(model.coef_) # R \in R^K*D
     R_g = np.sum(R, axis=0) # R_g \in R^D
