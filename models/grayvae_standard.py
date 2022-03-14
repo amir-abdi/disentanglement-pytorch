@@ -317,7 +317,7 @@ class GrayVAE_Standard(VAE):
 
         for internal_iter, (x_true, label, y_true, _) in enumerate(self.test_loader):
             x_true = x_true.to(self.device)
-            label = label[:,1:].to(self.device, dtype=torch.long)
+            label = label[:,1:].to(self.device, dtype=torch.float32)
             y_true =  y_true.to(self.device, dtype=torch.long)
 
             mu, logvar = self.model.encode(x=x_true, )

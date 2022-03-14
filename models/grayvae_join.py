@@ -312,59 +312,56 @@ class GrayVAE_Join(VAE):
         I = np.zeros(self.z_dim)
         I_tot = 0
 
-        N = 10 ** 4
+        N = 10**4
         l_dim = 7
         g_dim = 7
 
-        z_array = np.zeros(shape=(self.batch_size * len(self.test_loader), l_dim))
-        g_array = np.zeros(shape=(self.batch_size * len(self.test_loader), g_dim))
+        z_array = np.zeros( shape=(self.batch_size*len(self.test_loader), l_dim))
+        g_array = np.zeros( shape=(self.batch_size*len(self.test_loader), g_dim))
 
         for internal_iter, (x_true, label, y_true, _) in enumerate(self.test_loader):
             x_true = x_true.to(self.device)
-            label = label[:, 1:].to(self.device, dtype=torch.long)
-            y_true = y_true.to(self.device, dtype=torch.long)
+            label = label[:,1:].to(self.device, dtype=torch.float32)
+            y_true =  y_true.to(self.device, dtype=torch.long)
 
             mu, logvar = self.model.encode(x=x_true, )
             z = reparametrize(mu, logvar)
 
             mu_processed = torch.tanh(mu / 2)
             prediction, forecast = self.predict(latent=mu_processed)
-            x_recon = self.model.decode(z=z, )
+            x_recon = self.model.decode(z=z,)
 
             z = np.asarray(nn.Sigmoid()(z).detach().cpu())
             g = np.asarray(label.detach().cpu())
 
-            z_array[self.batch_size * internal_iter:self.batch_size * internal_iter + self.batch_size, :] = z
-            g_array[self.batch_size * internal_iter:self.batch_size * internal_iter + self.batch_size, :] = g
+            z_array[self.batch_size*internal_iter:self.batch_size*internal_iter+self.batch_size, :] = z
+            g_array[self.batch_size*internal_iter:self.batch_size*internal_iter+self.batch_size, :] = g
 
-            #            I_batch , I_TOT = Interpretability(z, g)
-            #           I += I_batch; I_tot += I_TOT
+#            I_batch , I_TOT = Interpretability(z, g)
+ #           I += I_batch; I_tot += I_TOT
 
-            rec += (F.binary_cross_entropy(input=x_recon, target=x_true,
-                                           reduction='sum').detach().item() / self.batch_size)
-            kld += (self._kld_loss_fn(mu, logvar).detach().item())
+            rec+=(F.binary_cross_entropy(input=x_recon, target=x_true,reduction='sum').detach().item()/self.batch_size )
+            kld+=(self._kld_loss_fn(mu, logvar).detach().item())
 
             if self.latent_loss == 'MSE':
-                loss_bin = nn.MSELoss(reduction='mean')(mu_processed[:, :label.size(1)],
-                                                        2 * label.to(dtype=torch.float32) - 1)
+                loss_bin = nn.MSELoss(reduction='mean')(mu_processed[:, :label.size(1)], 2 * label.to(dtype=torch.float32) - 1)
             elif self.latent_loss == 'BCE':
-                loss_bin = nn.BCELoss(reduction='mean')((1 + mu_processed[:, :label.size(1)]) / 2,
-                                                        label.to(dtype=torch.float32))
+                loss_bin = nn.BCELoss(reduction='mean')((1+mu_processed[:, :label.size(1)])/2, label.to(dtype=torch.float32) )
             elif self.latent_loss == 'exact_MSE':
-                mu_proessed = nn.Sigmoid()(mu / torch.sqrt(1 + torch.exp(logvar)))
-                loss_bin = nn.MSELoss(reduction='mean')(mu_proessed[:, :label.size(1)],
-                                                        label.to(dtype=torch.float32))
+                mu_proessed = nn.Sigmoid()(mu/torch.sqrt( 1+ torch.exp(logvar)))
+                loss_bin = nn.MSELoss(reduction='mean')(mu_proessed[:,:label.size(1)], label.to(dtype=torch.float32) )
             else:
                 NotImplementedError('Wrong argument for latent loss.')
 
-            latent += (loss_bin.detach().item())
+            latent+=(loss_bin.detach().item())
             del loss_bin
 
-            BCE += (nn.CrossEntropyLoss(reduction='mean')(prediction,
-                                                          y_true).detach().item())
+            BCE+=(nn.CrossEntropyLoss(reduction='mean')(prediction,
+                                                        y_true).detach().item())
 
-            Acc += (Accuracy_Loss()(forecast,
-                                    y_true).detach().item())
+
+            Acc+=(Accuracy_Loss()(forecast,
+                                   y_true).detach().item() )
 
         if end_of_epoch:
             self.visualize_recon(x_true, x_recon, test=True)
@@ -372,12 +369,12 @@ class GrayVAE_Join(VAE):
                                     spacing=self.traverse_spacing,
                                     data=(x_true, label), test=True)
 
-            # self.iter += 1
-            # self.pbar.update(1)
+            #self.iter += 1
+            #self.pbar.update(1)
 
         print('Done testing')
 
         I, I_tot = Interpretability(z_array, g_array, rel_factors=N)
 
         nrm = internal_iter + 1
-        return rec / nrm, kld / nrm, latent / nrm, BCE / nrm, Acc / nrm, I / nrm, I_tot / nrm
+        return rec/nrm, kld/nrm, latent/nrm, BCE/nrm, Acc/nrm, I/nrm, I_tot/nrm
