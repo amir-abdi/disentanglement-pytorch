@@ -1,7 +1,7 @@
 import logging
 import argparse
 import subprocess
-from sklearn.linear_model import LinearRegression, Lasso
+from sklearn.linear_model import LinearRegression, MultiTaskLasso, HuberRegressor
 import scipy.linalg as linalg
 import numpy as np
 import random
@@ -440,11 +440,52 @@ def Interpretability(z, g, rel_factors=10 ** 4):
     D = len(z[0])
     K = len(g[0])
 
+    model = HuberRegressor()
+    coeff = np.zeros(shape=(D, K))
+    total_acc = 0
+    for i in range(K):
+        model.fit(z, g[:, i])
+        coeff[:, i] = model.coef_
+        total_acc += model.score(z, g[:, i])
+
+    print('# Interpret score # Total accuracy of Regressor model:', total_acc / K)
+    # print('Regression score:',model.score(z,g)*100,'%')
+
+    R = np.abs(coeff)
+
+    R_g = np.sum(R, axis=0)
+
+    P = np.zeros(np.shape(R))
+    for i in range(D):
+        for j in range(K):
+            P[i, j] = R[i, j] / (R_g[j] + 10 ** -6)
+
+    H_D = np.zeros(K)
+    for j in range(K):
+        P[:, j] += 10 ** -6
+        for i in range(D):
+            if P[i, j] > 1: P[i, j] = 1
+        H_D[j] = - np.sum(P[:, j] * np.log(P[:, j]))
+
+    I = 1 - H_D / np.log(D)
+
+    rho = np.sum(R, axis=0) / np.sum(R + 10 ** -6)
+
+    I_tot = np.sum(rho * I)
+
+    return I, I_tot
+
+
+
+def old_Interpret(z,g, rel_factors=1000):
+    D = len(z[0])
+    K = len(g[0])
+
     z = z[:rel_factors]
     g = g[:rel_factors]
 
     # lasso variant
-    model = Lasso()
+    model = MultiTaskLasso()
     model.fit(z, g)
 #    print('Model weights', model.coef_)
 
