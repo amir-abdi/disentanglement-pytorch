@@ -46,7 +46,7 @@ class CBM_Seq(VAE):
                                decoder(decoder_input_channels, self.num_channels, self.image_size),
                                ).to(self.device)
         #self.optim_G = optim.Adam(self.model.parameters(), lr=self.lr_G, betas=(self.beta1, self.beta2))
-        #self.optim_G_mse = optim.Adam(self.model.encoder.parameters(), lr=self.lr_G, betas=(self.beta1, self.beta2))
+        self.optim_G = optim.Adam(self.model.encoder.parameters(), lr=self.lr_G, betas=(self.beta1, self.beta2))
 
         # update nets
         self.net_dict['G'] = self.model
@@ -56,11 +56,15 @@ class CBM_Seq(VAE):
                               args.w_recon_scheduler, args.w_recon_scheduler_args)
 
         ## add binary classification layer
+        self.classification_epoch = args.classification_epoch
         self.classification = nn.Linear(self.z_dim, 2, bias=False).to(self.device) ### CHANGED OUT DIMENSION
         self.reduce_rec = args.reduce_recon
+        
 
-        self.class_G_all = optim.Adam([*self.model.encoder.parameters(), *self.classification.parameters()],
-                                      lr=self.lr_G, betas=(self.beta1, self.beta2))
+        #self.class_G_all = optim.Adam([*self.model.encoder.parameters(), *self.classification.parameters()],
+         #                             lr=self.lr_G, betas=(self.beta1, self.beta2))
+
+        self.class_G = optim.SGD(self.classification.parameters(), lr=0.01, momentum=0.9)
 
         self.label_weight = args.label_weight
         self.masking_fact = args.masking_fact
@@ -82,7 +86,7 @@ class CBM_Seq(VAE):
 
     def loss_fn(self, input_losses, reduce_rec=False, **kwargs):
         output_losses = dict()
-        output_losses['total'] = input_losses.get('total', 0)
+        output_losses['total'] = input_losses.get('total', torch.tensor(0))
         return output_losses
 
     def cbm_classification(self, losses, x_true1, label1, y_true1, examples, classification=False):
@@ -105,16 +109,15 @@ class CBM_Seq(VAE):
 
         if classification:
             loss_true_vals = torch.tensor(-1)
-            losses.update({'total_vae': loss_dict['total_vae'].detach(), 'true_values': -1})
+            losses.update({'total_vae': loss_dict['total'].detach(), 'true_values': torch.tensor(-1)})
             err_latent = [-1] * label1.size(1)
+            losses.update(prediction=nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1) )
 
 
         else:
 
             losses.update(loss_dict)
-
-            losses.update(prediction=nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long)) )
-            losses[c.TOTAL_VAE] += nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long))
+            losses.update(prediction= -torch.tensor(1))
 
             if n_passed > 0: # added the presence of only small labelled generative factors
 
@@ -179,35 +182,14 @@ class CBM_Seq(VAE):
             epoch += 1
             self.net_mode(train=True)
             vae_loss_sum = 0
-            # add the classification layer #
+
+            if epoch>self.classification_epoch:
+                print("## STARTING CLASSIFICATION ##")
+                start_classification = True
+            else: start_classification = False
 
             for internal_iter, (x_true1, label1, y_true1, examples) in enumerate(self.data_loader):
-
-                if internal_iter > 1 and is_time_for(self.iter, self.evaluate_iter):
-                    # test the behaviour on other losses
-                    trec, tkld, tlat, tbce, tacc, I, I_tot = self.test(end_of_epoch=False)
-                    factors = pd.DataFrame(
-                        {'iter': self.iter, 'rec': trec, 'kld': tkld, 'latent': tlat, 'BCE': tbce, 'Acc': tacc,
-                         'I': I_tot}, index=[0])
-
-                    for i in range(label1.size(1)):
-                        factors['I_%i' % i] = np.asarray(I)[i]
-
-                    self.dataframe_eval = self.dataframe_eval.append(factors, ignore_index=True)
-                    self.net_mode(train=True)
-
-                    if track_changes and not self.dataframe_eval.empty:
-                        self.dataframe_eval.to_csv(os.path.join(out_path, 'eval_results/test_metrics.csv'), index=False)
-                        print('Saved test_metrics')
-
-                    # include disentanglement metrics
-                    dis_metrics = pd.DataFrame(self.evaluate_results, index=[0])
-                    self.dataframe_dis = self.dataframe_dis.append(dis_metrics)
-
-                    if track_changes and not self.dataframe_dis.empty:
-                        self.dataframe_dis.to_csv(os.path.join(out_path, 'eval_results/dis_metrics.csv'), index=False)
-                        print('Saved dis_metrics')
-
+                
                 Iterations.append(internal_iter+1)
                 Epochs.append(epoch)
                 losses = {'total_vae':0}
@@ -218,14 +200,21 @@ class CBM_Seq(VAE):
 
                 ###configuration for dsprites
 
-                losses, params = self.cbm_classification(losses, x_true1, label1, y_true1, examples)
+                losses, params = self.cbm_classification(losses, x_true1, label1, y_true1, examples, classification=start_classification)
 
-                self.class_G_all.zero_grad()
+                self.optim_G.zero_grad()
+                self.class_G.zero_grad()
 
                 if (internal_iter%self.show_loss)==0: print("Losses:", losses)
 
-                losses[c.TOTAL_VAE].backward(retain_graph=False)
-                self.class_G_all.step()
+                if not start_classification:
+                    losses[c.TOTAL_VAE].backward(retain_graph=False)
+                    #losses['true_values'].backward(retain_graph=False)
+                    self.optim_G.step()
+
+                if start_classification:   # and (params['n_passed']>0):
+                    losses['prediction'].backward(retain_graph=False)
+                    self.class_G.step()
 
                 vae_loss_sum += losses[c.TOTAL_VAE]
                 losses[c.TOTAL_VAE_EPOCH] = vae_loss_sum /( internal_iter+1)
@@ -250,6 +239,33 @@ class CBM_Seq(VAE):
 
                         sofar.to_csv(os.path.join(out_path+'/train_runs', 'metrics.csv'), index=False)
                         del sofar
+
+                if internal_iter > 1 and is_time_for(self.iter, self.evaluate_iter):
+                    # test the behaviour on other losses
+                    trec, tkld = -1, -1
+                    tlat, tbce, tacc, I, I_tot = self.test(end_of_epoch=False)
+                    factors = pd.DataFrame(
+                        {'iter': self.iter, 'rec': trec, 'kld': tkld, 'latent': tlat, 'BCE': tbce, 'Acc': tacc,
+                         'I': I_tot}, index=[0])
+
+                    for i in range(label1.size(1)):
+                        factors['I_%i' % i] = np.asarray(I)[i]
+
+                    self.dataframe_eval = self.dataframe_eval.append(factors, ignore_index=True)
+                    self.net_mode(train=True)
+
+                    if track_changes and not self.dataframe_eval.empty:
+                        self.dataframe_eval.to_csv(os.path.join(out_path, 'eval_results/test_metrics.csv'), index=False)
+                        print('Saved test_metrics')
+
+                    # include disentanglement metrics
+                    dis_metrics = pd.DataFrame(self.evaluate_results, index=[0])
+                    self.dataframe_dis = self.dataframe_dis.append(dis_metrics)
+
+                    if track_changes and not self.dataframe_dis.empty:
+                        self.dataframe_dis.to_csv(os.path.join(out_path, 'eval_results/dis_metrics.csv'), index=False)
+                        print('Saved dis_metrics')
+
 
                 self.log_save(input_image=x_true1, recon_image=x_true1, loss=losses)
             # end of epoch
@@ -279,8 +295,7 @@ class CBM_Seq(VAE):
 
             mu_processed = torch.tanh(mu / 2)
             prediction, forecast = self.predict(latent=mu_processed)
-            x_recon = self.model.decode(z=z, )
-
+            
             z = np.asarray(nn.Sigmoid()(z).detach().cpu())
             g = np.asarray(label.detach().cpu())
 
@@ -290,10 +305,7 @@ class CBM_Seq(VAE):
             #            I_batch , I_TOT = Interpretability(z, g)
             #           I += I_batch; I_tot += I_TOT
 
-            rec += (F.binary_cross_entropy(input=x_recon, target=x_true,
-                                           reduction='sum').detach().item() / self.batch_size)
-            kld += (self._kld_loss_fn(mu, logvar).detach().item())
-
+            
             if self.latent_loss == 'MSE':
                 loss_bin = nn.MSELoss(reduction='mean')(mu_processed[:, :label.size(1)],
                                                         2 * label.to(dtype=torch.float32) - 1)
@@ -316,12 +328,6 @@ class CBM_Seq(VAE):
             Acc += (Accuracy_Loss()(forecast,
                                     y_true).detach().item())
 
-        if end_of_epoch:
-            self.visualize_recon(x_true, x_recon, test=True)
-            self.visualize_traverse(limit=(self.traverse_min, self.traverse_max),
-                                    spacing=self.traverse_spacing,
-                                    data=(x_true, label), test=True)
-
             # self.iter += 1
             # self.pbar.update(1)
 
@@ -330,4 +336,4 @@ class CBM_Seq(VAE):
         I, I_tot = Interpretability(z_array, g_array, rel_factors=N)
 
         nrm = internal_iter + 1
-        return rec / nrm, kld / nrm, latent / nrm, BCE / nrm, Acc / nrm, I / nrm, I_tot / nrm
+        return latent / nrm, BCE / nrm, Acc / nrm, I / nrm, I_tot / nrm

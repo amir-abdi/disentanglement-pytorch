@@ -1,0 +1,98 @@
+name=slurm_script
+_Args.alg CBM_Seq
+[1, 2, 3, 4, 5]
+target (737280,)
+Population of 0: 50.0 %.
+Start verification
+Labels in data_loader
+Fitting a LogReg model, loss - CE: tensor(0.0095)
+ACCURACY for logreg:  tensor(0.9920)
+Created the simple conv64 with channels 1
+Initialized CBM_Join model
+Created the simple conv64 with channels 1
+<class 'argparse.Namespace'>
+## Initializing Train indexes
+::path chosen -> logs/dsprites_full__CBM_Seq__2022_03/16-11/train_runs
+Losses: {'total_vae': tensor(0.6953, device='cuda:0', grad_fn=<AddBackward0>), 'total': tensor(0), 'prediction': tensor(-1), 'true_values': tensor(0.6953, device='cuda:0', grad_fn=<MseLossBackward>)}
+Losses: {'total_vae': tensor(0.0361, device='cuda:0', grad_fn=<AddBackward0>), 'total': tensor(0), 'prediction': tensor(-1), 'true_values': tensor(0.0361, device='cuda:0', grad_fn=<MseLossBackward>)}
+[0:9215]  loss_total_vae=0.048  loss_total=0.000  loss_prediction=-1.000  loss_true_values=0.048  loss_total_vae_epoch=0.146  
+Done testing
+# Interpret score # Total accuracy of Regressor model: 0.7130191562390956
+Saved test_metrics
+Saved dis_metrics
+Losses: {'total_vae': tensor(0.0436, device='cuda:0', grad_fn=<AddBackward0>), 'total': tensor(0), 'prediction': tensor(-1), 'true_values': tensor(0.0436, device='cuda:0', grad_fn=<MseLossBackward>)}
+Losses: {'total_vae': tensor(0.0373, device='cuda:0', grad_fn=<AddBackward0>), 'total': tensor(0), 'prediction': tensor(-1), 'true_values': tensor(0.0373, device='cuda:0', grad_fn=<MseLossBackward>)}
+[1:18431]  loss_total_vae=0.033  loss_total=0.000  loss_prediction=-1.000  loss_true_values=0.033  loss_total_vae_epoch=0.038  
+Done testing
+# Interpret score # Total accuracy of Regressor model: 0.7679353080107649
+Saved test_metrics
+Saved dis_metrics
+Losses: {'total_vae': tensor(0.0285, device='cuda:0', grad_fn=<AddBackward0>), 'total': tensor(0), 'prediction': tensor(-1), 'true_values': tensor(0.0285, device='cuda:0', grad_fn=<MseLossBackward>)}
+Losses: {'total_vae': tensor(0.0289, device='cuda:0', grad_fn=<AddBackward0>), 'total': tensor(0), 'prediction': tensor(-1), 'true_values': tensor(0.0289, device='cuda:0', grad_fn=<MseLossBackward>)}
+[2:27647]  loss_total_vae=0.038  loss_total=0.000  loss_prediction=-1.000  loss_true_values=0.038  loss_total_vae_epoch=0.035  
+Done testing
+# Interpret score # Total accuracy of Regressor model: 0.7716252278005646
+Saved test_metrics
+Saved dis_metrics
+Losses: {'total_vae': tensor(0.0225, device='cuda:0', grad_fn=<AddBackward0>), 'total': tensor(0), 'prediction': tensor(-1), 'true_values': tensor(0.0225, device='cuda:0', grad_fn=<MseLossBackward>)}
+Losses: {'total_vae': tensor(0.0382, device='cuda:0', grad_fn=<AddBackward0>), 'total': tensor(0), 'prediction': tensor(-1), 'true_values': tensor(0.0382, device='cuda:0', grad_fn=<MseLossBackward>)}
+[3:36863]  loss_total_vae=0.028  loss_total=0.000  loss_prediction=-1.000  loss_true_values=0.028  loss_total_vae_epoch=0.033  
+Done testing
+# Interpret score # Total accuracy of Regressor model: 0.7762195926568284
+Saved test_metrics
+Saved dis_metrics
+Losses: {'total_vae': tensor(0.0312, device='cuda:0', grad_fn=<AddBackward0>), 'total': tensor(0), 'prediction': tensor(-1), 'true_values': tensor(0.0312, device='cuda:0', grad_fn=<MseLossBackward>)}
+Losses: {'total_vae': tensor(0.0259, device='cuda:0', grad_fn=<AddBackward0>), 'total': tensor(0), 'prediction': tensor(-1), 'true_values': tensor(0.0259, device='cuda:0', grad_fn=<MseLossBackward>)}
+[4:46079]  loss_total_vae=0.027  loss_total=0.000  loss_prediction=-1.000  loss_true_values=0.027  loss_total_vae_epoch=0.033  
+Done testing
+# Interpret score # Total accuracy of Regressor model: 0.7698480522233601
+Saved test_metrics
+Saved dis_metrics
+## STARTING CLASSIFICATION ##
+Losses: {'total_vae': tensor(0), 'true_values': tensor(-1), 'prediction': tensor(0.8009, device='cuda:0', grad_fn=<NllLossBackward>)}
+Losses: {'total_vae': tensor(0), 'true_values': tensor(-1), 'prediction': tensor(0.0991, device='cuda:0', grad_fn=<NllLossBackward>)}
+[5:55295]  loss_total_vae=0.000  loss_true_values=-1.000  loss_prediction=0.128  loss_total_vae_epoch=0.000  
+Done testing
+# Interpret score # Total accuracy of Regressor model: 0.7693982503158509
+Saved test_metrics
+Saved dis_metrics
+## STARTING CLASSIFICATION ##
+Losses: {'total_vae': tensor(0), 'true_values': tensor(-1), 'prediction': tensor(0.0779, device='cuda:0', grad_fn=<NllLossBackward>)}
+Losses: {'total_vae': tensor(0), 'true_values': tensor(-1), 'prediction': tensor(0.0493, device='cuda:0', grad_fn=<NllLossBackward>)}
+[6:64511]  loss_total_vae=0.000  loss_true_values=-1.000  loss_prediction=0.092  loss_total_vae_epoch=0.000  
+Done testing
+# Interpret score # Total accuracy of Regressor model: 0.7696603755302068
+Saved test_metrics
+Saved dis_metrics
+## STARTING CLASSIFICATION ##
+Losses: {'total_vae': tensor(0), 'true_values': tensor(-1), 'prediction': tensor(0.0944, device='cuda:0', grad_fn=<NllLossBackward>)}
+Losses: {'total_vae': tensor(0), 'true_values': tensor(-1), 'prediction': tensor(0.1168, device='cuda:0', grad_fn=<NllLossBackward>)}
+[7:73727]  loss_total_vae=0.000  loss_true_values=-1.000  loss_prediction=0.077  loss_total_vae_epoch=0.000  
+Done testing
+# Interpret score # Total accuracy of Regressor model: 0.7689282342793616
+Saved test_metrics
+Saved dis_metrics
+## STARTING CLASSIFICATION ##
+Losses: {'total_vae': tensor(0), 'true_values': tensor(-1), 'prediction': tensor(0.1340, device='cuda:0', grad_fn=<NllLossBackward>)}
+Losses: {'total_vae': tensor(0), 'true_values': tensor(-1), 'prediction': tensor(0.0503, device='cuda:0', grad_fn=<NllLossBackward>)}
+[8:82943]  loss_total_vae=0.000  loss_true_values=-1.000  loss_prediction=0.108  loss_total_vae_epoch=0.000  
+Done testing
+# Interpret score # Total accuracy of Regressor model: 0.7694276221953196
+Saved test_metrics
+Saved dis_metrics
+## STARTING CLASSIFICATION ##
+Losses: {'total_vae': tensor(0), 'true_values': tensor(-1), 'prediction': tensor(0.1338, device='cuda:0', grad_fn=<NllLossBackward>)}
+Losses: {'total_vae': tensor(0), 'true_values': tensor(-1), 'prediction': tensor(0.2043, device='cuda:0', grad_fn=<NllLossBackward>)}
+[9:92159]  loss_total_vae=0.000  loss_true_values=-1.000  loss_prediction=0.044  loss_total_vae_epoch=0.000  
+Done testing
+# Interpret score # Total accuracy of Regressor model: 0.769112597466296
+Saved test_metrics
+Saved dis_metrics
+## STARTING CLASSIFICATION ##
+Losses: {'total_vae': tensor(0), 'true_values': tensor(-1), 'prediction': tensor(0.0443, device='cuda:0', grad_fn=<NllLossBackward>)}
+Losses: {'total_vae': tensor(0), 'true_values': tensor(-1), 'prediction': tensor(0.1356, device='cuda:0', grad_fn=<NllLossBackward>)}
+[10:101375]  loss_total_vae=0.000  loss_true_values=-1.000  loss_prediction=0.137  loss_total_vae_epoch=0.000  
+Done testing
+# Interpret score # Total accuracy of Regressor model: 0.7697984522959108
+Saved test_metrics
+Saved dis_metrics
