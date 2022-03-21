@@ -1,7 +1,7 @@
 import logging
 import argparse
 import subprocess
-from sklearn.linear_model import LinearRegression, MultiTaskLasso, HuberRegressor
+from sklearn.linear_model import Lasso, LinearRegression, MultiTaskLasso, HuberRegressor
 import scipy.linalg as linalg
 import numpy as np
 import random
@@ -13,6 +13,7 @@ import torch.nn.init as init
 from torch.autograd import Variable
 import torch.nn.functional as F
 from common import constants as c
+from sklearn.preprocessing import OneHotEncoder
 
 
 def cuda(x):
@@ -437,28 +438,49 @@ def Interpretability(z, g, rel_factors=10 ** 4):
     It can be done on a restricted number of entries.
     '''
 
+    # We transform first three dimensions into one categorical
+
+    enc = OneHotEncoder()
+    labels = [[0],[1],[2]]
+    encoder = enc.fit(labels)
+    dec_z = encoder.inverse_transform(z[:,:3])
+    dec_g = encoder.inverse_transform(g[:,:3])
+
+    z = np.concatenate((dec_z, z[:,3:] ), axis=1 )
+    g = np.concatenate((dec_g, g[:,3:] ), axis=1 )
+
+    ### let's see
+
     D = len(z[0])
     K = len(g[0])
 
-    model = HuberRegressor()
+    model = LinearRegression()
     coeff = np.zeros(shape=(D, K))
-    total_acc = 0
-    for i in range(K):
-        model.fit(z, g[:, i])
-        coeff[:, i] = model.coef_
-        total_acc += model.score(z, g[:, i])
 
-    print('# Interpret score # Total accuracy of Regressor model:', total_acc / K)
+#    total_acc = 0
+ #   for i in range(K):
+    model.fit(z, g)
+    coeff = model.coef_
+    
+    print('# Interpret score # Total accuracy of Regressor model:', model.score(z,g) )
     # print('Regression score:',model.score(z,g)*100,'%')
 
     R = np.abs(coeff)
 
+    np.set_printoptions(suppress=True)
+
+    print('Inside metrics')
+    #print('R', R*100)
+    
     R_g = np.sum(R, axis=0)
 
     P = np.zeros(np.shape(R))
     for i in range(D):
         for j in range(K):
             P[i, j] = R[i, j] / (R_g[j] + 10 ** -6)
+    
+    #print('P:', P*100)
+
 
     H_D = np.zeros(K)
     for j in range(K):
@@ -467,11 +489,15 @@ def Interpretability(z, g, rel_factors=10 ** 4):
             if P[i, j] > 1: P[i, j] = 1
         H_D[j] = - np.sum(P[:, j] * np.log(P[:, j]))
 
+
     I = 1 - H_D / np.log(D)
 
-    rho = np.sum(R, axis=0) / np.sum(R + 10 ** -6)
 
+    rho = np.sum(R, axis=0) / np.sum(R + 10 ** -6)
     I_tot = np.sum(rho * I)
+    print('Interpretability scores')
+    print(I)
+    print(I_tot)
 
     return I, I_tot
 

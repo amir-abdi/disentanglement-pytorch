@@ -1,98 +1,252 @@
 name=slurm_script
-_Args.alg CBM_Seq
+_Args.alg GrayVAE_Join
 [1, 2, 3, 4, 5]
 target (737280,)
 Population of 0: 50.0 %.
 Start verification
 Labels in data_loader
-Fitting a LogReg model, loss - CE: tensor(0.0095)
-ACCURACY for logreg:  tensor(0.9920)
+Fitting a LogReg model, loss - CE: tensor(0.0097)
+ACCURACY for logreg:  tensor(0.9918)
 Created the simple conv64 with channels 1
-Initialized CBM_Join model
+Initialized GrayVAE_Standard model
 Created the simple conv64 with channels 1
 <class 'argparse.Namespace'>
 ## Initializing Train indexes
-::path chosen -> logs/dsprites_full__CBM_Seq__2022_03/16-11/train_runs
-Losses: {'total_vae': tensor(0.6953, device='cuda:0', grad_fn=<AddBackward0>), 'total': tensor(0), 'prediction': tensor(-1), 'true_values': tensor(0.6953, device='cuda:0', grad_fn=<MseLossBackward>)}
-Losses: {'total_vae': tensor(0.0361, device='cuda:0', grad_fn=<AddBackward0>), 'total': tensor(0), 'prediction': tensor(-1), 'true_values': tensor(0.0361, device='cuda:0', grad_fn=<MseLossBackward>)}
-[0:9215]  loss_total_vae=0.048  loss_total=0.000  loss_prediction=-1.000  loss_true_values=0.048  loss_total_vae_epoch=0.146  
+->path chosen:: logs/dsprites_full__GrayVAE_Join__2022_03/19-20/train_runs
+Losses: {'total_vae': tensor(69.3908, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(0.0761, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(69.3147, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+Losses: {'total_vae': tensor(12.6005, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(2.9006, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(9.6999, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+[0:9215]  loss_total_vae=10.954  loss_recon=0.000  loss_kld=5.278  loss_prediction=5.676  loss_true_values=-1.000  loss_total_vae_epoch=22.980  
+Losses: {'total_vae': tensor(10.0873, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(8.3608, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(1.7264, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
 Done testing
-# Interpret score # Total accuracy of Regressor model: 0.7130191562390956
+# Interpret score # Total accuracy of Regressor model: 0.5394471531752251
+Inside metrics
+Interpretability scores
+[0.29341835 0.15613826 0.24008076 0.21137348 0.09175246]
+0.2264517285928227
 Saved test_metrics
 Saved dis_metrics
-Losses: {'total_vae': tensor(0.0436, device='cuda:0', grad_fn=<AddBackward0>), 'total': tensor(0), 'prediction': tensor(-1), 'true_values': tensor(0.0436, device='cuda:0', grad_fn=<MseLossBackward>)}
-Losses: {'total_vae': tensor(0.0373, device='cuda:0', grad_fn=<AddBackward0>), 'total': tensor(0), 'prediction': tensor(-1), 'true_values': tensor(0.0373, device='cuda:0', grad_fn=<MseLossBackward>)}
-[1:18431]  loss_total_vae=0.033  loss_total=0.000  loss_prediction=-1.000  loss_true_values=0.033  loss_total_vae_epoch=0.038  
+Losses: {'total_vae': tensor(3.7355, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(1.3609, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(2.3746, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+[1:18431]  loss_total_vae=4.945  loss_recon=0.000  loss_kld=0.910  loss_prediction=4.035  loss_true_values=-1.000  loss_total_vae_epoch=5.646  
+Losses: {'total_vae': tensor(5.0550, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(3.5981, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(1.4569, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
 Done testing
-# Interpret score # Total accuracy of Regressor model: 0.7679353080107649
+# Interpret score # Total accuracy of Regressor model: 0.49881435412505476
+Inside metrics
+Interpretability scores
+[0.20178813 0.08509675 0.18470636 0.17999566 0.36559963]
+0.18262037297070843
 Saved test_metrics
 Saved dis_metrics
-Losses: {'total_vae': tensor(0.0285, device='cuda:0', grad_fn=<AddBackward0>), 'total': tensor(0), 'prediction': tensor(-1), 'true_values': tensor(0.0285, device='cuda:0', grad_fn=<MseLossBackward>)}
-Losses: {'total_vae': tensor(0.0289, device='cuda:0', grad_fn=<AddBackward0>), 'total': tensor(0), 'prediction': tensor(-1), 'true_values': tensor(0.0289, device='cuda:0', grad_fn=<MseLossBackward>)}
-[2:27647]  loss_total_vae=0.038  loss_total=0.000  loss_prediction=-1.000  loss_true_values=0.038  loss_total_vae_epoch=0.035  
+Losses: {'total_vae': tensor(3.8935, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(0.7821, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(3.1114, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+[2:27647]  loss_total_vae=3.867  loss_recon=0.000  loss_kld=0.158  loss_prediction=3.709  loss_true_values=-1.000  loss_total_vae_epoch=4.526  
+Losses: {'total_vae': tensor(4.8627, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(4.3934, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(0.4694, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
 Done testing
-# Interpret score # Total accuracy of Regressor model: 0.7716252278005646
+# Interpret score # Total accuracy of Regressor model: 0.4880972142915286
+Inside metrics
+Interpretability scores
+[0.33504041 0.48814625 0.22114269 0.19291043 0.15227629]
+0.2092487911651893
 Saved test_metrics
 Saved dis_metrics
-Losses: {'total_vae': tensor(0.0225, device='cuda:0', grad_fn=<AddBackward0>), 'total': tensor(0), 'prediction': tensor(-1), 'true_values': tensor(0.0225, device='cuda:0', grad_fn=<MseLossBackward>)}
-Losses: {'total_vae': tensor(0.0382, device='cuda:0', grad_fn=<AddBackward0>), 'total': tensor(0), 'prediction': tensor(-1), 'true_values': tensor(0.0382, device='cuda:0', grad_fn=<MseLossBackward>)}
-[3:36863]  loss_total_vae=0.028  loss_total=0.000  loss_prediction=-1.000  loss_true_values=0.028  loss_total_vae_epoch=0.033  
+Losses: {'total_vae': tensor(0.1834, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(0.0233, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(0.1602, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+[3:36863]  loss_total_vae=3.094  loss_recon=0.000  loss_kld=0.840  loss_prediction=2.254  loss_true_values=-1.000  loss_total_vae_epoch=4.096  
+Losses: {'total_vae': tensor(1.0794, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(0.0669, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(1.0125, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
 Done testing
-# Interpret score # Total accuracy of Regressor model: 0.7762195926568284
+# Interpret score # Total accuracy of Regressor model: 0.44066759951897116
+Inside metrics
+Interpretability scores
+[0.22848257 0.30675561 0.20317983 0.16070764 0.19753604]
+0.1801319413295264
 Saved test_metrics
 Saved dis_metrics
-Losses: {'total_vae': tensor(0.0312, device='cuda:0', grad_fn=<AddBackward0>), 'total': tensor(0), 'prediction': tensor(-1), 'true_values': tensor(0.0312, device='cuda:0', grad_fn=<MseLossBackward>)}
-Losses: {'total_vae': tensor(0.0259, device='cuda:0', grad_fn=<AddBackward0>), 'total': tensor(0), 'prediction': tensor(-1), 'true_values': tensor(0.0259, device='cuda:0', grad_fn=<MseLossBackward>)}
-[4:46079]  loss_total_vae=0.027  loss_total=0.000  loss_prediction=-1.000  loss_true_values=0.027  loss_total_vae_epoch=0.033  
+Losses: {'total_vae': tensor(4.8047, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(1.8822, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(2.9225, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+[4:46079]  loss_total_vae=9.879  loss_recon=0.000  loss_kld=0.974  loss_prediction=8.904  loss_true_values=-1.000  loss_total_vae_epoch=3.888  
+Losses: {'total_vae': tensor(2.3364, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(2.0238, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(0.3126, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
 Done testing
-# Interpret score # Total accuracy of Regressor model: 0.7698480522233601
+# Interpret score # Total accuracy of Regressor model: 0.43685389054129314
+Inside metrics
+Interpretability scores
+[0.30265878 0.19712863 0.25317559 0.46018865 0.32803208]
+0.37410447931597907
 Saved test_metrics
 Saved dis_metrics
-## STARTING CLASSIFICATION ##
-Losses: {'total_vae': tensor(0), 'true_values': tensor(-1), 'prediction': tensor(0.8009, device='cuda:0', grad_fn=<NllLossBackward>)}
-Losses: {'total_vae': tensor(0), 'true_values': tensor(-1), 'prediction': tensor(0.0991, device='cuda:0', grad_fn=<NllLossBackward>)}
-[5:55295]  loss_total_vae=0.000  loss_true_values=-1.000  loss_prediction=0.128  loss_total_vae_epoch=0.000  
+Losses: {'total_vae': tensor(4.1769, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(1.9732, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(2.2036, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+[5:55295]  loss_total_vae=0.389  loss_recon=0.000  loss_kld=0.333  loss_prediction=0.056  loss_true_values=-1.000  loss_total_vae_epoch=3.712  
+Losses: {'total_vae': tensor(2.6724, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(0.9236, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(1.7488, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
 Done testing
-# Interpret score # Total accuracy of Regressor model: 0.7693982503158509
+# Interpret score # Total accuracy of Regressor model: 0.4344555197985392
+Inside metrics
+Interpretability scores
+[0.20256273 0.36657968 0.32964533 0.35478355 0.37329559]
+0.337563096360768
 Saved test_metrics
 Saved dis_metrics
-## STARTING CLASSIFICATION ##
-Losses: {'total_vae': tensor(0), 'true_values': tensor(-1), 'prediction': tensor(0.0779, device='cuda:0', grad_fn=<NllLossBackward>)}
-Losses: {'total_vae': tensor(0), 'true_values': tensor(-1), 'prediction': tensor(0.0493, device='cuda:0', grad_fn=<NllLossBackward>)}
-[6:64511]  loss_total_vae=0.000  loss_true_values=-1.000  loss_prediction=0.092  loss_total_vae_epoch=0.000  
+Losses: {'total_vae': tensor(2.3379, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(1.8751, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(0.4629, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+[6:64511]  loss_total_vae=3.187  loss_recon=0.000  loss_kld=1.843  loss_prediction=1.344  loss_true_values=-1.000  loss_total_vae_epoch=3.517  
+Losses: {'total_vae': tensor(2.7099, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(1.5005, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(1.2094, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+Losses: {'total_vae': tensor(0.7646, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(0.5507, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(0.2139, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
 Done testing
-# Interpret score # Total accuracy of Regressor model: 0.7696603755302068
+# Interpret score # Total accuracy of Regressor model: 0.43242751472558805
+Inside metrics
+Interpretability scores
+[0.19598994 0.07285223 0.25584169 0.41589512 0.39806144]
+0.35671328085516874
 Saved test_metrics
 Saved dis_metrics
-## STARTING CLASSIFICATION ##
-Losses: {'total_vae': tensor(0), 'true_values': tensor(-1), 'prediction': tensor(0.0944, device='cuda:0', grad_fn=<NllLossBackward>)}
-Losses: {'total_vae': tensor(0), 'true_values': tensor(-1), 'prediction': tensor(0.1168, device='cuda:0', grad_fn=<NllLossBackward>)}
-[7:73727]  loss_total_vae=0.000  loss_true_values=-1.000  loss_prediction=0.077  loss_total_vae_epoch=0.000  
+[7:73727]  loss_total_vae=6.660  loss_recon=0.000  loss_kld=2.806  loss_prediction=3.854  loss_true_values=-1.000  loss_total_vae_epoch=3.345  
+Losses: {'total_vae': tensor(2.2638, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(0.6087, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(1.6551, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+Losses: {'total_vae': tensor(3.6976, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(1.9508, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(1.7468, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
 Done testing
-# Interpret score # Total accuracy of Regressor model: 0.7689282342793616
+# Interpret score # Total accuracy of Regressor model: 0.43406474542218043
+Inside metrics
+Interpretability scores
+[0.47464409 0.20251848 0.19842581 0.31003605 0.33913968]
+0.27064843972094926
 Saved test_metrics
 Saved dis_metrics
-## STARTING CLASSIFICATION ##
-Losses: {'total_vae': tensor(0), 'true_values': tensor(-1), 'prediction': tensor(0.1340, device='cuda:0', grad_fn=<NllLossBackward>)}
-Losses: {'total_vae': tensor(0), 'true_values': tensor(-1), 'prediction': tensor(0.0503, device='cuda:0', grad_fn=<NllLossBackward>)}
-[8:82943]  loss_total_vae=0.000  loss_true_values=-1.000  loss_prediction=0.108  loss_total_vae_epoch=0.000  
+[8:82943]  loss_total_vae=0.585  loss_recon=0.000  loss_kld=0.518  loss_prediction=0.067  loss_true_values=-1.000  loss_total_vae_epoch=3.258  
+Losses: {'total_vae': tensor(4.4277, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(1.4823, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(2.9455, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+Losses: {'total_vae': tensor(6.6687, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(4.3844, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(2.2843, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
 Done testing
-# Interpret score # Total accuracy of Regressor model: 0.7694276221953196
+# Interpret score # Total accuracy of Regressor model: 0.4418867378725324
+Inside metrics
+Interpretability scores
+[0.43098219 0.20272    0.26345382 0.29149248 0.33994844]
+0.28046862031505837
 Saved test_metrics
 Saved dis_metrics
-## STARTING CLASSIFICATION ##
-Losses: {'total_vae': tensor(0), 'true_values': tensor(-1), 'prediction': tensor(0.1338, device='cuda:0', grad_fn=<NllLossBackward>)}
-Losses: {'total_vae': tensor(0), 'true_values': tensor(-1), 'prediction': tensor(0.2043, device='cuda:0', grad_fn=<NllLossBackward>)}
-[9:92159]  loss_total_vae=0.000  loss_true_values=-1.000  loss_prediction=0.044  loss_total_vae_epoch=0.000  
+[9:92159]  loss_total_vae=3.194  loss_recon=0.000  loss_kld=1.195  loss_prediction=1.999  loss_true_values=-1.000  loss_total_vae_epoch=3.140  
+Losses: {'total_vae': tensor(3.4165, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(0.8182, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(2.5983, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+Losses: {'total_vae': tensor(0.9958, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(0.5219, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(0.4738, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
 Done testing
-# Interpret score # Total accuracy of Regressor model: 0.769112597466296
+# Interpret score # Total accuracy of Regressor model: 0.4690172658586435
+Inside metrics
+Interpretability scores
+[0.39281724 0.15541029 0.23376898 0.26316674 0.36758417]
+0.2521182422301535
 Saved test_metrics
 Saved dis_metrics
-## STARTING CLASSIFICATION ##
-Losses: {'total_vae': tensor(0), 'true_values': tensor(-1), 'prediction': tensor(0.0443, device='cuda:0', grad_fn=<NllLossBackward>)}
-Losses: {'total_vae': tensor(0), 'true_values': tensor(-1), 'prediction': tensor(0.1356, device='cuda:0', grad_fn=<NllLossBackward>)}
-[10:101375]  loss_total_vae=0.000  loss_true_values=-1.000  loss_prediction=0.137  loss_total_vae_epoch=0.000  
+[10:101375]  loss_total_vae=1.113  loss_recon=0.000  loss_kld=1.085  loss_prediction=0.028  loss_true_values=-1.000  loss_total_vae_epoch=3.026  
+Losses: {'total_vae': tensor(4.1312, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(0.2917, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(3.8394, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+Losses: {'total_vae': tensor(0.6262, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(0.1297, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(0.4966, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
 Done testing
-# Interpret score # Total accuracy of Regressor model: 0.7697984522959108
+# Interpret score # Total accuracy of Regressor model: 0.4401764940827174
+Inside metrics
+Interpretability scores
+[0.35840063 0.22443987 0.308044   0.33593512 0.36121346]
+0.32510017293436844
 Saved test_metrics
 Saved dis_metrics
+[11:110591]  loss_total_vae=0.765  loss_recon=0.000  loss_kld=0.739  loss_prediction=0.026  loss_true_values=-1.000  loss_total_vae_epoch=2.981  
+Losses: {'total_vae': tensor(3.4650, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(1.9557, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(1.5093, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+Losses: {'total_vae': tensor(2.7290, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(2.5958, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(0.1331, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+[12:119807]  loss_total_vae=3.040  loss_recon=0.000  loss_kld=0.987  loss_prediction=2.052  loss_true_values=-1.000  loss_total_vae_epoch=2.938  
+Losses: {'total_vae': tensor(8.1186, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(2.1053, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(6.0133, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+Done testing
+# Interpret score # Total accuracy of Regressor model: 0.4388390611593703
+Inside metrics
+Interpretability scores
+[0.39280799 0.25826252 0.28572071 0.31538927 0.31447556]
+0.3024118740481447
+Saved test_metrics
+Saved dis_metrics
+Losses: {'total_vae': tensor(15.2578, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(1.4964, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(13.7614, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+[13:129023]  loss_total_vae=1.798  loss_recon=0.000  loss_kld=0.528  loss_prediction=1.270  loss_true_values=-1.000  loss_total_vae_epoch=2.825  
+Losses: {'total_vae': tensor(4.3188, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(2.4216, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(1.8972, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+Done testing
+# Interpret score # Total accuracy of Regressor model: 0.4422442781495948
+Inside metrics
+Interpretability scores
+[0.47579735 0.41802687 0.28692258 0.35075817 0.43671971]
+0.333512674048082
+Saved test_metrics
+Saved dis_metrics
+Losses: {'total_vae': tensor(0.9611, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(0.4388, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(0.5223, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+[14:138239]  loss_total_vae=2.039  loss_recon=0.000  loss_kld=0.619  loss_prediction=1.420  loss_true_values=-1.000  loss_total_vae_epoch=2.745  
+Losses: {'total_vae': tensor(1.6713, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(1.6474, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(0.0238, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+Done testing
+# Interpret score # Total accuracy of Regressor model: 0.4386753741690927
+Inside metrics
+Interpretability scores
+[0.39717706 0.30156628 0.27213241 0.29719983 0.33285298]
+0.29053454123991246
+Saved test_metrics
+Saved dis_metrics
+Losses: {'total_vae': tensor(0.4735, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(0.4445, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(0.0290, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+[15:147455]  loss_total_vae=1.297  loss_recon=0.000  loss_kld=1.122  loss_prediction=0.175  loss_true_values=-1.000  loss_total_vae_epoch=2.675  
+Losses: {'total_vae': tensor(1.7900, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(1.7587, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(0.0312, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+Done testing
+# Interpret score # Total accuracy of Regressor model: 0.4353236400863946
+Inside metrics
+Interpretability scores
+[0.50820791 0.3863567  0.42555625 0.36396898 0.34429628]
+0.38736056774258004
+Saved test_metrics
+Saved dis_metrics
+Losses: {'total_vae': tensor(1.1850, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(0.1386, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(1.0464, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+[16:156671]  loss_total_vae=1.346  loss_recon=0.000  loss_kld=0.493  loss_prediction=0.853  loss_true_values=-1.000  loss_total_vae_epoch=2.618  
+Losses: {'total_vae': tensor(6.1180, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(0.2829, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(5.8352, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+Done testing
+# Interpret score # Total accuracy of Regressor model: 0.45189690705298524
+Inside metrics
+Interpretability scores
+[0.43620714 0.37466587 0.35004844 0.45493121 0.38830943]
+0.41927547417024563
+Saved test_metrics
+Saved dis_metrics
+Losses: {'total_vae': tensor(0.2650, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(0.0376, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(0.2274, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+[17:165887]  loss_total_vae=3.093  loss_recon=0.000  loss_kld=0.685  loss_prediction=2.408  loss_true_values=-1.000  loss_total_vae_epoch=2.570  
+Losses: {'total_vae': tensor(0.6775, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(0.6356, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(0.0419, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+Done testing
+# Interpret score # Total accuracy of Regressor model: 0.43215280848695353
+Inside metrics
+Interpretability scores
+[0.55379157 0.24199881 0.18316335 0.42382302 0.36526829]
+0.3432018775187402
+Saved test_metrics
+Saved dis_metrics
+Losses: {'total_vae': tensor(5.3572, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(3.4358, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(1.9214, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+[18:175103]  loss_total_vae=3.894  loss_recon=0.000  loss_kld=2.189  loss_prediction=1.705  loss_true_values=-1.000  loss_total_vae_epoch=2.486  
+Losses: {'total_vae': tensor(1.7497, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(0.2615, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(1.4882, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+Done testing
+# Interpret score # Total accuracy of Regressor model: 0.4334111209547063
+Inside metrics
+Interpretability scores
+[0.51650757 0.18260996 0.36427529 0.49160443 0.3671142 ]
+0.44296932840248615
+Saved test_metrics
+Saved dis_metrics
+Losses: {'total_vae': tensor(2.7240, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(0.7988, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(1.9252, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+[19:184319]  loss_total_vae=2.190  loss_recon=0.000  loss_kld=0.476  loss_prediction=1.714  loss_true_values=-1.000  loss_total_vae_epoch=2.458  
+Losses: {'total_vae': tensor(2.7023, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(1.5216, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(1.1807, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+Losses: {'total_vae': tensor(1.1246, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(0.5349, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(0.5897, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+Done testing
+# Interpret score # Total accuracy of Regressor model: 0.42888143240240933
+Inside metrics
+Interpretability scores
+[0.43799808 0.21012173 0.39072171 0.57191125 0.42443741]
+0.5057915978851331
+Saved test_metrics
+Saved dis_metrics
+[20:193535]  loss_total_vae=2.217  loss_recon=0.000  loss_kld=0.736  loss_prediction=1.481  loss_true_values=-1.000  loss_total_vae_epoch=2.411  
+Losses: {'total_vae': tensor(0.8427, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(0.4279, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(0.4148, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+Losses: {'total_vae': tensor(0.7577, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(0.7072, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(0.0505, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+Done testing
+# Interpret score # Total accuracy of Regressor model: 0.4306862557333901
+Inside metrics
+Interpretability scores
+[0.57881921 0.36550466 0.17805884 0.2805066  0.34403148]
+0.252051193381625
+Saved test_metrics
+Saved dis_metrics
+[21:202751]  loss_total_vae=2.307  loss_recon=0.000  loss_kld=0.960  loss_prediction=1.347  loss_true_values=-1.000  loss_total_vae_epoch=2.380  
+Losses: {'total_vae': tensor(3.1175, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(0.5018, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(2.6157, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+Losses: {'total_vae': tensor(1.9296, device='cuda:0', grad_fn=<AddBackward0>), 'recon': tensor(0., device='cuda:0', grad_fn=<MulBackward0>), 'kld': tensor(1.1633, device='cuda:0', grad_fn=<MulBackward0>), 'prediction': tensor(0.7662, device='cuda:0', grad_fn=<MulBackward0>), 'true_values': tensor(-1)}
+Done testing
+# Interpret score # Total accuracy of Regressor model: 0.43944437566881084
+Inside metrics
+Interpretability scores
+[0.49732671 0.31827813 0.16746434 0.41022468 0.36833918]
+0.33192283688422336
+Saved test_metrics
+Saved dis_metrics
+[22:211967]  loss_total_vae=2.210  loss_recon=0.000  loss_kld=2.169  loss_prediction=0.041  loss_true_values=-1.000  loss_total_vae_epoch=2.299  

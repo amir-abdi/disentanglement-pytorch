@@ -220,7 +220,8 @@ class CBM_Join(VAE):
 
                     #                    self.dataframe_eval = self.dataframe_eval.append(self.evaluate_results,  ignore_index=True)
                     # test the behaviour on other losses
-                    trec, tkld, tlat, tbce, tacc, I, I_tot = self.test(end_of_epoch=False)
+                    trec, tkld = 0 
+                    tlat, tbce, tacc, I, I_tot = self.test(end_of_epoch=False)
                     factors = pd.DataFrame(
                         {'iter': self.iter, 'rec': trec, 'kld': tkld, 'latent': tlat, 'BCE': tbce, 'Acc': tacc,
                          'I': I_tot}, index=[0])
@@ -274,7 +275,6 @@ class CBM_Join(VAE):
 
             mu_processed = torch.tanh(mu / 2)
             prediction, forecast = self.predict(latent=mu_processed)
-            x_recon = self.model.decode(z=z, )
 
             z = np.asarray(nn.Sigmoid()(z).detach().cpu())
             g = np.asarray(label.detach().cpu())
@@ -285,9 +285,6 @@ class CBM_Join(VAE):
             #            I_batch , I_TOT = Interpretability(z, g)
             #           I += I_batch; I_tot += I_TOT
 
-            rec += (F.binary_cross_entropy(input=x_recon, target=x_true,
-                                           reduction='sum').detach().item() / self.batch_size)
-            kld += (self._kld_loss_fn(mu, logvar).detach().item())
 
             if self.latent_loss == 'MSE':
                 loss_bin = nn.MSELoss(reduction='mean')(mu_processed[:, :label.size(1)],
@@ -325,4 +322,4 @@ class CBM_Join(VAE):
         I, I_tot = Interpretability(z_array, g_array, rel_factors=N)
 
         nrm = internal_iter + 1
-        return rec / nrm, kld / nrm, latent / nrm, BCE / nrm, Acc / nrm, I / nrm, I_tot / nrm
+        return latent / nrm, BCE / nrm, Acc / nrm, I / nrm, I_tot / nrm
