@@ -17,14 +17,15 @@ def pred_loss(pred, ys):
     return loss
 
 def latent_error(z, ys):
-    z_true = torch.zeros(size=z.size())
+    z_true = torch.zeros(size=(len(z), 2))
     for i, y in enumerate(ys):
         if y == 4:
             z_true[i, 0] = 1
         if y == 5:
             z_true[i, 1] = 1
     z_true = z_true.cuda()
-    return nn.MSELoss(reduction='sum')(z, z_true)
+    z = torch.sigmoid(z)
+    return nn.MSELoss(reduction='sum')(z[:,:2], z_true)
 
 class VAE(nn.Module):
     def __init__(self, x_dim, h_dim1, h_dim2, z_dim):
@@ -41,7 +42,7 @@ class VAE(nn.Module):
         self.fc6 = nn.Linear(h_dim1, x_dim)
 
         # classifier
-        self.classifier = nn.Linear(z_dim, 2)
+        self.classifier = nn.Linear(2, 2)
 
     def encoder(self, x):
         h = F.relu(self.fc1(x))
