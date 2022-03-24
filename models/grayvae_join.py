@@ -90,7 +90,7 @@ class GrayVAE_Join(VAE):
         mu, logvar = self.model.encode(x=x_true1,)
 
         z = reparametrize(mu, logvar)
-        mu_processed = torch.tanh(mu/2)
+        mu_processed = torch.tanh(z/2)
         x_recon = self.model.decode(z=z,)
 
         prediction, forecast = self.predict(latent=mu_processed)
@@ -197,6 +197,10 @@ class GrayVAE_Join(VAE):
         if track_changes:
             print("## Initializing Train indexes")
             print("->path chosen::",out_path+"/train_runs")
+        
+        ## SAVE INITIALIZATION ##
+        self.save_checkpoint()
+
 
         Iterations, Epochs, Reconstructions, KLDs, True_Values, Accuracies, F1_scores = [], [], [], [], [], [], []  ## JUST HERE FOR NOW
         latent_errors = []
@@ -276,7 +280,7 @@ class GrayVAE_Join(VAE):
  #                           self.dataframe_eval.to_csv(os.path.join(out_path, 'dis_metrics.csv'), index=False)
 
                 # TESTSET LOSSES
-                if internal_iter > 1 and is_time_for(self.iter, self.evaluate_iter):
+                if is_time_for(self.iter, self.evaluate_iter):
 
                     #                    self.dataframe_eval = self.dataframe_eval.append(self.evaluate_results,  ignore_index=True)
                     # test the behaviour on other losses

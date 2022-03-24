@@ -12,8 +12,11 @@ def vae_train(epoch, vae, optimizer, train_loader ):
     vae.train()
     train_loss = 0
     for batch_idx, (data, y) in enumerate(train_loader):
-        data = data.cuda()
-        y = y.cuda()
+        
+        mask = (y != 4) & (y != 5)
+        data = data[mask].cuda()
+        y = y[mask].cuda()
+
         optimizer.zero_grad()
 
         recon_batch, mu, log_var, z = vae(data)
@@ -60,8 +63,11 @@ def cbm_train(epoch, cbm, optimizer, train_loader):
     cbm.train()
     train_loss = 0
     for batch_idx, (data, y) in enumerate(train_loader):
-        data = data.cuda()
-        y = y.cuda()
+        
+        mask = (y != 4) & (y != 5)
+        data = data[mask].cuda()
+        y = y[mask].cuda()
+        
         optimizer.zero_grad()
 
         mu = cbm(data)

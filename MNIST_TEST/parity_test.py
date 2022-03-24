@@ -31,7 +31,7 @@ def information_leakage():
 
     print('# Start parity test. First with VAE model')
     ### BUILD VAE
-    vae = VAE(x_dim=784, h_dim1=512, h_dim2=256, z_dim=10)
+    vae = VAE(x_dim=784, h_dim1=128, h_dim2=128, z_dim=10)
     if torch.cuda.is_available():
         vae.cuda()
     optimizer = optim.Adam(vae.parameters())
@@ -56,12 +56,12 @@ def information_leakage():
     for epoch in range(10):
         vae = train_parity(epoch, vae, vae_optim, val_loader, name='vae')
 
-    vae_accuracy = test_parity(vae, test_loader)
+        vae_accuracy = test_parity(vae, test_loader)
 
 
     print('# Start parity test with CBM model')
 
-    cbm = CBM(x_dim=784, h_dim1= 512, h_dim2=256, z_dim=2)
+    cbm = CBM(x_dim=784, h_dim1= 128, h_dim2=128, z_dim=2)
     if torch.cuda.is_available():
         cbm.cuda()
 
@@ -80,7 +80,7 @@ def information_leakage():
     for epoch in range(10):
         cbm = train_parity(epoch, cbm, cbm_optim, val_loader, name='cbm')
 
-    cbm_accuracy = test_parity(cbm, test_loader, name='cbm')
+        cbm_accuracy = test_parity(cbm, test_loader, name='cbm')
 
 if __name__=='__main__':
     information_leakage()

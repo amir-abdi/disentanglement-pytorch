@@ -28,7 +28,7 @@ def latent_error(z, ys):
     return nn.MSELoss(reduction='sum')(z[:,:2], z_true)
 
 class VAE(nn.Module):
-    def __init__(self, x_dim, h_dim1, h_dim2, z_dim):
+    def __init__(self, x_dim, h_dim1=128, h_dim2=128, z_dim=2):
         super(VAE, self).__init__()
 
         # encoder part
@@ -41,8 +41,12 @@ class VAE(nn.Module):
         self.fc5 = nn.Linear(h_dim2, h_dim1)
         self.fc6 = nn.Linear(h_dim1, x_dim)
 
-        # classifier
-        self.classifier = nn.Linear(2, 2)
+        # classifier 
+        self.classifier = nn.Sequential(nn.Linear(2,h_dim2), 
+                                        nn.ReLU(),
+                                        nn.Linear(h_dim2,h_dim1),
+                                        nn.ReLU(),
+                                        nn.Linear(h_dim1, 2))
 
     def encoder(self, x):
         h = F.relu(self.fc1(x))
@@ -70,7 +74,7 @@ class VAE(nn.Module):
 
     def loss_function(self, recon_x, x, mu, log_var, z=None, pred=None, y=None, only_class=False ):
         BCE = F.binary_cross_entropy(recon_x, x.view(-1, 784), reduction='sum')
-        KLD = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
+        KLD = -0.5 * torch.sum(1 + log_var[:,2:] - mu[:,2:].pow(2) - log_var[:,2:].exp()) * 10
 
         ## ADD 4/5 test for parity prediction
 

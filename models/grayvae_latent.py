@@ -107,7 +107,7 @@ class GrayVAE_Latent(VAE):
         bs = self.batch_size
 
         ## CALCULATE THE RE-ELBO
-        elbo_term = F.binary_cross_entropy(input=x_recon, target=x_true1,reduction='sum') / bs * self.w_recon * 
+        elbo_term = F.binary_cross_entropy(input=x_recon, target=x_true1,reduction='sum') / bs * self.w_recon * 0
 
         loss = 1
 
