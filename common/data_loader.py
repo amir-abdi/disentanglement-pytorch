@@ -1,7 +1,6 @@
 import os
 from .utils import Accuracy_Loss, F1_Loss
 
-from disentanglement_lib.data.ground_truth.named_data import get_named_ground_truth_data
         
 
 from sklearn.linear_model import LogisticRegression
@@ -245,6 +244,8 @@ class DisentanglementLibDataset(Dataset):
         iterator_len : int
             Length of the dataset. This defines the length of one training epoch.
         """
+        from disentanglement_lib.data.ground_truth.named_data import get_named_ground_truth_data
+
         self.name = name
         self.seed = seed
         self.random_state = np.random.RandomState(seed)
@@ -396,7 +397,7 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
         if labels is not None:
             ### NOW CREATE A PARTICULAR TYPE THAT PREDICTS ONLY WITH TWO COMPONENTS
             r_plane=random_plane(label_idx, labels,  _plot=False)
-            r_plane[0] = np.array([0, 0, 0, 0.71490194, 0.53805917, -0.37950434, 0.23533808]) # JUST A RANDOM VECTOR
+            r_plane[0] = np.array([0,-0.55329954, -0.3754565, 0.46785691, 0.37617377, 0.4387428]) # JUST A RANDOM VECTOR
             target_set = np.asarray(target_cast(label_idx, labels, r_plane,
                                     irrelevant_components=[0], _plot=True, noise_fact=noise_class), dtype=np.int)
             print("target", np.shape(target_set))

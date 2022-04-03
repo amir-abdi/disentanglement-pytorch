@@ -220,13 +220,13 @@ class CBM_Join(VAE):
 
                     #                    self.dataframe_eval = self.dataframe_eval.append(self.evaluate_results,  ignore_index=True)
                     # test the behaviour on other losses
-                    trec, tkld = 0 
+                    trec, tkld = 0, 0
                     tlat, tbce, tacc, I, I_tot = self.test(end_of_epoch=False)
                     factors = pd.DataFrame(
                         {'iter': self.iter, 'rec': trec, 'kld': tkld, 'latent': tlat, 'BCE': tbce, 'Acc': tacc,
                          'I': I_tot}, index=[0])
 
-                    for i in range(label1.size(1)):
+                    for i in range(len(I)):
                         factors['I_%i' % i] = np.asarray(I)[i]
 
                     self.dataframe_eval = self.dataframe_eval.append(factors, ignore_index=True)
@@ -307,15 +307,6 @@ class CBM_Join(VAE):
 
             Acc += (Accuracy_Loss()(forecast,
                                     y_true).detach().item())
-
-        if end_of_epoch:
-            self.visualize_recon(x_true, x_recon, test=True)
-            self.visualize_traverse(limit=(self.traverse_min, self.traverse_max),
-                                    spacing=self.traverse_spacing,
-                                    data=(x_true, label), test=True)
-
-            # self.iter += 1
-            # self.pbar.update(1)
 
         print('Done testing')
 
