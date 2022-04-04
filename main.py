@@ -30,8 +30,6 @@ def main(_args):
  #   data_args.to_csv(out_path, index=False)
 
     # load the model associated with args.alg
-    print("_Args.alg", _args.alg)
-
     model_cl = getattr(models, _args.alg)
     model = model_cl(_args) #return models.alg
 

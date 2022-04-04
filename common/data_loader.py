@@ -1,7 +1,8 @@
 import os
-from .utils import Accuracy_Loss, F1_Loss
+from .utils import Accuracy_Loss, F1_Loss, net
 
-        
+from kmodes.kmodes import KModes
+import pickle
 
 from sklearn.linear_model import LogisticRegression
 import matplotlib.pyplot as plt
@@ -9,15 +10,58 @@ import numpy as np
 import logging
 
 import torch
+import torch.nn as nn
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 from torchvision.datasets import ImageFolder
 from torchvision import transforms
 import matplotlib.pyplot as plt
+from torch.optim import SGD
 
 from common import constants as c
 
+def validate_model(data,labels):
+    print('Calculating whether the model is linearly separable')
+    
+    model = net(40,10)
+    
+    optimizer = SGD(model.parameters(), 0.1, 0.9)
+    criterion = nn.CrossEntropyLoss()
+
+    dataset = torch.cat((data, labels.view(-1,1)), dim=1)
+    dataloader = DataLoader(dataset, batch_size=125)
+
+    for epoch in range(51):
+        
+        for iterum, alls in enumerate(dataloader):
+            X = alls[:,:40]
+            y = alls[:,40:].to(torch.long)
+            optimizer.zero_grad()
+                    
+            pred = model(X)
+            loss = criterion(pred,y.view(-1))
+
+            loss.backward()
+            optimizer.step()
+            
+        if (epoch % 10)==0 :
+            print('## Epoch:', epoch,'-> Loss:', loss)
+
+    ## CALCULATE ACCURACY
+
+    acc = 0
+    bs = dataloader.batch_size
+    tot = 0
+    for data in dataloader:
+        tot += 1
+        X = data[:,:40]
+        y = data[:,40:].view(-1).to(torch.long)
+        classes = model.predict(X).to(torch.long)
+        acc += (classes == y).sum()/bs      
+    #acc = acc/tot
+
+    print('Overall accuracy on train:', acc/tot)
 
 def target_cast(labels, inputs, r_plane, irrelevant_components=[0], noise_fact=0.1, _plot=False):
     l = len(labels)
@@ -25,7 +69,7 @@ def target_cast(labels, inputs, r_plane, irrelevant_components=[0], noise_fact=0
     targets = []
     admitted = np.ones(len(r_plane[0]))
     admitted[irrelevant_components] = 0
-    print([iter for iter, i in enumerate(admitted) if i == 1])
+    print('Considered components', [iter for iter, i in enumerate(admitted) if i == 1])
     for i in range(len(inputs)):
         guess = (np.dot(inputs[i] - r_plane[1] * admitted, (r_plane[0] * admitted)))
         if guess < 0:
@@ -39,29 +83,6 @@ def target_cast(labels, inputs, r_plane, irrelevant_components=[0], noise_fact=0
     for i in irrelevant_components:
         labels.remove(i)
 
-    if _plot and len(labels) == 2:
-        f = plt.figure(figsize=(18, 10))
-        mask = (np.array(targets, dtype=np.int) > 0)
-
-        f.add_subplot(2, 1, 1)
-        plt.plot(inputs[:, labels[0]][mask], inputs[:, labels[1]][mask], 'r.', label='classified 1')
-        x = np.linspace(np.min(inputs[:, labels[0]]), np.max(inputs[:, labels[0]]))
-        y = -r_plane[0][labels[0]] / r_plane[0][labels[1]] * (x - r_plane[1][labels[0]]) + r_plane[1][labels[1]]
-        plt.plot(x, y, color='black', label='separation plane')
-        plt.legend()
-        plt.xlim(x[0], x[-1])
-        plt.ylim(np.min(inputs[:, labels[1]]), np.max(inputs[:, labels[1]]))
-
-        f.add_subplot(2, 1, 2)
-        plt.plot(inputs[:, labels[0]][~mask], inputs[:, labels[1]][~mask], 'b.', label='classified 0')
-        x = np.linspace(np.min(inputs[:, labels[0]]), np.max(inputs[:, labels[0]]))
-        y = -r_plane[0][labels[0]] / r_plane[0][labels[1]] * (x - r_plane[1][labels[0]]) + r_plane[1][labels[1]]
-        plt.plot(x, y, color='black', label='separation plane')
-        plt.legend()
-        plt.xlim(x[0], x[-1])
-        plt.ylim(np.min(inputs[:, labels[1]]), np.max(inputs[:, labels[1]]))
-
-        plt.show()
     return np.array(targets, dtype=np.int)
 
 
@@ -116,14 +137,14 @@ class LabelHandler(object):
 
 
 class CustomImageFolder(ImageFolder):
-    def __init__(self, root, transform, labels, label_weights, name, class_values, num_channels, seed):
+    def __init__(self, root, labels, transform, name, num_channels, seed):
         super(CustomImageFolder, self).__init__(root, transform)
         self.indices = range(len(self))
         self._num_channels = num_channels
         self._name = name
         self.seed = seed
 
-        self.label_handler = LabelHandler(labels, label_weights, class_values)
+        #self.label_handler = LabelHandler(labels, label_weights, class_values)
 
         ## ADDED GRAYBOX VARIANT
         self.isGRAY = False
@@ -153,11 +174,17 @@ class CustomImageFolder(ImageFolder):
         if self.transform is not None:
             img1 = self.transform(img1)
 
+        if self.isGRAY:
+            return img1
+        
         label1 = 0
         if self.label_handler.has_labels():
             label1 = self.label_handler.get_label(index1)
         if self.isGRAY: label1 = self.label_weights(index1)
+
         return img1, label1
+         
+        
 
 
 class CustomNpzDataset(Dataset): ### MODIFIED HERE THE DATABASE TYPE FOR _GET_ITEM
@@ -200,7 +227,7 @@ class CustomNpzDataset(Dataset): ### MODIFIED HERE THE DATABASE TYPE FOR _GET_IT
 
     def __getitem__(self, index1):
         #print("Passed index", index1)
-        img1 = Image.fromarray(self.data_npz[index1] * 255)
+        img1 = Image.fromarray(self.data_npz[index1])# * 255)
         if self.transform is not None:
             img1 = self.transform(img1)
 
@@ -245,7 +272,6 @@ class DisentanglementLibDataset(Dataset):
             Length of the dataset. This defines the length of one training epoch.
         """
         from disentanglement_lib.data.ground_truth.named_data import get_named_ground_truth_data
-
         self.name = name
         self.seed = seed
         self.random_state = np.random.RandomState(seed)
@@ -293,48 +319,43 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
     make_yset = False
 
     if name.lower() == 'celeba':
-        print("Entered this routine")
-        root = os.path.join(dset_dir, 'CelebA')
-        labels_file = os.path.join(root, 'list_attr_celeba.csv')
+        print('Pre-Processing CelebA')
+        root = os.path.join(dset_dir, 'celebA/celebA64.npz')
 
-        # celebA images are properly numbered, so the order should remain intact in loading
-        labels = None
-        if label_names is not None:
-            labels = []
-            labels_all = np.genfromtxt(labels_file, delimiter=',', names=True)
-            for label_name in label_names:
-                labels.append(labels_all[label_name])
-            labels = np.array(labels).transpose()
-        elif label_idx is not None:
-            labels_all = np.genfromtxt(labels_file, delimiter=',', skip_header=True)
-            labels = labels_all[:, label_idx]
+#        labels_file = os.path.join(root, 'list_attr_celeba.csv')
 
-        if labels is not None:
-            # celebA labels are all binary with values -1 and +1
-            labels[labels == -1] = 0
-            from pathlib import Path
-            num_l = labels.shape[0]
-            num_i = len(list(Path(root).glob('**/*.jpg')))
-            assert num_i == num_l, 'num_images ({}) != num_labels ({})'.format(num_i, num_l)
+        transform = transforms.Compose([
+                transforms.Resize((image_size, image_size)),
+                transforms.ToTensor(), 
+                ])
 
-            # calculate weight adversely proportional to each class's population
-            num_labels = labels.shape[1]
-            label_weights = []
-            for i in range(num_labels):
-                ones = labels[:, i].sum()
-                prob_one = ones / labels.shape[0]
-                label_weights.append([prob_one, 1 - prob_one])
-            label_weights = np.array(label_weights)
+        npz = np.load(root)
 
-            # all labels in celebA are binary
-            class_values = [[0, 1]] * num_labels
+        labels = npz['Y']
+        
+        # LOAD CLASSIFICATION
+        km_files = os.path.join(dset_dir, 'celebA/km.pickle')
+        with open(km_files, 'rb') as f:
+            km = pickle.load(f)
 
-        data_kwargs = {'root': root,
+        targets = km.predict(labels)
+        targets = np.asarray(targets, dtype=int)
+        
+        if False:
+            all_attrs , all_targets = torch.as_tensor(labels, dtype=torch.float), torch.as_tensor(targets, dtype=torch.float) 
+            validate_model(all_attrs, all_targets)
+
+        data_kwargs = {'data_images': npz['X'],
                        'labels': labels,
-                       'label_weights': label_weights,
-                       'class_values': class_values,
-                       'num_channels': 3}
-        dset = CustomImageFolder
+                       'label_weights': labels,
+                       'class_values': labels,
+                       'num_channels': 3,
+                       'y_target': targets,
+                       }
+        dset = CustomNpzDataset
+
+
+        #dset(**data_kwargs)
 
     elif name.lower() == 'dsprites_full':
         #print(name)
@@ -406,7 +427,6 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
             print("Population of 0:", len(target_set[target_set == 0]) / len(target_set) * 100, "%.")
 
             print("Start verification")
-#            print("labels shape:", (np.shape(labels)))
             in_data = labels
 
             print("Labels in data_loader")
@@ -416,32 +436,11 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
             lr = LogisticRegression( solver='lbfgs')#, penalty='none')
             lr.fit(in_data[:,1:], y_target1)
             y_pred = lr.predict_proba(in_data[:,1:])
-            """ 
-            f = plt.figure(figsize=(20,10))
-            f.add_subplot(1,2,1)
-            mask = (y_target1>0.5)
-            plt.plot(in_data[mask][:,4], in_data[mask][:,5], 'b.', label='1' )
-            plt.plot(in_data[~mask][:,4], in_data[~mask][:,5], 'r.', label='0' )
-            plt.legend()
-
-            f.add_subplot(1,2,2)
-            mask = (y_pred[:,1]>0.5)
-            plt.plot(in_data[mask][:,4], in_data[mask][:,5], 'b.', label='1' )
-            plt.plot(in_data[~mask][:,4], in_data[~mask][:,5], 'r.', label='0' )
-            plt.legend()
-
-            plt.show()
-            """
-#            x_pred = np.zeros(shape=np.shape(y_pred))
- #           x_pred[:,0] = np.log( y_pred[:,0]/(1-y_pred[:,0]+0.01) )
-  #          x_pred[:,1] = - x_pred[:,0]
-
-
-
-            #baseline1 = torch.nn.CrossEntropyLoss(reduction="mean", )(torch.tensor(y_pred), torch.tensor(y_target1))
+ 
+ 
             baseline2 = torch.nn.BCELoss(reduction='mean')(torch.tensor(y_pred[:,1], dtype=torch.float),
                                                            torch.tensor(y_target1, dtype=torch.float) )
-            #print("Fitting a LogReg model, loss - CE:",  baseline1)
+ 
             print("Fitting a LogReg model, loss - CE:",  baseline2)
 
             accuracy = Accuracy_Loss()((torch.tensor(y_pred, dtype=torch.float)), torch.tensor(y_target1, dtype=torch.float))

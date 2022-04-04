@@ -24,7 +24,7 @@ class GrayVAE_Join(VAE):
 
         super().__init__(args)
 
-        print('Initialized GrayVAE_Standard model')
+        print('Initialized GrayVAE_Join model')
 
         # checks
         assert self.num_classes is not None, 'please identify the number of classes for each label separated by comma'
@@ -57,7 +57,8 @@ class GrayVAE_Join(VAE):
 
         ## add binary classification layer
 #        self.classification = nn.Linear(self.z_dim, 1, bias=False).to(self.device)
-        self.classification = nn.Linear(self.z_dim, 2, bias=False).to(self.device) ### CHANGED OUT DIMENSION
+        # TODO: SET HERE HOW MANY CLASS TO PREDICT
+        self.classification = nn.Linear(self.z_dim, 10, bias=True).to(self.device) ### CHANGED OUT DIMENSION
         self.classification_epoch = args.classification_epoch
         self.reduce_rec = args.reduce_recon
 
@@ -90,19 +91,29 @@ class GrayVAE_Join(VAE):
         mu, logvar = self.model.encode(x=x_true1,)
 
         z = reparametrize(mu, logvar)
+
+        #print('z')
+        #print(z)
+
         mu_processed = torch.tanh(z/2)
         x_recon = self.model.decode(z=z,)
+
+        #print('mu processed')
+        #print(mu_processed[:10])
 
         prediction, forecast = self.predict(latent=mu_processed)
         rn_mask = (examples==1)
         n_passed = len(examples[rn_mask])
 
+        #print('Prediction:')
+        #print(prediction[:10])
+
         if not classification:
-            loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu, logvar=logvar, z=z)
+            loss_fn_args = dict(x_recon=x_recon, x_true=x_true1, mu=mu[label1.size(1):], logvar=logvar[label1.size(1):], z=z)
             loss_dict = self.loss_fn(losses, reduce_rec=False, **loss_fn_args)
             losses.update(loss_dict)
 
-            pred_loss = nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1)*self.label_weight
+            pred_loss = nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1) *self.label_weight / 2 # her efor celebA
             losses.update(prediction=pred_loss)
             losses[c.TOTAL_VAE] += pred_loss
 
@@ -115,14 +126,15 @@ class GrayVAE_Join(VAE):
                 ## loss of categorical variables
 
                 ## loss of continuous variables
+
                 if self.latent_loss == 'MSE':
                     #TODO: PLACE ONEHOT ENCODING
+                   
                     loss_bin = nn.MSELoss(reduction='mean')( mu_processed[rn_mask][:, :label1.size(1)], 2*label1[rn_mask]-1  )
                     ## track losses
                     err_latent = []
                     for i in range(label1.size(1)):
                         err_latent.append(nn.MSELoss(reduction='mean')(mu_processed[rn_mask][:, i], 2 * label1[rn_mask][:,i] - 1).detach().item() )
-
                     losses.update(true_values=self.label_weight * loss_bin)
                     losses[c.TOTAL_VAE] += self.label_weight * loss_bin
 
@@ -136,17 +148,6 @@ class GrayVAE_Join(VAE):
                     for i in range(label1.size(1)):
                         err_latent.append(nn.BCELoss(reduction='mean')((1+mu_processed[rn_mask][:, i])/2,
                                                                         label1[rn_mask][:, i] ).detach().item())
-                    losses.update(true_values=self.label_weight * loss_bin)
-                    losses[c.TOTAL_VAE] += self.label_weight * loss_bin
-
-                elif self.latent_loss == 'exact_BCE':
-                    mu_processed = nn.Sigmoid()( mu/torch.sqrt(1+ torch.exp(logvar)) )
-                    loss_bin = nn.BCELoss(reduction='mean')( mu_processed[rn_mask], label1[rn_mask] )
-
-                    err_latent = []
-                    for i in range(label1.size(1)):
-                        err_latent.append( nn.BCELoss(reduction='mean')( mu_processed[rn_mask], label1[rn_mask] ) )
-
                     losses.update(true_values=self.label_weight * loss_bin)
                     losses[c.TOTAL_VAE] += self.label_weight * loss_bin
 
@@ -199,7 +200,7 @@ class GrayVAE_Join(VAE):
             print("->path chosen::",out_path+"/train_runs")
         
         ## SAVE INITIALIZATION ##
-        self.save_checkpoint()
+        #self.save_checkpoint()
 
 
         Iterations, Epochs, Reconstructions, KLDs, True_Values, Accuracies, F1_scores = [], [], [], [], [], [], []  ## JUST HERE FOR NOW
@@ -220,9 +221,18 @@ class GrayVAE_Join(VAE):
                 losses = {'total_vae':0}
 
                 x_true1 = x_true1.to(self.device)
-                label1 = label1[:, 1:].to(self.device)
+
+                #label1 = label1[:, 1:].to(self.device) #TODO CHANGE THE 1 with SOMETHING CHOSEN
+                label1 = label1.to(self.device)
                 y_true1 = y_true1.to(self.device, dtype=torch.long)
 
+
+                #print('Inside the tensors')
+                #print('Label1:', label1.size())
+                #print(label1[:3])
+                #print('ytrue1:', y_true1.size())
+                #
+                #print(y_true1[:10])
                 ###configuration for dsprites
 
                 losses, params = self.vae_classification(losses, x_true1, label1, y_true1, examples,
@@ -247,7 +257,7 @@ class GrayVAE_Join(VAE):
                 losses[c.TOTAL_VAE_EPOCH] = vae_loss_sum /( internal_iter+1) ## ADDED +1 HERE IDK WHY NOT BEFORE!!!!!
 
                 ## Insert losses -- only in training set
-                if track_changes and (internal_iter%2500)==0:
+                if track_changes and (internal_iter%150)==0:
                     #TODO: set the tracking at a given iter_number/epoch
 
                     Iterations.append(internal_iter + 1)
@@ -258,10 +268,7 @@ class GrayVAE_Join(VAE):
                     latent_errors.append(params['latents'])
 
                     if not start_classification: #RECONSTRUCTION ERROR + KLD + MSE on Z
-                        Accuracies, F1_scores = [-1] * len(Iterations), [-1] * len(Iterations)
-
-                    else: #CLASSIFICATION
-
+                        
                         Accuracies.append(losses['prediction'].item())
                         f1_class = Accuracy_Loss()
                         F1_scores.append(f1_class(params['prediction'], y_true1).item())
@@ -322,8 +329,8 @@ class GrayVAE_Join(VAE):
         I_tot = 0
 
         N = 10**4
-        l_dim = 7
-        g_dim = 7
+        l_dim = self.z_dim
+        g_dim = self.z_dim
 
         z_array = np.zeros( shape=(self.batch_size*len(self.test_loader), l_dim))
         g_array = np.zeros( shape=(self.batch_size*len(self.test_loader), g_dim))

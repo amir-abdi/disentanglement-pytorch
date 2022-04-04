@@ -536,3 +536,15 @@ def old_Interpret(z,g, rel_factors=1000):
     I_tot = np.sum(rho * I)
 
     return I, I_tot
+
+
+class net(torch.nn.Module):
+    def __init__(self, dim_concepts, dim_output):
+        super(net, self).__init__()
+        self.linear = torch.nn.Linear(dim_concepts, dim_output)
+    def forward(self, x):
+        return self.linear(x)
+
+    def predict(self, x):
+        pred = torch.nn.Softmax()(self.forward(x))
+        return torch.argmax(pred, dim=1)
