@@ -407,13 +407,13 @@ class Accuracy_Loss(torch.nn.Module):
         super().__init__()
         self.epsilon = epsilon
 
-    def forward(self, y_pred, y_true, ):
+    def forward(self, y_pred, y_true, dims=2 ):
         #print(y_pred.size(1))
         #print(y_true.size())
-        assert y_pred.size(1) == 2
+        #assert y_pred.size(1) == 2
         #assert y_true.size(1) == 1
 
-        y_true = F.one_hot(y_true.to(dtype = torch.long), 2).to(torch.float32)
+        y_true = F.one_hot(y_true.to(dtype = torch.long), dims).to(torch.float32)
         #y_pred = F.softmax(y_pred, dim=1)
 
 #        ymask = (y_pred[:,0] > 0.5)

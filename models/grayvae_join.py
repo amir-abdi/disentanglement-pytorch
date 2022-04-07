@@ -257,7 +257,7 @@ class GrayVAE_Join(VAE):
                 losses[c.TOTAL_VAE_EPOCH] = vae_loss_sum /( internal_iter+1) ## ADDED +1 HERE IDK WHY NOT BEFORE!!!!!
 
                 ## Insert losses -- only in training set
-                if track_changes and (internal_iter%150)==0:
+                if track_changes and (internal_iter%345)==0:
                     #TODO: set the tracking at a given iter_number/epoch
 
                     Iterations.append(internal_iter + 1)
@@ -271,7 +271,7 @@ class GrayVAE_Join(VAE):
                         
                         Accuracies.append(losses['prediction'].item())
                         f1_class = Accuracy_Loss()
-                        F1_scores.append(f1_class(params['prediction'], y_true1).item())
+                        F1_scores.append(f1_class(params['prediction'], y_true1, dims=10).item())
                         del f1_class
 
                     if (internal_iter%2500)==0:
@@ -322,7 +322,7 @@ class GrayVAE_Join(VAE):
 
         self.pbar.close()
 
-    def test(self, end_of_epoch=True):
+    def test(self, end_of_epoch=True, vers='dsprites'):
         self.net_mode(train=False)
         rec, kld, latent, BCE, Acc = 0, 0, 0, 0, 0
         I = np.zeros(self.z_dim)
@@ -340,10 +340,12 @@ class GrayVAE_Join(VAE):
             label = label[:,1:].to(self.device, dtype=torch.float32)
             y_true =  y_true.to(self.device, dtype=torch.long)
 
+            g_array = g_array[:,:label.size(1)]
+
             mu, logvar = self.model.encode(x=x_true, )
             z = reparametrize(mu, logvar)
 
-            mu_processed = torch.tanh(mu / 2)
+            mu_processed = torch.tanh(z / 2)
             prediction, forecast = self.predict(latent=mu_processed)
             x_recon = self.model.decode(z=z,)
 
@@ -363,9 +365,6 @@ class GrayVAE_Join(VAE):
                 loss_bin = nn.MSELoss(reduction='mean')(mu_processed[:, :label.size(1)], 2 * label.to(dtype=torch.float32) - 1)
             elif self.latent_loss == 'BCE':
                 loss_bin = nn.BCELoss(reduction='mean')((1+mu_processed[:, :label.size(1)])/2, label.to(dtype=torch.float32) )
-            elif self.latent_loss == 'exact_MSE':
-                mu_proessed = nn.Sigmoid()(mu/torch.sqrt( 1+ torch.exp(logvar)))
-                loss_bin = nn.MSELoss(reduction='mean')(mu_proessed[:,:label.size(1)], label.to(dtype=torch.float32) )
             else:
                 NotImplementedError('Wrong argument for latent loss.')
 
