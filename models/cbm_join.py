@@ -56,13 +56,22 @@ class CBM_Join(VAE):
                               args.w_recon_scheduler, args.w_recon_scheduler_args)
 
         ## add binary classification layer
-        self.classification = nn.Linear(self.z_dim, 2, bias=False).to(self.device) ### CHANGED OUT DIMENSION
+        ## TODO: set choices of how many classes
+        self.classification = nn.Linear(self.z_dim, 10, bias=False).to(self.device) ### CHANGED OUT DIMENSION
         self.reduce_rec = args.reduce_recon
 
         self.class_G_all = optim.Adam([*self.model.encoder.parameters(), *self.classification.parameters()],
                                       lr=self.lr_G, betas=(self.beta1, self.beta2))
 
+        ## CHOOSE THE WEIGHT FOR CLASSIFICATION
         self.label_weight = args.label_weight
+        
+        ## CHOOSE THE WEIGHT FOR LATENTS
+        if args.latent_weight is None:
+            self.latent_weight = args.label_weight 
+        else:
+            self.latent_weight = args.latent_weight        
+        
         self.masking_fact = args.masking_fact
         self.show_loss = args.show_loss
 
@@ -105,8 +114,8 @@ class CBM_Join(VAE):
 
         losses.update(self.loss_fn(losses, reduce_rec=False,))
 
-        losses.update(prediction=nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long)) )
-        losses[c.TOTAL_VAE] += nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long))
+        losses.update(prediction=nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long))*self.label_weight )
+        losses[c.TOTAL_VAE] += nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long)* self.label_weight )
 
         if n_passed > 0: # added the presence of only small labelled generative factors
 
@@ -121,8 +130,8 @@ class CBM_Join(VAE):
                 for i in range(label1.size(1)):
                     err_latent.append(nn.MSELoss(reduction='mean')(z[rn_mask][:, i], 2 * label1[rn_mask][:,i] - 1).detach().item() )
 
-                losses.update(true_values= loss_bin)
-                losses[c.TOTAL_VAE] += loss_bin
+                losses.update(true_values= loss_bin * self.latent_weight)
+                losses[c.TOTAL_VAE] += loss_bin * self.latent_weight
 
             elif self.latent_loss == 'BCE':
 
@@ -134,8 +143,8 @@ class CBM_Join(VAE):
                 for i in range(label1.size(1)):
                     err_latent.append(nn.BCELoss(reduction='mean')((1+z[rn_mask][:, i])/2,
                                                                     label1[rn_mask][:, i] ).detach().item())
-                losses.update(true_values= loss_bin)
-                losses[c.TOTAL_VAE] += loss_bin
+                losses.update(true_values= loss_bin * self.latent_weight)
+                losses[c.TOTAL_VAE] += loss_bin * self.latent_weight
 
             else:
                 raise NotImplementedError('Not implemented loss.')
@@ -163,6 +172,7 @@ class CBM_Join(VAE):
             print("::path chosen ->",out_path+"/train_runs")
 
         Iterations, Epochs, True_Values, Accuracies, CE_class = [], [], [], [], []  ## JUST HERE FOR NOW
+        F1_scores = []
         latent_errors = []
         epoch = 0
         while not self.training_complete():
@@ -173,12 +183,13 @@ class CBM_Join(VAE):
 
             for internal_iter, (x_true1, label1, y_true1, examples) in enumerate(self.data_loader):
 
-                Iterations.append(internal_iter+1)
-                Epochs.append(epoch)
                 losses = {'total_vae':0}
 
                 x_true1 = x_true1.to(self.device)
-                label1 = label1[:, 1:].to(self.device)
+                
+                #label1 = label1[:, 1:].to(self.device)
+                label1 = label1.to(self.device)
+
                 y_true1 = y_true1.to(self.device)
 
                 ###configuration for dsprites
@@ -196,27 +207,33 @@ class CBM_Join(VAE):
                 losses[c.TOTAL_VAE_EPOCH] = vae_loss_sum /( internal_iter+1)
 
                 ## Insert losses -- only in training set
-                if track_changes:
-                    #TODO: set the tracking at a given iter_number/epoch
+                if track_changes and (internal_iter%375)==0:
+
+                    Iterations.append(internal_iter + 1)
+                    Epochs.append(epoch)
 
                     True_Values.append(losses['true_values'].item())
                     latent_errors.append(params['latents'])
                     CE_class.append(losses['prediction'].item())
                     f1_class = Accuracy_Loss().to(self.device)
-                    Accuracies.append(f1_class(params['forecast'], y_true1).item())
+                    F1_scores.append(f1_class(params['prediction'], y_true1, dims=10).item())
+
+                    print('Data format:')
+                    print(np.array([Iterations, Epochs, True_Values, CE_class, F1_scores]).T)
 
                     del f1_class
 
-                    if (internal_iter%500)==0:
+                    if internal_iter%750==0 and internal_iter > 1:
+                    
                         sofar = pd.DataFrame(data=np.array([Iterations, Epochs,  True_Values, CE_class, Accuracies]).T,
-                                             columns=['iter', 'epoch', 'latent_error', 'classification_error', 'accuracy'], )
+                                                columns=['iter', 'epoch', 'latent_error', 'classification_error', 'accuracy'], )
                         for i in range(label1.size(1)):
                             sofar['latent%i'%i] = np.asarray(latent_errors)[:,i]
 
                         sofar.to_csv(os.path.join(out_path+'/train_runs', 'metrics.csv'), index=False)
                         del sofar
 
-                if internal_iter > 1 and is_time_for(self.iter, self.evaluate_iter):
+                if is_time_for(self.iter, self.evaluate_iter):
 
                     #                    self.dataframe_eval = self.dataframe_eval.append(self.evaluate_results,  ignore_index=True)
                     # test the behaviour on other losses

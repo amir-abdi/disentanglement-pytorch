@@ -68,7 +68,15 @@ class GrayVAE_Join(VAE):
 
         self.class_G = optim.SGD(self.classification.parameters(), lr=0.01, momentum=0.9)
 
+        ## CHOOSE THE WEIGHT FOR CLASSIFICATION
         self.label_weight = args.label_weight
+        
+        ## CHOOSE THE WEIGHT FOR LATENTS
+        if args.latent_weight is None:
+            self.latent_weight = args.label_weight 
+        else:
+            self.latent_weight = args.latent_weight
+
         self.masking_fact = args.masking_fact
         self.show_loss = args.show_loss
 
@@ -113,7 +121,7 @@ class GrayVAE_Join(VAE):
             loss_dict = self.loss_fn(losses, reduce_rec=False, **loss_fn_args)
             losses.update(loss_dict)
 
-            pred_loss = nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1) *self.label_weight / 2 # her efor celebA
+            pred_loss = nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1) *self.label_weight  # her efor celebA
             losses.update(prediction=pred_loss)
             losses[c.TOTAL_VAE] += pred_loss
 
@@ -135,8 +143,8 @@ class GrayVAE_Join(VAE):
                     err_latent = []
                     for i in range(label1.size(1)):
                         err_latent.append(nn.MSELoss(reduction='mean')(mu_processed[rn_mask][:, i], 2 * label1[rn_mask][:,i] - 1).detach().item() )
-                    losses.update(true_values=self.label_weight * loss_bin)
-                    losses[c.TOTAL_VAE] += self.label_weight * loss_bin
+                    losses.update(true_values=self.latent_weight * loss_bin)
+                    losses[c.TOTAL_VAE] += self.latent_weight * loss_bin
 
                 elif self.latent_loss == 'BCE':
 
@@ -148,8 +156,8 @@ class GrayVAE_Join(VAE):
                     for i in range(label1.size(1)):
                         err_latent.append(nn.BCELoss(reduction='mean')((1+mu_processed[rn_mask][:, i])/2,
                                                                         label1[rn_mask][:, i] ).detach().item())
-                    losses.update(true_values=self.label_weight * loss_bin)
-                    losses[c.TOTAL_VAE] += self.label_weight * loss_bin
+                    losses.update(true_values=self.latent_weight * loss_bin)
+                    losses[c.TOTAL_VAE] += self.latent_weight * loss_bin
 
                 else:
                     raise NotImplementedError('Not implemented loss.')
@@ -257,7 +265,7 @@ class GrayVAE_Join(VAE):
                 losses[c.TOTAL_VAE_EPOCH] = vae_loss_sum /( internal_iter+1) ## ADDED +1 HERE IDK WHY NOT BEFORE!!!!!
 
                 ## Insert losses -- only in training set
-                if track_changes and (internal_iter%345)==0:
+                if track_changes and (internal_iter%375)==0:
                     #TODO: set the tracking at a given iter_number/epoch
 
                     Iterations.append(internal_iter + 1)
@@ -267,14 +275,12 @@ class GrayVAE_Join(VAE):
                     True_Values.append(losses['true_values'].item())
                     latent_errors.append(params['latents'])
 
-                    if not start_classification: #RECONSTRUCTION ERROR + KLD + MSE on Z
-                        
-                        Accuracies.append(losses['prediction'].item())
-                        f1_class = Accuracy_Loss()
-                        F1_scores.append(f1_class(params['prediction'], y_true1, dims=10).item())
-                        del f1_class
-
-                    if (internal_iter%2500)==0:
+                    Accuracies.append(losses['prediction'].item())
+                    f1_class = Accuracy_Loss()
+                    F1_scores.append(f1_class(params['prediction'], y_true1, dims=10).item())
+                    del f1_class
+                    
+                    if (internal_iter%750)==0:
                         sofar = pd.DataFrame(data=np.array([Iterations, Epochs, Reconstructions, KLDs, True_Values, Accuracies, F1_scores]).T,
                                              columns=['iter', 'epoch', 'reconstruction_error', 'kld', 'latent_error', 'classification_error', 'accuracy'], )
                         for i in range(label1.size(1)):

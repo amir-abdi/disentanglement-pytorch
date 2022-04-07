@@ -14,6 +14,10 @@ scripts
 **/saved
 requirements.txt
 dsprites_GRAYVAE.sh
+grayvae_error.e
+cbm_error.e
+
+
 ### default python ignores
 
 # Byte-compiled / optimized / DLL files
