@@ -8,8 +8,9 @@ from torch.autograd import Variable
 from torchvision.utils import save_image
 
 from mlp_models import VAE, CBM
-
 from test_functions import *
+
+import os
 
 def information_leakage():
 
@@ -29,55 +30,76 @@ def information_leakage():
     val_loader = torch.utils.data.DataLoader(dataset=val_dataset, batch_size=bs, shuffle=True)
     test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=bs, shuffle=False)
 
-    print('# Start parity test. First with VAE model')
+
+    path = '/home/marconato/GrayVAE/disentanglement-pytorch/mnist_data/'
+
+
     ### BUILD VAE
-    vae = VAE(x_dim=784, h_dim1=128, h_dim2=128, z_dim=10)
-    if torch.cuda.is_available():
-        vae.cuda()
-    optimizer = optim.Adam(vae.parameters())
-
-    for epoch in range(21):
-        vae = vae_train(epoch, vae, optimizer, train_loader)
-        vae_test(vae, test_loader)
-
-    with torch.no_grad():
-        z = torch.randn(64, 10).cuda()
-        sample = vae.decoder(z).cuda()
-        
-        save_image(sample.view(64, 1, 28, 28), '/home/emarcona/GrayVAE/disentanglement-pytorch/mnist_data/samples/sample_' + '.png')
+    print('# Start parity test. First with VAE model')
     
-    del optimizer
+    if os.path.exists(path+'vae.pt'):
+        print('Charged existing vae.pt')
+        vae = torch.load(path+'vae.pt')
+    else:
+        vae = VAE(x_dim=784, h_dim1=128, h_dim2=128, z_dim=10)
+        if torch.cuda.is_available(): vae.cuda()
+        optimizer = optim.Adam(vae.parameters())
+
+        for epoch in range(21):
+            vae = vae_train(epoch, vae, optimizer, train_loader)
+            vae_test(vae, test_loader)
+
+        with torch.no_grad():
+            z = torch.randn(size=(64, 10)).cuda()
+            sample = vae.decoder(z).cuda()
+            save_image(sample.view(64, 1, 28, 28), path+'samples/sample_MNIST' + '.png')
+        
+        del optimizer
+
+
+        torch.save(vae, path+'vae.pt')
 
     ### PARITY TEST ###
     vae_optim = optim.SGD(vae.classifier.parameters(),
                           lr = 0.01,
-                          momentum=0.9)
+                          momentum=0.1)
 
-    for epoch in range(10):
+    for epoch in range(3):
+        print('VAE, epoch:', epoch+1)
         vae = train_parity(epoch, vae, vae_optim, val_loader, name='vae')
 
         vae_accuracy = test_parity(vae, test_loader)
 
 
+    
+    ### BUILD CBM
     print('# Start parity test with CBM model')
 
-    cbm = CBM(x_dim=784, h_dim1= 128, h_dim2=128, z_dim=2)
-    if torch.cuda.is_available():
-        cbm.cuda()
+    if os.path.exists(path+'cbm.pt'):
+        print('Charged existing cbm.pt')
+        cbm = torch.load(path+'cbm.pt')
+    else:
+        cbm = CBM(x_dim=784, h_dim1= 128, h_dim2=128, z_dim=2)
+        if torch.cuda.is_available():
+            cbm.cuda()
 
-    optimizer = optim.Adam(cbm.parameters())
+        optimizer = optim.Adam(cbm.parameters())
 
-    for epoch in range(21):
-        cbm = cbm_train(epoch, cbm, optimizer, train_loader)
-        cbm_test(cbm, test_loader)
+        for epoch in range(21):
+            cbm = cbm_train(epoch, cbm, optimizer, train_loader)
+            cbm_test(cbm, test_loader)
 
-    del optimizer
+        del optimizer
+        torch.save(cbm, path+'cbm.pt')
+
 
     ### PARITY TEST ###
     cbm_optim = optim.SGD(cbm.classifier.parameters(),
                           lr=0.01,
                           momentum=0.9)
-    for epoch in range(10):
+    for epoch in range(3):
+        print('CBM, epoch:', epoch+1)
+
         cbm = train_parity(epoch, cbm, cbm_optim, val_loader, name='cbm')
 
         cbm_accuracy = test_parity(cbm, test_loader, name='cbm')

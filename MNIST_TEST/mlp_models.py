@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 def pred_loss(pred, ys):
-    loss = 0
+    
     for i, y in enumerate(ys):
         val = torch.zeros(size=ys.size())
         if y % 2 == 0:
@@ -11,9 +11,12 @@ def pred_loss(pred, ys):
         else:
             val[i] = 1
 
-        if y != 4 and y != 5:
-            loss += nn.CrossEntropyLoss(reduction='sum')(pred, val.to(dtype=torch.long).cuda())
-
+        #if y != 4 and y != 5:
+    loss = nn.CrossEntropyLoss(reduction='mean')(pred, val.to(dtype=torch.long).cuda())
+    #print(loss)
+    #print(pred)
+    #print(val)
+    
     return loss
 
 def latent_error(z, ys):
@@ -25,7 +28,7 @@ def latent_error(z, ys):
             z_true[i, 1] = 1
     z_true = z_true.cuda()
     z = torch.sigmoid(z)
-    return nn.MSELoss(reduction='sum')(z[:,:2], z_true)
+    return nn.BCELoss(reduction='sum')(z[:,:2], z_true)
 
 class VAE(nn.Module):
     def __init__(self, x_dim, h_dim1=128, h_dim2=128, z_dim=2):
@@ -47,6 +50,8 @@ class VAE(nn.Module):
                                         nn.Linear(h_dim2,h_dim1),
                                         nn.ReLU(),
                                         nn.Linear(h_dim1, 2))
+        #self.classifier = nn.Linear(2,2)
+        self.leak_classifier = nn.Linear(z_dim,2)
 
     def encoder(self, x):
         h = F.relu(self.fc1(x))
@@ -64,7 +69,7 @@ class VAE(nn.Module):
         return F.sigmoid(self.fc6(h))
 
     def predict(self, z):
-        prob = nn.Softmax()(z)[:, 1]
+        prob = nn.Softmax(dim=1)(z)[:, 1]
         return self.classifier(z), prob
 
     def forward(self, x):
@@ -74,19 +79,21 @@ class VAE(nn.Module):
 
     def loss_function(self, recon_x, x, mu, log_var, z=None, pred=None, y=None, only_class=False ):
         BCE = F.binary_cross_entropy(recon_x, x.view(-1, 784), reduction='sum')
-        KLD = -0.5 * torch.sum(1 + log_var[:,2:] - mu[:,2:].pow(2) - log_var[:,2:].exp()) * 10
+        KLD = -0.5 * torch.sum(1 + log_var[:,2:] - mu[:,2:].pow(2) - log_var[:,2:].exp()) * 100
 
         ## ADD 4/5 test for parity prediction
 
         PRED, LAT = 0, 0
         if y is not None:
-            PRED = pred_loss(pred, y) * 100
+            PRED = pred_loss(pred, y)
 
             LAT = latent_error(z, y) * 100
 
         if only_class:
+            BCE, KLD, LAT = torch.tensor(0), torch.tensor(0), torch.tensor(0)
             return PRED, {'pred': PRED}
         else:
+            PRED = torch.tensor(0)
             return BCE + KLD + LAT, {'rec': BCE, 'kld': KLD, 'pred': PRED, 'lat': LAT}  # PRED + LAT
 
 
@@ -99,7 +106,13 @@ class CBM(nn.Module):
         self.fc3 = nn.Linear(h_dim2, z_dim)
 
         # classifier
-        self.classifier = nn.Linear(z_dim, 2)
+        self.classifier =  nn.Sequential(nn.Linear(2,h_dim2), 
+                                        nn.ReLU(),
+                                        nn.Linear(h_dim2,h_dim1),
+                                        nn.ReLU(),
+                                        nn.Linear(h_dim1, 2))
+
+        self.classifier = nn.Linear(2,2)
 
         # cbm type
         self.version = version
@@ -110,7 +123,7 @@ class CBM(nn.Module):
         return self.fc3(h)
 
     def predict(self, z):
-        prob = nn.Softmax()(self.classifier(z))[:, 1]
+        prob = nn.Softmax(dim=1)(self.classifier(z))[:, 1]
         return self.classifier(z), prob
 
     def forward(self, x):
@@ -120,18 +133,20 @@ class CBM(nn.Module):
 
         ## ADD 4/5 test for parity prediction
         PRED, LAT = 0, 0
-        PRED = pred_loss(pred, y) * 100
+        PRED = pred_loss(pred, y) #* 100
 
         if only_class:
             return PRED, {'pred': PRED}
 
-        if mse_on_z: LAT = latent_error(mu, y) * 100
+        if mse_on_z: LAT = latent_error(mu, y) #* 100
 
         # TYPE OF CBMS
         if self.version == 'seq':
+            PRED = torch.tensor(0)
             return LAT, {'pred': PRED, 'lat': LAT}  # PRED + LAT
 
         elif self.version == 'join':
+            PRED, LAT = torch.tensor(0), torch.tensor(0)
             return PRED + LAT, {'pred': PRED, 'lat': LAT}  # PRED + LAT
         else:
             NotImplementedError('Wrong choice!')
