@@ -341,6 +341,13 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
         targets = km.predict(labels)
         targets = np.asarray(targets, dtype=int)
         
+        ## CHECK PERCS OF CLASSES
+        tot = []
+        for i in range(10):
+            y_mask = (targets==i)
+            tot.append( len(targets[y_mask])/len(targets) )
+        print('All classes percentages:', tot)
+
         if False:
             all_attrs , all_targets = torch.as_tensor(labels, dtype=torch.float), torch.as_tensor(targets, dtype=torch.float) 
             validate_model(all_attrs, all_targets)

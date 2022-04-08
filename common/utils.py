@@ -432,34 +432,65 @@ class Accuracy_Loss(torch.nn.Module):
         return acc.mean()
 
 
-def Interpretability(z, g, rel_factors=10 ** 4):
+def Interpretability(z, g, n_gens=40, all_labels=[[0,1,2],], rel_factors=10 ** 4):
     '''
     Compute the interpretability score of the latent factors given the generative ones.
     It can be done on a restricted number of entries.
     '''
 
     # We transform first three dimensions into one categorical
+    
+    # pass a list of lists
+    dec_z, dec_g = [], []
 
-    enc = OneHotEncoder()
-    labels = [[0],[1],[2]]
-    encoder = enc.fit(labels)
-    dec_z = encoder.inverse_transform(z[:,:3])
-    dec_g = encoder.inverse_transform(g[:,:3])
+    l = len(all_labels)
 
-    z = np.concatenate((dec_z, z[:,3:] ), axis=1 )
-    g = np.concatenate((dec_g, g[:,3:] ), axis=1 )
+    for labels in all_labels:
+
+        enc = OneHotEncoder()
+        range_labels = [[i] for i in range(len(labels))]
+        encoder = enc.fit(range_labels)
+
+        dec_z.append(encoder.inverse_transform(z[:,labels]))
+        dec_g.append(encoder.inverse_transform(g[:,labels]))
+    all_labels = sum(all_labels, [])
+    
+    if  l==0:
+        pass
+
+    elif l==1: 
+        z = np.delete(z, all_labels, 1) 
+        g = np.delete(g, all_labels, 1)
+
+        dec_z = np.array(dec_z).reshape(-1,1)
+        dec_g = np.array(dec_g).reshape(-1,1)
+
+        z = np.concatenate((dec_z , z ), axis=1 )
+        g = np.concatenate((dec_g , g ), axis=1 )
+
+    else:
+        z = np.delete(z, all_labels, 1) 
+        g = np.delete(z, all_labels, 1)
+
+        dec_z = np.array(dec_z).T
+        dec_g = np.array(dec_g).T
+
+        z = np.concatenate((dec_z, z ), axis=1 )
+        g = np.concatenate((dec_g, g ), axis=1 )
 
     ### let's see
 
     D = len(z[0])
     K = len(g[0])
 
+    print('Lenghts', K, D)
+
     model = LinearRegression()
     coeff = np.zeros(shape=(D, K))
 
 #    total_acc = 0
  #   for i in range(K):
-    model.fit(z, g)
+    model.fit(z[:rel_factors], g[:rel_factors])
     coeff = model.coef_
     
     print('# Interpret score # Total accuracy of Regressor model:', model.score(z,g) )
@@ -469,7 +500,7 @@ def Interpretability(z, g, rel_factors=10 ** 4):
 
     np.set_printoptions(suppress=True)
 
-    print('Inside metrics')
+    #print('Inside metrics')
     #print('R', R*100)
     
     R_g = np.sum(R, axis=0)

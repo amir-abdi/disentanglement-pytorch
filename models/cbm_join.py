@@ -214,18 +214,15 @@ class CBM_Join(VAE):
 
                     True_Values.append(losses['true_values'].item())
                     latent_errors.append(params['latents'])
+
                     CE_class.append(losses['prediction'].item())
                     f1_class = Accuracy_Loss().to(self.device)
                     F1_scores.append(f1_class(params['prediction'], y_true1, dims=10).item())
 
-                    print('Data format:')
-                    print(np.array([Iterations, Epochs, True_Values, CE_class, F1_scores]).T)
-
                     del f1_class
-
-                    if internal_iter%750==0 and internal_iter > 1:
                     
-                        sofar = pd.DataFrame(data=np.array([Iterations, Epochs,  True_Values, CE_class, Accuracies]).T,
+                    if epoch > 10:
+                        sofar = pd.DataFrame(data=np.array([Iterations, Epochs,  True_Values, CE_class, F1_scores]).T,
                                                 columns=['iter', 'epoch', 'latent_error', 'classification_error', 'accuracy'], )
                         for i in range(label1.size(1)):
                             sofar['latent%i'%i] = np.asarray(latent_errors)[:,i]

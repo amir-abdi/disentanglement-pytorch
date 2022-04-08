@@ -58,7 +58,8 @@ class GrayVAE_Join(VAE):
         ## add binary classification layer
 #        self.classification = nn.Linear(self.z_dim, 1, bias=False).to(self.device)
         # TODO: SET HERE HOW MANY CLASS TO PREDICT
-        self.classification = nn.Linear(self.z_dim, 10, bias=True).to(self.device) ### CHANGED OUT DIMENSION
+        self.n_classes = args.n_classes
+        self.classification = nn.Linear(self.z_dim, args.n_classes, bias=True).to(self.device) ### CHANGED OUT DIMENSION
         self.classification_epoch = args.classification_epoch
         self.reduce_rec = args.reduce_recon
 
@@ -104,6 +105,8 @@ class GrayVAE_Join(VAE):
         #print(z)
 
         mu_processed = torch.tanh(z/2)
+        #mu_processed = torch.tanh(mu/2)
+ 
         x_recon = self.model.decode(z=z,)
 
         #print('mu processed')
@@ -229,11 +232,13 @@ class GrayVAE_Join(VAE):
                 losses = {'total_vae':0}
 
                 x_true1 = x_true1.to(self.device)
-
-                #label1 = label1[:, 1:].to(self.device) #TODO CHANGE THE 1 with SOMETHING CHOSEN
-                label1 = label1.to(self.device)
                 y_true1 = y_true1.to(self.device, dtype=torch.long)
 
+                #label1 = label1[:, 1:].to(self.device) #TODO CHANGE THE 1 with SOMETHING CHOSEN
+                if self.dset_name == 'dsprites_full':
+                    label1 = label1[:, 1:].to(self.device)
+                else:
+                    label1 = label1.to(self.device)
 
                 #print('Inside the tensors')
                 #print('Label1:', label1.size())
@@ -277,10 +282,10 @@ class GrayVAE_Join(VAE):
 
                     Accuracies.append(losses['prediction'].item())
                     f1_class = Accuracy_Loss()
-                    F1_scores.append(f1_class(params['prediction'], y_true1, dims=10).item())
+                    F1_scores.append(f1_class(params['prediction'], y_true1, dims=self.n_classes).item())
                     del f1_class
                     
-                    if (internal_iter%750)==0:
+                    if epoch >1:
                         sofar = pd.DataFrame(data=np.array([Iterations, Epochs, Reconstructions, KLDs, True_Values, Accuracies, F1_scores]).T,
                                              columns=['iter', 'epoch', 'reconstruction_error', 'kld', 'latent_error', 'classification_error', 'accuracy'], )
                         for i in range(label1.size(1)):
