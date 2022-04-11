@@ -49,8 +49,7 @@ def main(_args):
 
             if not os.path.exists(os.path.join(out_path, 'eval_results')):
                 os.makedirs(os.path.join(out_path, 'eval_results'))
-            # SAVE _args
-            print(type(_args))
+            
             with open(os.path.join(out_path, 'commandline_args.txt'), 'w') as f:
                 json.dump(_args.__dict__, f, indent=2)
 

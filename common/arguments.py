@@ -130,6 +130,7 @@ def get_args(sys_args):
     parser.add_argument('--treat_iter_as_epoch', default=False, type=bool, help='treat all iter arguments as epochs')
     parser.add_argument('--ckpt_save_iter', default=None, type=int, help='iters to save checkpoint [default: 1 epoch]')
     parser.add_argument('--evaluate_iter', default=None, type=int, help='iters to evaluate [default: 1 epoch]')
+    parser.add_argument('--test_iter', default=None, type=int, help='iters to test [default: 1 epoch]')
     parser.add_argument('--float_iter', default=None, type=int, help='iters to aggregate float logs [default: 1 epoch]')
     parser.add_argument('--print_iter', default=None, type=int, help='iters to print float values [default: 1 epoch]')
     parser.add_argument('--all_iter', default=None, type=int, help='use same iteration for all [default: 1 epoch]')

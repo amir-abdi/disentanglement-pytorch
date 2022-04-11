@@ -445,6 +445,11 @@ def Interpretability(z, g, n_gens=40, all_labels=[[0,1,2],], rel_factors=10 ** 4
 
     l = len(all_labels)
 
+    print('Latents')
+    print(z)
+
+    print(g)
+
     for labels in all_labels:
 
         enc = OneHotEncoder()
@@ -509,9 +514,6 @@ def Interpretability(z, g, n_gens=40, all_labels=[[0,1,2],], rel_factors=10 ** 4
     for i in range(D):
         for j in range(K):
             P[i, j] = R[i, j] / (R_g[j] + 10 ** -6)
-    
-    #print('P:', P*100)
-
 
     H_D = np.zeros(K)
     for j in range(K):

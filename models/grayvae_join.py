@@ -1,3 +1,4 @@
+from cProfile import label
 import os.path
 import torch
 from torch import nn
@@ -101,10 +102,9 @@ class GrayVAE_Join(VAE):
 
         z = reparametrize(mu, logvar)
 
-        #print('z')
-        #print(z)
-
+        
         mu_processed = torch.tanh(z/2)
+        
         #mu_processed = torch.tanh(mu/2)
  
         x_recon = self.model.decode(z=z,)
@@ -150,7 +150,6 @@ class GrayVAE_Join(VAE):
                     losses[c.TOTAL_VAE] += self.latent_weight * loss_bin
 
                 elif self.latent_loss == 'BCE':
-
                     loss_bin = nn.BCELoss(reduction='mean')((1+mu_processed[rn_mask][:, :label1.size(1)])/2,
                                                              label1[rn_mask] )
 
@@ -298,7 +297,7 @@ class GrayVAE_Join(VAE):
  #                           self.dataframe_eval.to_csv(os.path.join(out_path, 'dis_metrics.csv'), index=False)
 
                 # TESTSET LOSSES
-                if is_time_for(self.iter, self.evaluate_iter):
+                if is_time_for(self.iter, self.test_iter):
 
                     #                    self.dataframe_eval = self.dataframe_eval.append(self.evaluate_results,  ignore_index=True)
                     # test the behaviour on other losses
@@ -321,11 +320,14 @@ class GrayVAE_Join(VAE):
                     # include disentanglement metrics
                     dis_metrics = pd.DataFrame(self.evaluate_results, index=[0])
                     self.dataframe_dis = self.dataframe_dis.append(dis_metrics)
+                    del dis_metrics
 
                     if track_changes and not self.dataframe_dis.empty:
                         self.dataframe_dis.to_csv(os.path.join(out_path, 'eval_results/dis_metrics.csv'),
                                                   index=False)
                         print('Saved dis_metrics')
+
+                    
 
                 self.log_save(input_image=x_true1, recon_image=params['x_recon'], loss=losses)
 
@@ -333,7 +335,7 @@ class GrayVAE_Join(VAE):
 
         self.pbar.close()
 
-    def test(self, end_of_epoch=True, vers='dsprites'):
+    def test(self, end_of_epoch=True, name='dsprites'):
         self.net_mode(train=False)
         rec, kld, latent, BCE, Acc = 0, 0, 0, 0, 0
         I = np.zeros(self.z_dim)
@@ -348,7 +350,7 @@ class GrayVAE_Join(VAE):
 
         for internal_iter, (x_true, label, y_true, _) in enumerate(self.test_loader):
             x_true = x_true.to(self.device)
-            label = label[:,1:].to(self.device, dtype=torch.float32)
+            label = label.to(self.device, dtype=torch.float32)
             y_true =  y_true.to(self.device, dtype=torch.long)
 
             g_array = g_array[:,:label.size(1)]
@@ -387,7 +389,7 @@ class GrayVAE_Join(VAE):
 
 
             Acc+=(Accuracy_Loss()(forecast,
-                                   y_true).detach().item() )
+                                y_true, dims=self.n_classes).detach().item() )
 
         if end_of_epoch:
             self.visualize_recon(x_true, x_recon, test=True)
@@ -400,7 +402,11 @@ class GrayVAE_Join(VAE):
 
         print('Done testing')
 
-        I, I_tot = Interpretability(z_array, g_array, rel_factors=N)
+        if name == 'dsprites_full':
+            I, I_tot = Interpretability(z_array, g_array,all_labels=[[0,1,2]],  rel_factors=N)
 
+        if name == 'celebA':
+            I, I_tot = Interpretability(z_array, g_array,all_labels=[],  rel_factors=N)
+            
         nrm = internal_iter + 1
         return rec/nrm, kld/nrm, latent/nrm, BCE/nrm, Acc/nrm, I/nrm, I_tot/nrm

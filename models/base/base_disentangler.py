@@ -106,6 +106,10 @@ class BaseDisentangler(object):
         self.recon_iter = args.recon_iter if args.recon_iter else self.num_batches
         self.traverse_iter = args.traverse_iter if args.traverse_iter else self.num_batches
         self.evaluate_iter = args.evaluate_iter if args.evaluate_iter else self.num_batches
+        if args.test_iter is not None:
+            self.test_iter = args.test_iter
+        else:
+            self.test_iter = self.evaluate_iter
         self.ckpt_save_iter = args.ckpt_save_iter if args.ckpt_save_iter else self.num_batches
         self.schedulers_iter = args.schedulers_iter if args.schedulers_iter else self.num_batches
 

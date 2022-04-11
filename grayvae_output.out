@@ -1,14 +1,1 @@
 name=slurm_script
-Considered components [1, 2, 3, 4, 5]
-target (737280,)
-Population of 0: 50.0 %.
-Start verification
-Labels in data_loader
-Fitting a LogReg model, loss - CE: tensor(0.0110)
-ACCURACY for logreg:  tensor(0.9907)
-Created the simple conv64 with channels 1
-Initialized GrayVAE_Join model
-Created the simple conv64 with channels 1
-<class 'argparse.Namespace'>
-## Initializing Train indexes
-->path chosen:: logs/dsprites_full__GrayVAE_Join__2022_04/08-14/train_runs

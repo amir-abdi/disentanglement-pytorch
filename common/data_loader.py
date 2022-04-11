@@ -332,13 +332,16 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
         npz = np.load(root)
 
         labels = npz['Y']
+
+        print('labels', labels.size())
         
         # LOAD CLASSIFICATION
-        km_files = os.path.join(dset_dir, 'celebA/km.pickle')
+        km_files = os.path.join(dset_dir, 'celebA/new_km.pickle')
         with open(km_files, 'rb') as f:
             km = pickle.load(f)
 
-        targets = km.predict(labels)
+
+        targets = km.predict(labels[:,:29])
         targets = np.asarray(targets, dtype=int)
         
         ## CHECK PERCS OF CLASSES
@@ -347,6 +350,8 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
             y_mask = (targets==i)
             tot.append( len(targets[y_mask])/len(targets) )
         print('All classes percentages:', tot)
+
+        #quit()
 
         if False:
             all_attrs , all_targets = torch.as_tensor(labels, dtype=torch.float), torch.as_tensor(targets, dtype=torch.float) 
@@ -415,7 +420,7 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
                 class_values.append(unique_values_mock)
             label_weights = np.array(label_weights)#, dtype=np.float32)
 
-        data_kwargs = {'data_images': npz['imgs']}
+        data_kwargs = {'data_images': npz['imgs']*255}
         data_kwargs.update({'labels': labels_one_hot,
                        'label_weights': label_weights,
                        'class_values': class_values,
