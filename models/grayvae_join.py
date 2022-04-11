@@ -335,7 +335,7 @@ class GrayVAE_Join(VAE):
 
         self.pbar.close()
 
-    def test(self, end_of_epoch=True, name='dsprites'):
+    def test(self, end_of_epoch=True, name='dsprites_full'):
         self.net_mode(train=False)
         rec, kld, latent, BCE, Acc = 0, 0, 0, 0, 0
         I = np.zeros(self.z_dim)
@@ -350,7 +350,12 @@ class GrayVAE_Join(VAE):
 
         for internal_iter, (x_true, label, y_true, _) in enumerate(self.test_loader):
             x_true = x_true.to(self.device)
-            label = label.to(self.device, dtype=torch.float32)
+
+            if self.dset_name == 'dsprites_full':
+                label1 = label1[:, 1:].to(self.device)
+            else:
+                label1 = label1.to(self.device)
+            
             y_true =  y_true.to(self.device, dtype=torch.long)
 
             g_array = g_array[:,:label.size(1)]
@@ -400,13 +405,16 @@ class GrayVAE_Join(VAE):
             #self.iter += 1
             #self.pbar.update(1)
 
-        print('Done testing')
 
         if name == 'dsprites_full':
             I, I_tot = Interpretability(z_array, g_array,all_labels=[[0,1,2]],  rel_factors=N)
 
         if name == 'celebA':
             I, I_tot = Interpretability(z_array, g_array,all_labels=[],  rel_factors=N)
+        
+        print('Done testing')
+
+        
             
         nrm = internal_iter + 1
         return rec/nrm, kld/nrm, latent/nrm, BCE/nrm, Acc/nrm, I/nrm, I_tot/nrm

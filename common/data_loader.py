@@ -333,7 +333,7 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
 
         labels = npz['Y']
 
-        print('labels', labels.size())
+        print('labels', np.shape(labels))
         
         # LOAD CLASSIFICATION
         km_files = os.path.join(dset_dir, 'celebA/new_km.pickle')
@@ -346,7 +346,7 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
         
         ## CHECK PERCS OF CLASSES
         tot = []
-        for i in range(10):
+        for i in range(labels.size[1]):
             y_mask = (targets==i)
             tot.append( len(targets[y_mask])/len(targets) )
         print('All classes percentages:', tot)

@@ -40,8 +40,6 @@ class Encoder_Conv64(BaseImageEncoder):
 class EncConv64(Encoder_Conv64):
     def __init__(self, latent_dim, num_channels, image_size):
         super().__init__(latent_dim * 2, num_channels, image_size)
-
-        print("Created the simple conv64 with channels", num_channels)
         # override value of _latent_dim
         self._latent_dim = latent_dim
 

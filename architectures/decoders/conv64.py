@@ -9,13 +9,13 @@ class Unsqueeze3D(nn.Module):
     def forward(self, x):
         x = x.unsqueeze(-1)
         x = x.unsqueeze(-1)
-        return x.view(-1, 1024, 9, 9)
+        return x.view(-1, 1024, 8, 8)
 
 class DeConv64(BaseImageEncoder):
     def __init__(self, latent_dim, num_channels, image_size):
         super().__init__(latent_dim, num_channels, image_size)
         assert image_size == 64, 'This model only works with image size 64x64.'
-        assert latent_dim == 81, 'This is the standard for CelebA_64x64'
+        assert latent_dim == 64, 'This is the standard for CelebA_64x64'
         
         self.main =  self.dec = nn.Sequential(
             nn.Linear(latent_dim, 1024*latent_dim),
@@ -30,7 +30,7 @@ class DeConv64(BaseImageEncoder):
             nn.ConvTranspose2d(256, 128, 5, 2),
             nn.BatchNorm2d(128),
             nn.ReLU(True),
-            nn.ConvTranspose2d(128, 3, 4, 1, 12+4),
+            nn.ConvTranspose2d(128, 3, 4, 1, 12),
         )
         # output shape = bs x 3 x 64 x 64
 

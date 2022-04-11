@@ -57,7 +57,7 @@ class CBM_Join(VAE):
 
         ## add binary classification layer
         ## TODO: set choices of how many classes
-        self.classification = nn.Linear(self.z_dim, 10, bias=False).to(self.device) ### CHANGED OUT DIMENSION
+        self.classification = nn.Linear(self.z_dim, args.n_classes, bias=False).to(self.device) ### CHANGED OUT DIMENSION
         self.reduce_rec = args.reduce_recon
 
         self.class_G_all = optim.Adam([*self.model.encoder.parameters(), *self.classification.parameters()],
@@ -188,7 +188,10 @@ class CBM_Join(VAE):
                 x_true1 = x_true1.to(self.device)
                 
                 #label1 = label1[:, 1:].to(self.device)
-                label1 = label1.to(self.device)
+                if self.dset_name == 'dsprites_full':
+                    label1 = label1[:, 1:].to(self.device)
+                else:
+                    label1 = label1.to(self.device)
 
                 y_true1 = y_true1.to(self.device)
 
@@ -266,7 +269,7 @@ class CBM_Join(VAE):
 
         self.pbar.close()
 
-    def test(self, end_of_epoch=True):
+    def test(self, end_of_epoch=True, name='dsprites_full'):
         self.net_mode(train=False)
         rec, kld, latent, BCE, Acc = 0, 0, 0, 0, 0
         I = np.zeros(self.z_dim)
@@ -281,7 +284,11 @@ class CBM_Join(VAE):
 
         for internal_iter, (x_true, label, y_true, _) in enumerate(self.test_loader):
             x_true = x_true.to(self.device)
-            label = label[:, 1:].to(self.device, dtype=torch.float32)
+            if self.dset_name == 'dsprites_full':
+                    label1 = label1[:, 1:].to(self.device)
+            else:
+                label1 = label1.to(self.device)
+            
             y_true = y_true.to(self.device, dtype=torch.long)
 
             mu, logvar = self.model.encode(x=x_true, )
@@ -298,7 +305,6 @@ class CBM_Join(VAE):
 
             #            I_batch , I_TOT = Interpretability(z, g)
             #           I += I_batch; I_tot += I_TOT
-
 
             if self.latent_loss == 'MSE':
                 loss_bin = nn.MSELoss(reduction='mean')(mu_processed[:, :label.size(1)],
@@ -322,9 +328,13 @@ class CBM_Join(VAE):
             Acc += (Accuracy_Loss()(forecast,
                                     y_true).detach().item())
 
-        print('Done testing')
+        if name == 'dsprites_full':
+            I, I_tot = Interpretability(z_array, g_array,all_labels=[[0,1,2]],  rel_factors=N)
 
-        I, I_tot = Interpretability(z_array, g_array, rel_factors=N)
+        if name == 'celebA':
+            I, I_tot = Interpretability(z_array, g_array,all_labels=[],  rel_factors=N)
+
+        print('Done testing')
 
         nrm = internal_iter + 1
         return latent / nrm, BCE / nrm, Acc / nrm, I / nrm, I_tot / nrm
