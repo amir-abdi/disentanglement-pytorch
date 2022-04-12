@@ -301,7 +301,7 @@ class GrayVAE_Join(VAE):
 
                     #                    self.dataframe_eval = self.dataframe_eval.append(self.evaluate_results,  ignore_index=True)
                     # test the behaviour on other losses
-                    trec, tkld, tlat, tbce, tacc, I, I_tot = self.test(end_of_epoch=False)
+                    trec, tkld, tlat, tbce, tacc, I, I_tot = self.test(end_of_epoch=False, name=self.dset_name)
                     factors = pd.DataFrame(
                         {'iter': self.iter, 'rec': trec, 'kld': tkld, 'latent': tlat, 'BCE': tbce, 'Acc': tacc,
                          'I': I_tot}, index=[0])
@@ -352,9 +352,9 @@ class GrayVAE_Join(VAE):
             x_true = x_true.to(self.device)
 
             if self.dset_name == 'dsprites_full':
-                label1 = label1[:, 1:].to(self.device)
+                label = label[:, 1:].to(self.device)
             else:
-                label1 = label1.to(self.device)
+                label = label.to(self.device)
             
             y_true =  y_true.to(self.device, dtype=torch.long)
 
@@ -409,8 +409,8 @@ class GrayVAE_Join(VAE):
         if name == 'dsprites_full':
             I, I_tot = Interpretability(z_array, g_array,all_labels=[[0,1,2]],  rel_factors=N)
 
-        if name == 'celebA':
-            I, I_tot = Interpretability(z_array, g_array,all_labels=[],  rel_factors=N)
+        #if name == 'celebA':
+            #I, I_tot = 0, 0 # Interpretability(z_array, g_array,all_labels=[],  rel_factors=N)
         
         print('Done testing')
 

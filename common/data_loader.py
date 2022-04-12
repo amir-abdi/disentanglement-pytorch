@@ -346,7 +346,7 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
         
         ## CHECK PERCS OF CLASSES
         tot = []
-        for i in range(labels.size[1]):
+        for i in range( len(labels[0])):
             y_mask = (targets==i)
             tot.append( len(targets[y_mask])/len(targets) )
         print('All classes percentages:', tot)
