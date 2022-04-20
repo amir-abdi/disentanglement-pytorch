@@ -152,9 +152,13 @@ class VAE(BaseDisentangler):
             output_losses['vae_mmd'] = infovae_loss_fn(self.w_infovae, self.z_dim, self.device, **kwargs)
             output_losses[c.TOTAL_VAE] += output_losses['vae_mmd']
 
-        #if "classification" in self.loss_terms:
-         #   pass
-         #   pass
+        if c.SENN in self.loss_terms:
+            x = kwargs['input']
+            concepts = kwargs['z']
+            W = kwargs['W']
+            aggregates = torch.einsum('ijk,ik->ij', [W,x] )
+            from models.SENN import robustness_loss
+            output_losses['senn'] = robustness_loss(x, aggregates, concepts, W)
 
         return output_losses
 

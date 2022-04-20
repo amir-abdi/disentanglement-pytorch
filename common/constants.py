@@ -25,6 +25,7 @@ GRAYVAE_STANDARD = 'grayvae_standard'
 GRAYVAE_JOIN = 'grayvae_join'
 CBM_SEQ = 'cbm_seq'
 CBM_JOIN ='cbm_join'
+SENN = 'SENN'
 
 TOTAL_VAE = 'total_vae'
 TOTAL_VAE_EPOCH = 'total_vae_epoch'

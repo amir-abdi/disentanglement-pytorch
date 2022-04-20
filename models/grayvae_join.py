@@ -335,7 +335,7 @@ class GrayVAE_Join(VAE):
 
         self.pbar.close()
 
-    def test(self, end_of_epoch=True, name='dsprites_full'):
+    def test(self, end_of_epoch=True, name='dsprites_full', out_path=None):
         self.net_mode(train=False)
         rec, kld, latent, BCE, Acc = 0, 0, 0, 0, 0
         I = np.zeros(self.z_dim)
@@ -345,7 +345,7 @@ class GrayVAE_Join(VAE):
         l_dim = self.z_dim
         g_dim = self.z_dim
 
-        z_array = np.zeros( shape=(self.batch_size*len(self.test_loader), l_dim))
+        z_array = np.zeros( shape=(self.batch_size*len(self.test_disentanglement-pytorchloader), l_dim))
         g_array = np.zeros( shape=(self.batch_size*len(self.test_loader), g_dim))
 
         for internal_iter, (x_true, label, y_true, _) in enumerate(self.test_loader):
@@ -406,14 +406,11 @@ class GrayVAE_Join(VAE):
             #self.pbar.update(1)
 
 
-        if name == 'dsprites_full':
-            I, I_tot = Interpretability(z_array, g_array,all_labels=[[0,1,2]],  rel_factors=N)
-
-        #if name == 'celebA':
-            #I, I_tot = 0, 0 # Interpretability(z_array, g_array,all_labels=[],  rel_factors=N)
-        
         print('Done testing')
-
+        if out_path is not None:
+            with open( os.path.join(out_path,'latents_obtained.npy'), 'wb') as f:
+                np.save(f, z_array)
+                np.save(f, g_array)
         
             
         nrm = internal_iter + 1

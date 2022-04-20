@@ -26,9 +26,10 @@ class CBM_Join(VAE):
 
         print('Initialized CBM_Join model')
 
+        self.num_classes = args.n_classes
         # checks
         assert self.num_classes is not None, 'please identify the number of classes for each label separated by comma'
-
+        
         # encoder and decoder
         encoder_name = args.encoder[0]
         decoder_name = args.decoder[0]
@@ -45,9 +46,13 @@ class CBM_Join(VAE):
         self.model = VAEModel(encoder(self.z_dim, input_channels, self.image_size),
                                decoder(decoder_input_channels, self.num_channels, self.image_size),
                                ).to(self.device)
+        self.classification = nn.Linear(self.z_dim, args.n_classes, bias=False).to(self.device) 
         #self.optim_G = optim.Adam(self.model.parameters(), lr=self.lr_G, betas=(self.beta1, self.beta2))
         #self.optim_G_mse = optim.Adam(self.model.encoder.parameters(), lr=self.lr_G, betas=(self.beta1, self.beta2))
 
+        self.optim_G = optim.Adam([*self.model.encoder.parameters(), *self.classification.parameters()],
+                                      lr=self.lr_G, betas=(self.beta1, self.beta2))
+        self.class_G_all = self.optim_G
         # update nets
         self.net_dict['G'] = self.model
         self.optim_dict['optim_G'] = self.optim_G
@@ -57,11 +62,8 @@ class CBM_Join(VAE):
 
         ## add binary classification layer
         ## TODO: set choices of how many classes
-        self.classification = nn.Linear(self.z_dim, args.n_classes, bias=False).to(self.device) ### CHANGED OUT DIMENSION
+        
         self.reduce_rec = args.reduce_recon
-
-        self.class_G_all = optim.Adam([*self.model.encoder.parameters(), *self.classification.parameters()],
-                                      lr=self.lr_G, betas=(self.beta1, self.beta2))
 
         ## CHOOSE THE WEIGHT FOR CLASSIFICATION
         self.label_weight = args.label_weight
@@ -74,6 +76,7 @@ class CBM_Join(VAE):
         
         self.masking_fact = args.masking_fact
         self.show_loss = args.show_loss
+        
 
         self.dataframe_dis = pd.DataFrame() #columns=self.evaluation_metric)
         self.dataframe_eval = pd.DataFrame()
@@ -99,14 +102,15 @@ class CBM_Join(VAE):
         # label_1 \in [0,1]
         mu, _ = self.model.encode(x=x_true1,)
 
-        z = torch.tanh(mu/2)
+        mu_processed = torch.tanh(mu/2)
+        z = mu_processed
         #x_recon = self.model.decode(z=z,)
 
         # CHECKING THE CONSISTENCY
 
-        prediction, forecast = self.predict(latent=z)
+        prediction, forecast = self.predict(latent=mu_processed)
         rn_mask = (examples==1)
-
+        
         if examples[rn_mask] is None:
             n_passed = 0
         else:
@@ -117,41 +121,41 @@ class CBM_Join(VAE):
         losses.update(prediction=nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long))*self.label_weight )
         losses[c.TOTAL_VAE] += nn.CrossEntropyLoss(reduction='mean')(prediction, y_true1.to(self.device, dtype=torch.long)* self.label_weight )
 
+
         if n_passed > 0: # added the presence of only small labelled generative factors
 
+            ## loss of categorical variables
+
             ## loss of continuous variables
-            if self.latent_loss == 'MSE':
 
-                # z \in [-1,1]
-                loss_bin = nn.MSELoss(reduction='mean')( z[rn_mask][:, :label1.size(1)], 2*label1[rn_mask]-1  )
-
+            if self.latent_loss == 'MSE':                
+                loss_bin = nn.MSELoss(reduction='mean')( mu_processed[rn_mask][:, :label1.size(1)], 2*label1[rn_mask]-1  )
+                losses.update(true_values=self.latent_weight * loss_bin)
+                losses[c.TOTAL_VAE] += self.latent_weight * loss_bin
                 ## track losses
                 err_latent = []
                 for i in range(label1.size(1)):
-                    err_latent.append(nn.MSELoss(reduction='mean')(z[rn_mask][:, i], 2 * label1[rn_mask][:,i] - 1).detach().item() )
-
-                losses.update(true_values= loss_bin * self.latent_weight)
-                losses[c.TOTAL_VAE] += loss_bin * self.latent_weight
-
+                    err_latent.append(nn.MSELoss(reduction='mean')(mu_processed[rn_mask][:, i], 2 * label1[rn_mask][:,i] - 1).detach().item() )
+                
             elif self.latent_loss == 'BCE':
+                loss_bin = nn.BCELoss(reduction='mean')((1+mu_processed[rn_mask][:, :label1.size(1)])/2,
+                                                            label1[rn_mask] )
 
-                # z \in [-1,1]
-                loss_bin = nn.BCELoss(reduction='mean')((1+z[rn_mask][:, :label1.size(1)])/2,
-                                                         label1[rn_mask] )
+                losses.update(true_values=self.latent_weight * loss_bin)
+                losses[c.TOTAL_VAE] += self.latent_weight * loss_bin
                 ## track losses
                 err_latent = []
                 for i in range(label1.size(1)):
-                    err_latent.append(nn.BCELoss(reduction='mean')((1+z[rn_mask][:, i])/2,
+                    err_latent.append(nn.BCELoss(reduction='mean')((1+mu_processed[rn_mask][:, i])/2,
                                                                     label1[rn_mask][:, i] ).detach().item())
-                losses.update(true_values= loss_bin * self.latent_weight)
-                losses[c.TOTAL_VAE] += loss_bin * self.latent_weight
-
             else:
                 raise NotImplementedError('Not implemented loss.')
 
         else:
-            err_latent = [-1]*label1.size(1)
             losses.update(true_values=torch.tensor(-1))
+            err_latent =[-1]*label1.size(1)
+    #            losses[c.TOTAL_VAE] += nn.MSELoss(reduction='mean')(mu[:, :label1.size(1)], label1).detach()
+
 
         return losses, {'mu': mu, 'z': z, "prediction": prediction, 'forecast': forecast,
                     'latents': err_latent, 'n_passed': n_passed}
@@ -220,7 +224,7 @@ class CBM_Join(VAE):
 
                     CE_class.append(losses['prediction'].item())
                     f1_class = Accuracy_Loss().to(self.device)
-                    F1_scores.append(f1_class(params['prediction'], y_true1, dims=10).item())
+                    F1_scores.append(f1_class(params['prediction'], y_true1, dims=self.num_classes).item())
 
                     del f1_class
                     
@@ -233,12 +237,12 @@ class CBM_Join(VAE):
                         sofar.to_csv(os.path.join(out_path+'/train_runs', 'metrics.csv'), index=False)
                         del sofar
 
-                if is_time_for(self.iter, self.evaluate_iter):
+                if is_time_for(self.iter, self.test_iter):
 
                     #                    self.dataframe_eval = self.dataframe_eval.append(self.evaluate_results,  ignore_index=True)
                     # test the behaviour on other losses
                     trec, tkld = 0, 0
-                    tlat, tbce, tacc, I, I_tot = self.test(end_of_epoch=False)
+                    tlat, tbce, tacc, I, I_tot = self.test(end_of_epoch=False, name=self.dset_name)
                     factors = pd.DataFrame(
                         {'iter': self.iter, 'rec': trec, 'kld': tkld, 'latent': tlat, 'BCE': tbce, 'Acc': tacc,
                          'I': I_tot}, index=[0])
@@ -269,15 +273,15 @@ class CBM_Join(VAE):
 
         self.pbar.close()
 
-    def test(self, end_of_epoch=True, name='dsprites_full'):
+    def test(self, end_of_epoch=True, name='dsprites_full', out_path=None):
         self.net_mode(train=False)
         rec, kld, latent, BCE, Acc = 0, 0, 0, 0, 0
         I = np.zeros(self.z_dim)
         I_tot = 0
 
         N = 10 ** 4
-        l_dim = 7
-        g_dim = 7
+        l_dim = self.z_dim
+        g_dim = 32
 
         z_array = np.zeros(shape=(self.batch_size * len(self.test_loader), l_dim))
         g_array = np.zeros(shape=(self.batch_size * len(self.test_loader), g_dim))
@@ -285,9 +289,9 @@ class CBM_Join(VAE):
         for internal_iter, (x_true, label, y_true, _) in enumerate(self.test_loader):
             x_true = x_true.to(self.device)
             if self.dset_name == 'dsprites_full':
-                    label1 = label1[:, 1:].to(self.device)
+                    label = label[:, 1:].to(self.device)
             else:
-                label1 = label1.to(self.device)
+                label = label.to(self.device)
             
             y_true = y_true.to(self.device, dtype=torch.long)
 
@@ -326,13 +330,18 @@ class CBM_Join(VAE):
                                                           y_true).detach().item())
 
             Acc += (Accuracy_Loss()(forecast,
-                                    y_true).detach().item())
+                                    y_true, dims=self.num_classes).detach().item())
 
-        if name == 'dsprites_full':
-            I, I_tot = Interpretability(z_array, g_array,all_labels=[[0,1,2]],  rel_factors=N)
+        #if name == 'dsprites_full':
+         #   I, I_tot = Interpretability(z_array, g_array,all_labels=[[0,1,2]],  rel_factors=N)
 
-        if name == 'celebA':
-            I, I_tot = Interpretability(z_array, g_array,all_labels=[],  rel_factors=N)
+        #if name == 'celebA':
+         #   I, I_tot = Interpretability(z_array, g_array,all_labels=[],  rel_factors=N)
+        
+        if out_path is not None:
+            with open( os.path.join(out_path,'latents_obtained.npy'), 'wb') as f:
+                np.save(f, z_array)
+                np.save(f, g_array)
 
         print('Done testing')
 
