@@ -1,0 +1,7 @@
+checkpoint,checkpoint_path,private_train_accuracy,private_test_accuracy,utility_train_accuracy,utility_test_accuracy,random_baseline
+Baseline Private v2 Epoch 10,outputs/market1501_disentangled_vae_private_v2/checkpoints/private_v2_epoch_10.pth,100.0,99.96136012364761,11.596443757247778,5.293663060278207,0.13315579227696406
+Adversarial v2 Epoch 1,outputs/market1501_disentangled_vae_adversarial_v2/checkpoints/adversarial_v2_epoch_01.pth,100.0,99.9227202472952,81.77425589485891,66.112828438949,0.13315579227696406
+Adversarial v2 Epoch 2,outputs/market1501_disentangled_vae_adversarial_v2/checkpoints/adversarial_v2_epoch_02.pth,100.0,100.0,85.25318902203324,68.16074188562597,0.13315579227696406
+Adversarial v2 Epoch 3,outputs/market1501_disentangled_vae_adversarial_v2/checkpoints/adversarial_v2_epoch_03.pth,100.0,99.96136012364761,82.6923076923077,61.93972179289027,0.13315579227696406
+Adversarial v2 Epoch 4,outputs/market1501_disentangled_vae_adversarial_v2/checkpoints/adversarial_v2_epoch_04.pth,100.0,100.0,67.85852338616158,45.5564142194745,0.13315579227696406
+Adversarial v2 Epoch 5,outputs/market1501_disentangled_vae_adversarial_v2/checkpoints/adversarial_v2_epoch_05.pth,100.0,100.0,51.623502126014685,32.30293663060278,0.13315579227696406

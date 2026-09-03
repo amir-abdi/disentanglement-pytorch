@@ -1,0 +1,7 @@
+checkpoint,checkpoint_path,private_train_accuracy,private_test_accuracy,utility_train_accuracy,utility_test_accuracy,utility_leakage_change_from_baseline,random_baseline
+Baseline Private v2 Epoch 10,outputs/market1501_disentangled_vae_private_v2/checkpoints/private_v2_epoch_10.pth,100.0,99.96136012364761,11.596443757247778,5.293663060278207,0.0,0.13315579227696406
+Triplet+Decorr Epoch 1,outputs/market1501_disentangled_vae_triplet_decorrelation/checkpoints/triplet_decorr_epoch_01.pth,100.0,100.0,27.92810204870506,16.924265842349303,11.630602782071097,0.13315579227696406
+Triplet+Decorr Epoch 2,outputs/market1501_disentangled_vae_triplet_decorrelation/checkpoints/triplet_decorr_epoch_02.pth,100.0,100.0,28.836490143022807,17.542503863987633,12.248840803709427,0.13315579227696406
+Triplet+Decorr Epoch 3,outputs/market1501_disentangled_vae_triplet_decorrelation/checkpoints/triplet_decorr_epoch_03.pth,100.0,100.0,30.208735987630458,18.58578052550232,13.292117465224113,0.13315579227696406
+Triplet+Decorr Epoch 4,outputs/market1501_disentangled_vae_triplet_decorrelation/checkpoints/triplet_decorr_epoch_04.pth,100.0,100.0,29.64824120603015,17.697063369397217,12.40340030911901,0.13315579227696406
+Triplet+Decorr Epoch 5,outputs/market1501_disentangled_vae_triplet_decorrelation/checkpoints/triplet_decorr_epoch_05.pth,100.0,100.0,28.227676845767295,16.15146831530139,10.857805255023184,0.13315579227696406

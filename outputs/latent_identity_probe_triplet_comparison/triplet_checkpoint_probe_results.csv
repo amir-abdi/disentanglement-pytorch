@@ -1,0 +1,7 @@
+checkpoint,checkpoint_path,private_train_accuracy,private_test_accuracy,utility_train_accuracy,utility_test_accuracy,utility_leakage_change_from_baseline,random_baseline
+Baseline Private v2 Epoch 10,outputs/market1501_disentangled_vae_private_v2/checkpoints/private_v2_epoch_10.pth,100.0,99.96136012364761,11.596443757247778,5.293663060278207,0.0,0.13315579227696406
+Triplet Epoch 1,outputs/market1501_disentangled_vae_triplet/checkpoints/triplet_epoch_01.pth,100.0,100.0,63.02667182064167,47.68160741885626,42.38794435857805,0.13315579227696406
+Triplet Epoch 2,outputs/market1501_disentangled_vae_triplet/checkpoints/triplet_epoch_02.pth,100.0,100.0,71.33745651333591,56.45285935085008,51.15919629057188,0.13315579227696406
+Triplet Epoch 3,outputs/market1501_disentangled_vae_triplet/checkpoints/triplet_epoch_03.pth,100.0,100.0,76.64282953227676,64.68315301391036,59.38948995363215,0.13315579227696406
+Triplet Epoch 4,outputs/market1501_disentangled_vae_triplet/checkpoints/triplet_epoch_04.pth,100.0,100.0,79.91882489369927,68.89489953632149,63.60123647604328,0.13315579227696406
+Triplet Epoch 5,outputs/market1501_disentangled_vae_triplet/checkpoints/triplet_epoch_05.pth,100.0,100.0,82.04483958252803,71.17465224111282,65.88098918083462,0.13315579227696406

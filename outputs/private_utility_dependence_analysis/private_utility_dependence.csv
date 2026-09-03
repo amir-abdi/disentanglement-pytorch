@@ -1,0 +1,7 @@
+checkpoint,checkpoint_path,utility_probe_accuracy,cross_covariance_frobenius,mean_absolute_cross_correlation,rms_cross_correlation,max_absolute_cross_correlation,linear_cka
+Baseline,outputs/market1501_disentangled_vae_private_v2/checkpoints/private_v2_epoch_10.pth,5.29,3.0237560272216797,0.03391314297914505,0.04274358972907066,0.16140040755271912,0.032723989337682724
+Triplet E1,outputs/market1501_disentangled_vae_triplet/checkpoints/triplet_epoch_01.pth,47.68,9.521327018737793,0.10038749128580093,0.12708507478237152,0.4864788055419922,0.44818317890167236
+Triplet E2,outputs/market1501_disentangled_vae_triplet/checkpoints/triplet_epoch_02.pth,56.45,8.048192024230957,0.09742465615272522,0.12215856462717056,0.4252414107322693,0.43476933240890503
+Triplet E3,outputs/market1501_disentangled_vae_triplet/checkpoints/triplet_epoch_03.pth,64.68,7.063763618469238,0.09483814984560013,0.11922203749418259,0.4166642725467682,0.4460715353488922
+Triplet E4,outputs/market1501_disentangled_vae_triplet/checkpoints/triplet_epoch_04.pth,68.89,6.409919738769531,0.09423965960741043,0.11783817410469055,0.4397823214530945,0.44342663884162903
+Triplet E5,outputs/market1501_disentangled_vae_triplet/checkpoints/triplet_epoch_05.pth,71.17,5.420856475830078,0.0909387394785881,0.11370062828063965,0.43552517890930176,0.42005497217178345
