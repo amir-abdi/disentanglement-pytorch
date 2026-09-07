@@ -1,0 +1,8 @@
+name,method,strength,output_width,output_height
+resized_control,resize_only,none,64,128
+blur_r2,gaussian_blur,2.0,64,128
+blur_r4,gaussian_blur,4.0,64,128
+blur_r8,gaussian_blur,8.0,64,128
+pixel_32x64,pixelation,32x64,64,128
+pixel_16x32,pixelation,16x32,64,128
+pixel_8x16,pixelation,8x16,64,128

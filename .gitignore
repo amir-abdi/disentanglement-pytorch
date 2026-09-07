@@ -1,30 +1,222 @@
+# ==============================================================================
+# Privacy-Preserving Person Re-Identification Research
+# .gitignore
+# ==============================================================================
+
+
+# ==============================================================================
+# 1. GENERATED RESEARCH OUTPUTS
+# ==============================================================================
+
+# Experimental outputs, generated images, plots, temporary result files, etc.
+train_outputs/
+test_outputs/
+
+# ==============================================================================
+# GENERATED RESEARCH OUTPUTS
+# ==============================================================================
+
+# Ignore everything inside outputs by default
+outputs/**
+
+
+# ------------------------------------------------------------------------------
+# Allow Git to traverse output directories
+# ------------------------------------------------------------------------------
+
+!outputs/**/
+
+
+# ==============================================================================
+# FINAL / IMPORTANT RESEARCH RESULT TABLES
+# ==============================================================================
+
+# Identity leakage probes
+!outputs/latent_identity_probe_checkpoint_comparison/checkpoint_probe_results.csv
+!outputs/latent_identity_probe_triplet_comparison/triplet_checkpoint_probe_results.csv
+!outputs/latent_identity_probe_triplet_decorr_comparison/triplet_decorr_probe_results.csv
+
+
+# Latent ReID evaluation
+!outputs/market1501_latent_reid_evaluation/latent_reid_results.csv
+!outputs/market1501_latent_reid_phase2d6_comparison/phase2d6_latent_reid_results.csv
+!outputs/market1501_latent_reid_phase2d6_comparison/phase2d6_utility_tradeoff.csv
+
+
+# Private / utility dependence
+!outputs/private_utility_dependence_analysis/private_utility_dependence.csv
+!outputs/private_utility_dependence_triplet_decorr/triplet_decorr_private_utility_dependence.csv
+
+
+# Full PIS latent results
+!outputs/market1501_full_pis/full_pis_latent_summary.csv
+
+
+# PIS ReID utility
+!outputs/market1501_pis_osnet_reid/pis_osnet_reid_results.csv
+
+
+# PIS source-identity privacy
+!outputs/market1501_pis_privacy/pis_privacy_results.csv
+!outputs/market1501_pis_privacy/pis_feature_similarity.csv
+
+
+# Donor leakage
+!outputs/market1501_pis_donor_leakage/donor_leakage_results.csv
+
+
+# Adaptive privacy attack
+!outputs/market1501_pis_adaptive_privacy/adaptive_privacy_attack_results.csv
+
+
+# Conventional privacy baselines
+!outputs/market1501_privacy_baseline_evaluation/privacy_baseline_results.csv
+!outputs/market1501_privacy_baselines/baseline_configurations.csv
+
+
+# Image quality
+!outputs/market1501_image_quality/image_quality_summary.csv
+
+
+# FID
+!outputs/market1501_fid_evaluation/fid_results.csv
+
+
+# ==============================================================================
+# FINAL RESEARCH FIGURES
+# ==============================================================================
+
+# Keep generated PNG figures.
+# These are small and useful for the report / README.
+
+
+
+# ==============================================================================
+# EXPLICITLY IGNORE LARGE / RAW OUTPUT ARTIFACTS
+# ==============================================================================
+
+# Generated Market-1501 transformed datasets
+outputs/**/query/**
+outputs/**/bounding_box_test/**
+
+# Per-image / per-sample result dumps
+outputs/**/image_quality_per_image.csv
+outputs/**/donor_leakage_sample_results.csv
+outputs/**/latent_pair_results.csv
+
+# Identity mappings / split bookkeeping
+outputs/**/identity_shift_assignments.csv
+outputs/**/adaptive_identity_split.csv
+
+# Pilot experiment outputs
+outputs/person_identity_shift_pilot/**
+
+# Training histories
+outputs/**/training_history.csv
+outputs/**/adversary_warmup_history.csv
+
+# FID cached statistics
+outputs/**/cached_statistics/**
+outputs/**/*.npz
+
+# Checkpoints / model weights
+outputs/**/checkpoints/**
+outputs/**/*.pth
+outputs/**/*.pth.tar
+outputs/**/*.pt
+outputs/**/*.ckpt
+
+# Experiment/training logs
+logs/
+log/
+
+# Weights & Biases
+wandb/
+
+# Scratch / temporary research work
+scratch/
+tmp/
+temp/
+
+# Local notes
 notes.txt
-scratch
-wandb
-checkpoints
-outputs
-train_outputs
-test_outputs
-.idea
-scripts
-*.sh
-**/saved
 
-### default python ignores
 
-# Byte-compiled / optimized / DLL files
+# ==============================================================================
+# 2. MODEL CHECKPOINTS / WEIGHTS
+# ==============================================================================
+
+checkpoints/
+**/checkpoints/
+**/saved/
+
+*.pth
+*.pth.tar
+*.pt
+*.ckpt
+
+
+# ==============================================================================
+# 3. DATASETS
+# ==============================================================================
+
+# Do not commit Market-1501 or other datasets.
+data/
+datasets/
+reid-data/
+
+# Common dataset/archive formats if placed locally
+*.tar.gz
+*.tgz
+
+# Temporary root-level analysis plots
+utility_cross_camera_*.png
+
+
+# ==============================================================================
+# 4. PYTHON CACHE / COMPILED FILES
+# ==============================================================================
+
 __pycache__/
 *.py[cod]
 *$py.class
 
-# C extensions
 *.so
 
-# Distribution / packaging
+
+# ==============================================================================
+# 5. PYTHON ENVIRONMENTS
+# ==============================================================================
+
+.env
+.env.*
+!.env.example
+
+.venv/
+venv/
+env/
+ENV/
+
+env.bak/
+venv.bak/
+
+# Conda/local environment metadata
+.conda/
+
+# pyenv
+.python-version
+
+
+# ==============================================================================
+# 6. PYTHON PACKAGING / BUILD ARTIFACTS
+# ==============================================================================
+
 .Python
+
 build/
-develop-eggs/
 dist/
+
+develop-eggs/
 downloads/
 eggs/
 .eggs/
@@ -34,104 +226,179 @@ parts/
 sdist/
 var/
 wheels/
+
 pip-wheel-metadata/
 share/python-wheels/
+
 *.egg-info/
 .installed.cfg
 *.egg
+
 MANIFEST
 
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
+# ==============================================================================
+# 7. TESTING / COVERAGE / STATIC ANALYSIS
+# ==============================================================================
 
-# Unit test / coverage reports
 htmlcov/
+
 .tox/
 .nox/
+
 .coverage
 .coverage.*
-.cache
+
+.cache/
+
 nosetests.xml
 coverage.xml
+
 *.cover
+*.py,cover
+
 .hypothesis/
 .pytest_cache/
 
-# Translations
-*.mo
-*.pot
-
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-
-# Flask stuff:
-instance/
-.webassets-cache
-
-# Scrapy stuff:
-.scrapy
-
-# Sphinx documentation
-docs/_build/
-
-# PyBuilder
-target/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# IPython
-profile_default/
-ipython_config.py
-
-# pyenv
-.python-version
-
-# pipenv
-#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install dependencies that don't work, or not
-#   install all needed dependencies.
-#Pipfile.lock
-
-# celery beat schedule file
-celerybeat-schedule
-
-# SageMath parsed files
-*.sage.py
-
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
-
-# mypy
 .mypy_cache/
 .dmypy.json
 dmypy.json
 
-# Pyre type checker
 .pyre/
+
+.ruff_cache/
+
+
+# ==============================================================================
+# 8. JUPYTER / IPYTHON
+# ==============================================================================
+
+.ipynb_checkpoints/
+
+profile_default/
+ipython_config.py
+
+
+# ==============================================================================
+# 9. IDE / EDITOR FILES
+# ==============================================================================
+
+.idea/
+.vscode/
+
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+
+
+# ==============================================================================
+# 10. OPERATING SYSTEM FILES
+# ==============================================================================
+
+.DS_Store
+.AppleDouble
+.LSOverride
+
+Thumbs.db
+Thumbs.db:encryptable
+Desktop.ini
+
+
+# ==============================================================================
+# 11. INSTALLER / PACKAGE MANAGER LOGS
+# ==============================================================================
+
+pip-log.txt
+pip-delete-this-directory.txt
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+
+# ==============================================================================
+# 12. FRAMEWORK / TOOL-SPECIFIC GENERATED FILES
+# ==============================================================================
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Sphinx
+docs/_build/
+
+# MkDocs
+site/
+
+# PyBuilder
+target/
+
+# Scrapy
+.scrapy/
+
+# Flask
+instance/
+.webassets-cache
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Celery
+celerybeat-schedule
+
+# SageMath
+*.sage.py
+
+# Spyder
+.spyderproject
+.spyproject
+
+# Rope
+.ropeproject
+
+
+# ==============================================================================
+# 13. LARGE / TEMPORARY NUMERICAL CACHE FILES
+# ==============================================================================
+
+# Torch temporary/cache files
+*.tmp
+
+# TensorBoard event logs
+events.out.tfevents.*
+
+
+# ==============================================================================
+# IMPORTANT: FILES WE INTENTIONALLY DO NOT IGNORE
+# ==============================================================================
+
+# Keep research source code:
+# *.py
+#
+# Keep shell/reproduction scripts:
+# *.sh
+#
+# Keep notebooks if they are part of the research:
+# *.ipynb
+#
+# Keep dependency/environment specifications:
+# requirements.txt
+# environment.yml
+# pyproject.toml
+#
+# Keep curated final research results:
+# results/
+#
+# Suggested structure:
+#
+# results/
+# ├── tables/
+# └── figures/
+#
+# Generated/raw experiment artifacts should stay under outputs/
+# and are therefore ignored.
